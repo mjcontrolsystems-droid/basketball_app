@@ -125,6 +125,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Modales que deben abrirse solos al cargar la página (ej. aviso de fecha futura en
+    // la ficha de eventos del partido). Se hace aquí, en el JS externo, porque el CSP del
+    // sitio no permite <script> inline en las páginas.
+    document.querySelectorAll('[data-modal-auto]').forEach(function (el) {
+        if (window.bootstrap) {
+            bootstrap.Modal.getOrCreateInstance(el).show();
+        }
+    });
+
     // Auto-cierre de alertas flash
     document.querySelectorAll('.alert[data-autoclose]').forEach(function (alerta) {
         setTimeout(function () {

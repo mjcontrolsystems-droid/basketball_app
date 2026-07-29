@@ -37,11 +37,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
     $accion = (string) ($_POST['accion'] ?? '');
 
+    // El partido se está jugando/registrando antes de la fecha programada: el modal de
+    // confirmación ofrece adelantar la fecha del encuentro a hoy sin salir de la ficha.
+    if ($accion === 'actualizar_fecha_hoy') {
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId) {
+                $p['fecha'] = date('Y-m-d');
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Fecha del encuentro actualizada a hoy.');
+    }
+
     if ($accion === 'eliminar_evento') {
         $id = (int) $_POST['id'];
         $eventos = db_leer_eventos_partido($torneo['id'], $partidoId);
+        $eventoBorrado = db_buscar_por_id($eventos, $id);
         $eventos = array_values(array_filter($eventos, fn($ev) => (int) $ev['id'] !== $id));
         db_guardar_eventos_partido($torneo['id'], $partidoId, $eventos);
+        // Si el evento borrado era un gol, el marcador cambia: se recalcula desde los
+        // eventos restantes. Un evento que no era gol (tarjeta/cambio) no toca el marcador.
+        if ($eventoBorrado !== null && ($eventoBorrado['tipo'] ?? '') === 'gol') {
+            partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
+        }
         redirigir_con_mensaje($urlLista, 'success', 'Evento eliminado.');
     }
 
@@ -113,12 +132,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $evento['id'] = db_siguiente_id_global('partido_eventos');
         $eventos[] = $evento;
         db_guardar_eventos_partido($torneo['id'], $partidoId, $eventos);
+        // Al registrar un gol, el marcador se actualiza automáticamente reflejando
+        // todos los goles del partido (fútbol +1; basketball +1/2/3; autogol al rival).
+        if ($accion === 'agregar_gol') {
+            partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
+        }
         redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.');
     }
 }
 
 $eventos = db_leer_eventos_partido($torneo['id'], $partidoId);
 usort($eventos, fn($a, $b) => ($a['minuto'] ?? 999) <=> ($b['minuto'] ?? 999));
+
+// Marcador en vivo calculado directamente desde los goles registrados. Es la fuente de
+// verdad del resultado: cada gol que se agrega abajo se refleja aquí y en la tabla.
+[$marcadorLocalVivo, $marcadorVisitanteVivo] = marcador_desde_eventos(
+    $eventos,
+    (int) $partido['equipo_local'],
+    (int) $partido['equipo_visitante'],
+    $deporte
+);
+
+// El encuentro se está registrando antes de su fecha programada: se ofrece (vía modal)
+// adelantar la fecha a hoy o seguir registrando eventos sin tocar la fecha.
+$hoy = date('Y-m-d');
+$fechaEsFutura = ($partido['fecha'] ?? '') > $hoy && ($partido['estado'] ?? '') !== 'jugado';
 
 $seccion_activa = 'partidos';
 $titulo_pagina = 'Ficha del partido';
@@ -132,6 +170,24 @@ require __DIR__ . '/includes/admin_layout_top.php';
         <div class="small text-muted"><?= $equipoLocal ? e($equipoLocal['nombre']) : '?' ?> vs <?= $equipoVisitante ? e($equipoVisitante['nombre']) : '?' ?> · <?= e(formatear_fecha_larga($partido['fecha'])) ?></div>
     </div>
     <a href="<?= e(url_copa('partido.php?id=' . $partidoId . '&imprimir=1')) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>Descargar PDF</a>
+</div>
+
+<div class="card-suave p-3 mb-4">
+    <div class="d-flex align-items-center justify-content-center gap-3 gap-md-4 flex-wrap">
+        <div class="text-center" style="min-width:120px;">
+            <?= logo_equipo($equipoLocal ?? ['nombre' => '?'], 44) ?>
+            <div class="small fw-semibold mt-1"><?= $equipoLocal ? e($equipoLocal['nombre']) : '?' ?></div>
+        </div>
+        <div class="text-center px-2">
+            <div class="display-6 fw-bold lh-1" data-marcador-vivo><?= (int) $marcadorLocalVivo ?> <span class="text-muted">-</span> <?= (int) $marcadorVisitanteVivo ?></div>
+            <div class="small text-muted mt-1"><i class="bi bi-lightning-charge me-1"></i><?= e(etiqueta_anotaciones($deporte)) ?> en vivo</div>
+        </div>
+        <div class="text-center" style="min-width:120px;">
+            <?= logo_equipo($equipoVisitante ?? ['nombre' => '?'], 44) ?>
+            <div class="small fw-semibold mt-1"><?= $equipoVisitante ? e($equipoVisitante['nombre']) : '?' ?></div>
+        </div>
+    </div>
+    <p class="text-center small text-muted mb-0 mt-2">El marcador se calcula automáticamente con los <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> que registres abajo.</p>
 </div>
 
 <div class="row g-4">
@@ -306,5 +362,30 @@ require __DIR__ . '/includes/admin_layout_top.php';
         </div>
     </div>
 </div>
+
+<?php if ($fechaEsFutura): ?>
+<div class="modal fade" id="modalFechaFutura" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-modal-auto>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>Encuentro con fecha futura</h5>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Este encuentro está programado para el <strong><?= e(formatear_fecha_larga($partido['fecha'])) ?></strong>, que aún no llega.</p>
+                <p class="mb-0 text-muted small">¿Deseas actualizar la fecha del partido a hoy, o registrar los eventos igual sin cambiar la fecha?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Solo registrar eventos</button>
+                <form method="post" class="mb-0">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="accion" value="actualizar_fecha_hoy">
+                    <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+                    <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-calendar-check me-1"></i>Actualizar fecha a hoy</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php require __DIR__ . '/includes/admin_layout_bottom.php'; ?>

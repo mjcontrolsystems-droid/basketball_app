@@ -215,6 +215,107 @@ function evento_descripcion(array $evento, array $jugadoresPorId, ?string $depor
 }
 
 /**
+ * Calcula el marcador [local, visitante] de un partido a partir de sus eventos de
+ * anotación ('gol'). En fútbol cada gol vale 1 y un AUTOGOL suma al equipo RIVAL del
+ * que lo cometió (el evento guarda el equipo del jugador que se marcó en propia). En
+ * basketball cada anotación suma su valor real (1/2/3 puntos según el tipo de canasta).
+ *
+ * @return array{0:int,1:int} [marcadorLocal, marcadorVisitante]
+ */
+function marcador_desde_eventos(array $eventos, int $equipoLocalId, int $equipoVisitanteId, ?string $deporte = null): array
+{
+    $basketball = es_basketball($deporte);
+    $local = 0;
+    $visitante = 0;
+
+    foreach ($eventos as $ev) {
+        if (($ev['tipo'] ?? '') !== 'gol') {
+            continue;
+        }
+        $equipoId = (int) ($ev['equipo_id'] ?? 0);
+        $valor = $basketball ? (TIPOS_PUNTO_VALOR[$ev['tipo_gol'] ?? ''] ?? 1) : 1;
+
+        // Autogol (solo fútbol): el punto va al equipo contrario al del jugador.
+        $esAutogol = !$basketball && ($ev['tipo_gol'] ?? '') === 'autogol';
+        $equipoAcreditado = $esAutogol
+            ? ($equipoId === $equipoLocalId ? $equipoVisitanteId : $equipoLocalId)
+            : $equipoId;
+
+        if ($equipoAcreditado === $equipoLocalId) {
+            $local += $valor;
+        } elseif ($equipoAcreditado === $equipoVisitanteId) {
+            $visitante += $valor;
+        }
+    }
+
+    return [$local, $visitante];
+}
+
+/**
+ * Recalcula el marcador de un partido a partir de sus eventos de gol y lo escribe en el
+ * registro del partido, para que la tabla de posiciones (que lee marcador_local/visitante)
+ * quede al día. Modifica $partidos por referencia y persiste con db_guardar. NO cambia el
+ * estado 'programado'/'jugado'. Devuelve [local, visitante].
+ *
+ * @param array<int,array> $partidos Colección completa de partidos de la copa (por referencia).
+ * @return array{0:int,1:int}
+ */
+function partido_recalcular_marcador(int $torneoId, int $partidoId, array &$partidos, ?string $deporte): array
+{
+    $partido = db_buscar_por_id($partidos, $partidoId);
+    if ($partido === null) {
+        return [0, 0];
+    }
+
+    $eventos = db_leer_eventos_partido($torneoId, $partidoId);
+    [$local, $visitante] = marcador_desde_eventos(
+        $eventos,
+        (int) $partido['equipo_local'],
+        (int) $partido['equipo_visitante'],
+        $deporte
+    );
+
+    foreach ($partidos as &$p) {
+        if ((int) $p['id'] === $partidoId) {
+            $p['marcador_local'] = $local;
+            $p['marcador_visitante'] = $visitante;
+        }
+    }
+    unset($p);
+
+    db_guardar('partidos', $partidos, $torneoId);
+    return [$local, $visitante];
+}
+
+/**
+ * Marcador [local, visitante] con el que se debe dar por jugado un partido, calculado
+ * desde sus goles. Protege datos históricos: si todavía no hay goles registrados (0-0)
+ * pero el partido ya tenía un marcador capturado antes de este modelo, se conserva ese
+ * marcador en vez de borrarlo a 0-0.
+ *
+ * @return array{0:int,1:int}
+ */
+function marcador_jugado_desde_eventos(int $torneoId, array $partido, ?string $deporte): array
+{
+    $eventos = db_leer_eventos_partido($torneoId, (int) $partido['id']);
+    [$local, $visitante] = marcador_desde_eventos(
+        $eventos,
+        (int) $partido['equipo_local'],
+        (int) $partido['equipo_visitante'],
+        $deporte
+    );
+
+    $sinGoles = ($local === 0 && $visitante === 0);
+    $teniaMarcador = ($partido['marcador_local'] ?? null) !== null || ($partido['marcador_visitante'] ?? null) !== null;
+    if ($sinGoles && $teniaMarcador) {
+        $local = (int) $partido['marcador_local'];
+        $visitante = (int) $partido['marcador_visitante'];
+    }
+
+    return [$local, $visitante];
+}
+
+/**
  * Ranking de máximos anotadores a partir de los eventos de todos los partidos de la
  * copa/liga. En fútbol cuenta goles (los autogoles no suman al goleador, van a favor
  * del marcador del rival pero no son "su" gol). En basketball suma el valor real de

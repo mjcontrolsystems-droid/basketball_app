@@ -5,6 +5,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/tabla.php';
+require_once __DIR__ . '/../includes/liga.php';
 
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
@@ -33,9 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Interruptor rápido en la tarjeta del encuentro: alternar jugado/programado sin
-    // abrir el formulario completo. Para marcarlo como jugado sí hace falta el marcador
-    // (lo usa la tabla de posiciones), así que si todavía no está capturado se manda a
-    // editar en vez de fallar en silencio.
+    // abrir el formulario completo. Al marcarlo como jugado el marcador se toma de los
+    // goles registrados en Eventos (queda 0-0 si no hay goles), no se captura a mano.
     if (($_POST['accion'] ?? '') === 'alternar_jugado') {
         $id = (int) $_POST['id'];
         $partidoActual = db_buscar_por_id($partidos, $id);
@@ -54,49 +54,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como programado.');
         }
 
-        if ($partidoActual['marcador_local'] === null || $partidoActual['marcador_visitante'] === null) {
-            redirigir_con_mensaje(url('admin/partidos.php?accion=editar&id=' . $id), 'error', 'Captura el marcador de ambos equipos para marcar este encuentro como jugado.');
+        // El marcador se toma de los goles registrados en Eventos (fuente de verdad). Si
+        // no hay goles queda 0-0, salvo que la copa no permita empates. Se conserva un
+        // marcador histórico si ya estaba capturado y todavía no hay goles que lo sustituyan.
+        [$mLocal, $mVisit] = marcador_jugado_desde_eventos($torneo['id'], $partidoActual, $torneo['deporte'] ?? null);
+        if ($mLocal === $mVisit && empty($torneo['permite_empates'])) {
+            redirigir_con_mensaje(url('admin/partido_eventos.php?partido_id=' . $id), 'error', 'Esta copa no permite empates: registra los goles en Eventos para definir un ganador antes de marcar el encuentro como jugado.');
         }
 
         foreach ($partidos as &$p) {
             if ($p['id'] === $id) {
                 $p['estado'] = 'jugado';
+                $p['marcador_local'] = $mLocal;
+                $p['marcador_visitante'] = $mVisit;
             }
         }
         unset($p);
         db_guardar('partidos', $partidos, $torneo['id']);
         redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como jugado.');
-    }
-
-    // Cuadro de marcador directo en la tarjeta del encuentro (sin abrir el formulario
-    // completo). Capturar un marcador siempre marca el encuentro como jugado.
-    if (($_POST['accion'] ?? '') === 'guardar_marcador') {
-        $id = (int) $_POST['id'];
-        $partidoActual = db_buscar_por_id($partidos, $id);
-        if ($partidoActual === null) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Encuentro no encontrado.');
-        }
-
-        $marcadorLocal = $_POST['marcador_local'] !== '' ? (int) $_POST['marcador_local'] : null;
-        $marcadorVisitante = $_POST['marcador_visitante'] !== '' ? (int) $_POST['marcador_visitante'] : null;
-
-        if ($marcadorLocal === null || $marcadorVisitante === null) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Captura el marcador de ambos equipos.');
-        }
-        if ($marcadorLocal === $marcadorVisitante && !$torneo['permite_empates']) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Esta copa no permite empates: los marcadores no pueden ser iguales.');
-        }
-
-        foreach ($partidos as &$p) {
-            if ($p['id'] === $id) {
-                $p['marcador_local'] = $marcadorLocal;
-                $p['marcador_visitante'] = $marcadorVisitante;
-                $p['estado'] = 'jugado';
-            }
-        }
-        unset($p);
-        db_guardar('partidos', $partidos, $torneo['id']);
-        redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Marcador guardado.');
     }
 
     if (($_POST['accion'] ?? '') === 'guardar') {
@@ -117,21 +92,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errores[] = 'Selecciona equipos válidos.';
         }
 
-        $marcadorLocal = $_POST['marcador_local'] !== '' ? (int) $_POST['marcador_local'] : null;
-        $marcadorVisitante = $_POST['marcador_visitante'] !== '' ? (int) $_POST['marcador_visitante'] : null;
-
-        // Si se capturó el marcador de ambos equipos, el encuentro se da por jugado aunque
-        // no se haya tocado el selector de Estado a mano — si no, un marcador capturado se
-        // perdía en silencio porque más abajo solo se guarda cuando estado === 'jugado'.
-        if ($marcadorLocal !== null && $marcadorVisitante !== null) {
-            $estado = 'jugado';
+        // El marcador ya no se captura en este formulario: se calcula desde los goles
+        // registrados en Eventos. Para un encuentro existente se deriva de sus goles
+        // (conservando un marcador histórico si aún no hay goles); uno nuevo empieza 0-0.
+        $partidoExistente = $id > 0 ? db_buscar_por_id($partidos, $id) : null;
+        if ($partidoExistente !== null) {
+            [$marcadorLocal, $marcadorVisitante] = marcador_jugado_desde_eventos($torneo['id'], $partidoExistente, $torneo['deporte'] ?? null);
+        } else {
+            $marcadorLocal = 0;
+            $marcadorVisitante = 0;
         }
 
-        if ($estado === 'jugado') {
-            if ($marcadorLocal === null || $marcadorVisitante === null) {
-                $errores[] = 'Debes capturar el marcador de ambos equipos para marcar el encuentro como jugado.';
-            } elseif ($marcadorLocal === $marcadorVisitante && !$torneo['permite_empates']) {
-                $errores[] = 'Esta copa no permite empates: los marcadores no pueden ser iguales.';
+        if ($estado === 'jugado' && $marcadorLocal === $marcadorVisitante && empty($torneo['permite_empates'])) {
+            if ($partidoExistente !== null) {
+                $errores[] = 'Esta copa no permite empates: registra los goles en la ficha de Eventos para definir un ganador antes de marcar el encuentro como jugado.';
+            } else {
+                $errores[] = 'Esta copa no permite empates. Guarda el encuentro como "Programado", registra los goles en Eventos y luego márcalo como jugado.';
             }
         }
 
@@ -144,8 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'hora' => (string) $_POST['hora'],
                 'cancha' => trim((string) $_POST['cancha']),
                 'estado' => $estado,
-                'marcador_local' => $estado === 'jugado' ? $marcadorLocal : null,
-                'marcador_visitante' => $estado === 'jugado' ? $marcadorVisitante : null,
+                // Marcador derivado de los goles. Un encuentro jugado siempre lleva marcador
+                // (0-0 incluido); uno programado solo lo muestra si ya tiene goles cargados.
+                'marcador_local' => ($estado === 'jugado' || $marcadorLocal !== 0 || $marcadorVisitante !== 0) ? $marcadorLocal : null,
+                'marcador_visitante' => ($estado === 'jugado' || $marcadorLocal !== 0 || $marcadorVisitante !== 0) ? $marcadorVisitante : null,
                 'fase' => $fase,
                 'arbitro' => trim((string) ($_POST['arbitro'] ?? '')),
                 'observaciones' => trim((string) ($_POST['observaciones'] ?? '')),
@@ -257,16 +235,22 @@ require __DIR__ . '/includes/admin_layout_top.php';
                 <label class="form-label small fw-semibold">Estado</label>
                 <select name="estado" class="form-select" id="selectEstado">
                     <option value="programado" <?= ($partidoEditar['estado'] ?? 'programado') === 'programado' ? 'selected' : '' ?>>Programado</option>
-                    <option value="jugado" <?= ($partidoEditar['estado'] ?? '') === 'jugado' ? 'selected' : '' ?>>Jugado (capturar marcador)</option>
+                    <option value="jugado" <?= ($partidoEditar['estado'] ?? '') === 'jugado' ? 'selected' : '' ?>>Jugado</option>
                 </select>
             </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Marcador local</label>
-                <input type="number" min="0" name="marcador_local" class="form-control" value="<?= e((string) ($partidoEditar['marcador_local'] ?? '')) ?>">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Marcador visitante</label>
-                <input type="number" min="0" name="marcador_visitante" class="form-control" value="<?= e((string) ($partidoEditar['marcador_visitante'] ?? '')) ?>">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Marcador</label>
+                <div class="form-control d-flex align-items-center justify-content-between bg-light">
+                    <span class="fw-bold fs-5">
+                        <?= ($partidoEditar['marcador_local'] ?? '') !== '' && ($partidoEditar['marcador_local'] ?? null) !== null ? (int) $partidoEditar['marcador_local'] : '–' ?>
+                        <span class="text-muted mx-1">-</span>
+                        <?= ($partidoEditar['marcador_visitante'] ?? '') !== '' && ($partidoEditar['marcador_visitante'] ?? null) !== null ? (int) $partidoEditar['marcador_visitante'] : '–' ?>
+                    </span>
+                    <?php if (($partidoEditar['id'] ?? 0) > 0): ?>
+                    <a href="<?= url('admin/partido_eventos.php?partido_id=' . (int) $partidoEditar['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clipboard-data me-1"></i>Registrar goles</a>
+                    <?php endif; ?>
+                </div>
+                <div class="form-text">El marcador se calcula automáticamente con los goles registrados en la ficha de Eventos.</div>
             </div>
 
             <div class="col-md-6">

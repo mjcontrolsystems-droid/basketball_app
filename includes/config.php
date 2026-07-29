@@ -25,12 +25,20 @@ define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');
 define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
 
 // Correos (en minúsculas) de las cuentas super-admin: son las únicas que pueden gestionar
-// la lista blanca de correos autorizados a entrar con Google. Separados por coma en la
-// variable de entorno, ej. "persona1@gmail.com,persona2@gmail.com".
-define('SUPERADMIN_EMAILS', array_values(array_filter(array_map(
+// la lista blanca de correos autorizados a entrar con Google.
+//
+// Se combinan dos fuentes: (1) una lista base fija en el código (SUPERADMIN_EMAILS_BASE),
+// que garantiza que estas cuentas siempre sean super-admin aunque la variable de entorno
+// no esté configurada en el servidor; y (2) los correos extra de la variable de entorno
+// SUPERADMIN_EMAILS (separados por coma), para poder sumar más sin tocar el código.
+const SUPERADMIN_EMAILS_BASE = [
+    'sagastumejosue71@gmail.com',
+    'mjcontrolsystem@gmail.com',
+];
+define('SUPERADMIN_EMAILS', array_values(array_unique(array_filter(array_map(
     fn($e) => mb_strtolower(trim($e)),
-    explode(',', getenv('SUPERADMIN_EMAILS') ?: '')
-))));
+    array_merge(SUPERADMIN_EMAILS_BASE, explode(',', getenv('SUPERADMIN_EMAILS') ?: ''))
+)))));
 
 // Render (y la mayoría de hostings con proxy) terminan el HTTPS antes de llegar a PHP;
 // hay que revisar X-Forwarded-Proto además de $_SERVER['HTTPS'] para detectarlo correctamente.

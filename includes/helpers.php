@@ -158,21 +158,17 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
 </form>
 HTML;
 
-    // Cuadro de marcador junto a cada equipo: capturar y guardar aquí marca el
-    // encuentro como jugado automáticamente (antes había que acordarse de cambiar
-    // el selector de Estado aparte, y si no, el marcador capturado se perdía).
-    $valorLocal = $p['marcador_local'] !== null ? (int) $p['marcador_local'] : '';
-    $valorVisit = $p['marcador_visitante'] !== null ? (int) $p['marcador_visitante'] : '';
-    $formMarcador = <<<HTML
-<form method="post" class="d-flex align-items-center gap-2">
-    <input type="hidden" name="csrf_token" value="{$csrf}">
-    <input type="hidden" name="accion" value="guardar_marcador">
-    <input type="hidden" name="id" value="{$id}">
-    <input type="number" min="0" name="marcador_local" value="{$valorLocal}" placeholder="-" class="form-control form-control-lg text-center fw-bold p-1" style="width:60px;">
+    // Marcador de solo lectura: ya no se captura a mano aquí. El resultado se calcula
+    // automáticamente desde los goles registrados en la ficha de "Eventos" (botón abajo),
+    // así que aquí solo se muestra. Un guion cuando todavía no hay goles / no está jugado.
+    $valorLocal = $p['marcador_local'] !== null ? (int) $p['marcador_local'] : '–';
+    $valorVisit = $p['marcador_visitante'] !== null ? (int) $p['marcador_visitante'] : '–';
+    $marcadorDisplay = <<<HTML
+<div class="d-flex align-items-center gap-2" title="El marcador se calcula desde los goles registrados en Eventos">
+    <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorLocal}</span>
     <span class="text-muted">-</span>
-    <input type="number" min="0" name="marcador_visitante" value="{$valorVisit}" placeholder="-" class="form-control form-control-lg text-center fw-bold p-1" style="width:60px;">
-    <button type="submit" class="btn btn-sm btn-outline-success" title="Guardar marcador"><i class="bi bi-check-lg"></i></button>
-</form>
+    <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorVisit}</span>
+</div>
 HTML;
 
     return <<<HTML
@@ -187,7 +183,7 @@ HTML;
         </div>
         <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="equipo-col">{$logoLocal}<span class="nombre">{$nombreLocal}</span></div>
-            {$formMarcador}
+            {$marcadorDisplay}
             <div class="equipo-col">{$logoVisit}<span class="nombre">{$nombreVisit}</span></div>
         </div>
         <div class="d-flex justify-content-between align-items-center">
