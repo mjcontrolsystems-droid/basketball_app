@@ -33,7 +33,7 @@ define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
 // SUPERADMIN_EMAILS (separados por coma), para poder sumar más sin tocar el código.
 const SUPERADMIN_EMAILS_BASE = [
     'sagastumejosue71@gmail.com',
-    'mjcontrolsystem@gmail.com',
+    'mjcontrolsystems@gmail.com',
 ];
 define('SUPERADMIN_EMAILS', array_values(array_unique(array_filter(array_map(
     fn($e) => mb_strtolower(trim($e)),

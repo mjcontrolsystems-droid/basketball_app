@@ -139,9 +139,17 @@ function es_superadmin(?array $usuario): bool
  * El registro público (usuario/contraseña) está cerrado: solo se puede crear una cuenta
  * nueva con "Continuar con Google" si el correo está en esta lista blanca, administrada
  * por el/los super-admin. No afecta a cuentas que ya existían antes de cerrar el registro.
+ *
+ * Los correos de SUPERADMIN_EMAILS siempre están autorizados, aunque no estén en la tabla:
+ * si no fuera así, la primera vez que un super-admin entra con Google (cuenta todavía no
+ * creada) quedaría bloqueado, y no habría nadie que lo agregara a la lista.
  */
 function correo_autorizado(string $email): bool
 {
+    if (in_array(mb_strtolower(trim($email)), SUPERADMIN_EMAILS, true)) {
+        return true;
+    }
+
     $pdo = db_conexion();
     $stmt = $pdo->prepare('SELECT 1 FROM correos_autorizados WHERE lower(email) = lower(:email)');
     $stmt->bindValue(':email', $email, PDO::PARAM_STR);
