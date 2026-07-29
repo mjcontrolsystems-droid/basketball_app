@@ -11,6 +11,9 @@ auth_requerir();
 
 $organizador = usuarios_obtener_por_id((int) $_SESSION['usuario_id']);
 $errores = [];
+// Las cuentas que entraron con "Continuar con Google" no tienen password_hash propio,
+// así que no tiene sentido (ni es seguro) dejarles cambiar una contraseña que no usan.
+$esCuentaGoogle = !empty($organizador['google_id']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
@@ -45,6 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (($_POST['accion'] ?? '') === 'password') {
+        if ($esCuentaGoogle) {
+            redirigir_con_mensaje(url('admin/perfil.php'), 'error', 'Tu cuenta entra con Google y no usa contraseña.');
+        }
         $actual = (string) $_POST['password_actual'];
         $nueva = (string) $_POST['password_nueva'];
         $confirmar = (string) $_POST['password_confirmar'];
@@ -113,6 +119,7 @@ require __DIR__ . '/includes/admin_layout_top.php';
         </form>
     </div>
 
+    <?php if (!$esCuentaGoogle): ?>
     <div class="col-lg-5">
         <form method="post" class="card-suave p-4">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
@@ -133,6 +140,13 @@ require __DIR__ . '/includes/admin_layout_top.php';
             <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">Actualizar contraseña</button>
         </form>
     </div>
+    <?php else: ?>
+    <div class="col-lg-5">
+        <div class="card-suave p-4 text-muted small">
+            <i class="bi bi-google me-2"></i>Iniciaste sesión con Google, así que tu cuenta no usa contraseña.
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php require __DIR__ . '/includes/admin_layout_bottom.php'; ?>

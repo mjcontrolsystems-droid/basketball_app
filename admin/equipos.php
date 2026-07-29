@@ -166,6 +166,12 @@ require __DIR__ . '/includes/admin_layout_top.php';
         <a href="<?= url('admin/equipos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nuevo equipo</a>
     </div>
 
+    <?php if (empty($equipos)): ?>
+    <div class="card-suave p-4 text-center text-muted">
+        <i class="bi bi-shield display-6 d-block mb-2"></i>
+        Todavía no hay equipos registrados.
+    </div>
+    <?php else: ?>
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
         <?php foreach ($equipos as $eq): ?>
         <div class="col">
@@ -189,6 +195,7 @@ require __DIR__ . '/includes/admin_layout_top.php';
         </div>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 
 <?php endif; ?>
 

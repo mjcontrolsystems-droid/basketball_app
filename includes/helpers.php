@@ -138,6 +138,12 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
     $urlEventos = e(url('admin/partido_eventos.php?partido_id=' . $id));
     $botonEventos = "<a href=\"{$urlEventos}\" class=\"btn btn-sm btn-outline-secondary\" title=\"Goles, tarjetas y cambios\"><i class=\"bi bi-clipboard-data\"></i> Eventos</a>";
 
+    // Enlace público de transmisión en vivo: se puede abrir en una pantalla/TV para la
+    // afición (marcador grande y feed de eventos que se refresca solo) o copiar y compartir.
+    $urlVivo = e(url_copa('partido_vivo.php?id=' . $id));
+    $botonVivo = "<a href=\"{$urlVivo}\" target=\"_blank\" class=\"btn btn-sm btn-outline-secondary\" title=\"Abrir transmisión en vivo\"><i class=\"bi bi-broadcast\"></i></a>";
+    $botonCopiarVivo = "<button type=\"button\" class=\"btn btn-sm btn-outline-secondary btn-copiar-url\" data-url=\"{$urlVivo}\" title=\"Copiar enlace de transmisión en vivo\"><i class=\"bi bi-link-45deg\"></i></button>";
+
     $botonDescargar = '';
     if ($jugado) {
         $urlDescargar = e(url_copa('partido.php?id=' . $id . '&imprimir=1'));
@@ -190,6 +196,8 @@ HTML;
             <span class="small text-muted"><i class="bi bi-geo-alt me-1"></i>{$cancha}</span>
             <div class="d-flex gap-1">
                 {$botonEventos}
+                {$botonVivo}
+                {$botonCopiarVivo}
                 {$botonDescargar}
                 <a href="{$urlEditar}" class="btn btn-sm btn-outline-secondary">{$botonEditar}</a>
                 <form method="post" data-confirm="¿Eliminar este encuentro?">

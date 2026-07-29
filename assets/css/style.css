@@ -765,3 +765,144 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     }
     .ficha-pie p { margin: 0; font-size: 10px; }
 }
+
+/* Transmisión en vivo (partido_vivo.php): pantalla pensada para proyectar en un TV/monitor
+   durante el partido, con marcador grande y feed de eventos que se refresca solo. */
+.pagina-vivo {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(var(--color-primario-rgb), .45), transparent 55%),
+        radial-gradient(circle at 85% 85%, rgba(var(--color-secundario-rgb, 100, 116, 139), .35), transparent 55%),
+        #120a24;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+}
+
+.pagina-vivo-contenido {
+    width: 100%;
+    max-width: 960px;
+}
+
+.pagina-vivo-cabecera {
+    margin-bottom: 1.5rem;
+}
+
+.punto-en-vivo {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff4d4d;
+    display: inline-block;
+    box-shadow: 0 0 0 rgba(255, 77, 77, .6);
+    animation: pulsoEnVivo 1.6s infinite;
+}
+
+@keyframes pulsoEnVivo {
+    0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, .6); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+}
+
+.marcador-vivo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 3rem);
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 28px;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(6px);
+}
+
+.marcador-vivo-equipo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .75rem;
+    width: 30%;
+    text-align: center;
+}
+
+.marcador-vivo-nombre {
+    font-weight: 700;
+    font-size: clamp(.85rem, 2vw, 1.25rem);
+}
+
+.marcador-vivo-numeros {
+    display: flex;
+    align-items: center;
+    gap: clamp(.5rem, 2vw, 1.25rem);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 9vw, 6rem);
+    line-height: 1;
+}
+
+.marcador-vivo-guion {
+    opacity: .5;
+    font-size: clamp(1.5rem, 4vw, 3rem);
+}
+
+.marcador-pulso {
+    animation: pulsoMarcador .9s ease;
+}
+
+@keyframes pulsoMarcador {
+    0% { transform: scale(1); color: #fff; }
+    30% { transform: scale(1.35); color: #facc15; }
+    100% { transform: scale(1); color: #fff; }
+}
+
+.pagina-vivo-feed {
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.feed-eventos li.feed-evento {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    padding: .55rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    font-size: clamp(.85rem, 1.6vw, 1.05rem);
+    opacity: 1;
+    transition: opacity .4s ease, transform .4s ease;
+}
+
+.feed-eventos li.feed-evento:last-child {
+    border-bottom: none;
+}
+
+.feed-eventos li.feed-evento-nuevo {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+.feed-icono {
+    font-size: 1.15em;
+}
+
+.feed-equipo {
+    opacity: .65;
+}
+
+.confeti-lienzo {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+@media (max-width: 576px) {
+    .marcador-vivo { flex-direction: column; gap: 1rem; }
+    .marcador-vivo-equipo { width: auto; }
+}

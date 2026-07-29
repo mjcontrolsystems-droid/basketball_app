@@ -169,7 +169,10 @@ require __DIR__ . '/includes/admin_layout_top.php';
         <h3 class="mb-0">Ficha del partido</h3>
         <div class="small text-muted"><?= $equipoLocal ? e($equipoLocal['nombre']) : '?' ?> vs <?= $equipoVisitante ? e($equipoVisitante['nombre']) : '?' ?> · <?= e(formatear_fecha_larga($partido['fecha'])) ?></div>
     </div>
+    <a href="<?= e(url_copa('partido_vivo.php?id=' . $partidoId)) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-broadcast me-1"></i>Transmisión en vivo</a>
+    <button type="button" class="btn btn-sm btn-outline-secondary btn-copiar-url" data-url="<?= e(url_copa('partido_vivo.php?id=' . $partidoId)) ?>" title="Copiar enlace de transmisión en vivo"><i class="bi bi-link-45deg"></i></button>
     <a href="<?= e(url_copa('partido.php?id=' . $partidoId . '&imprimir=1')) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>Descargar PDF</a>
+    <a href="<?= url('admin/partidos.php') ?>" class="btn btn-sm btn-degradado rounded-pill px-3"><i class="bi bi-check2-circle me-1"></i>Guardar y volver a Encuentros</a>
 </div>
 
 <div class="card-suave p-3 mb-4">
