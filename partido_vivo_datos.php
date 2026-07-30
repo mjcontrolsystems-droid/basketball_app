@@ -60,4 +60,9 @@ echo json_encode([
     'marcador_local' => $marcadorLocal,
     'marcador_visitante' => $marcadorVisitante,
     'eventos' => $eventosSalida,
+    // Cronómetro tal cual está guardado (sin sumarle lo corrido "ahora mismo"): el cliente
+    // hace su propio tic en vivo a partir de estos tres valores, igual que en el panel admin.
+    'cronometro_estado' => $partido['cronometro_estado'] ?? 'detenido',
+    'cronometro_segundos' => (int) ($partido['cronometro_segundos'] ?? 0),
+    'cronometro_inicio' => $partido['cronometro_inicio'],
 ], JSON_UNESCAPED_UNICODE);

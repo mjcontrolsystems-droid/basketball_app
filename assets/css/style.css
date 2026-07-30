@@ -823,6 +823,12 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     padding: .4rem .9rem;
 }
 
+.cronometro-vivo {
+    font-weight: 700;
+    font-size: .95rem;
+    letter-spacing: .03em;
+}
+
 .punto-en-vivo {
     width: 10px;
     height: 10px;

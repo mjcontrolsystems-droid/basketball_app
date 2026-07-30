@@ -45,6 +45,35 @@
     var idsVistos = {};
     var primeraCargaHecha = false;
 
+    // Cronómetro: arranca con lo que ya trae la página (evita esperar el primer sondeo
+    // para mostrar algo) y luego se corrige con cada respuesta de actualizar(), por si el
+    // organizador inicia/pausa/finaliza el cronómetro mientras alguien está viendo esta página.
+    var cronometroEl = document.getElementById('cronometroVivo');
+    var cronoEstado = contenedor.getAttribute('data-cronometro-estado') || 'detenido';
+    var cronoSegundosBase = parseInt(contenedor.getAttribute('data-cronometro-segundos'), 10) || 0;
+    var cronoInicioAttr = contenedor.getAttribute('data-cronometro-inicio');
+    var cronoInicioMs = cronoInicioAttr ? new Date(cronoInicioAttr).getTime() : null;
+
+    function cronoSegundosActuales() {
+        if (cronoEstado === 'corriendo' && cronoInicioMs !== null && !isNaN(cronoInicioMs)) {
+            return cronoSegundosBase + Math.max(0, Math.floor((Date.now() - cronoInicioMs) / 1000));
+        }
+        return cronoSegundosBase;
+    }
+
+    function actualizarTextoCronometro() {
+        if (!cronometroEl) {
+            return;
+        }
+        var segundos = cronoSegundosActuales();
+        var mm = Math.floor(segundos / 60);
+        var ss = segundos % 60;
+        cronometroEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+    }
+
+    actualizarTextoCronometro();
+    setInterval(actualizarTextoCronometro, 1000);
+
     // Partículas hechas con <canvas>, sin librería externa (el CSP del sitio solo permite
     // scripts propios o de los CDN ya autorizados, y esto evita otra dependencia más).
     function lanzarParticulas(colores, cantidad, forma) {
@@ -191,6 +220,13 @@
                 if (marcadorLocalEl) { marcadorLocalEl.textContent = datos.marcador_local; }
                 if (marcadorVisitEl) { marcadorVisitEl.textContent = datos.marcador_visitante; }
                 if (estadoEl) { estadoEl.textContent = datos.estado === 'jugado' ? 'Finalizado' : 'En vivo'; }
+
+                if (datos.cronometro_estado !== undefined) {
+                    cronoEstado = datos.cronometro_estado;
+                    cronoSegundosBase = datos.cronometro_segundos || 0;
+                    cronoInicioMs = datos.cronometro_inicio ? new Date(datos.cronometro_inicio).getTime() : null;
+                    actualizarTextoCronometro();
+                }
 
                 datos.eventos.forEach(function (ev) {
                     if (idsVistos[ev.id]) {

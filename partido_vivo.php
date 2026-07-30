@@ -66,11 +66,17 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
 
 <div id="partidoVivo" class="pagina-vivo-contenido" data-url-datos="<?= $urlDatos ?>" data-url-balon="<?= $urlBalon ?>"
     data-texto-gol="<?= e($textoGol) ?>" data-texto-amarilla="<?= e($textoAmarilla) ?>"
-    data-texto-roja="<?= e($textoRoja) ?>" data-texto-cambio="<?= e($textoCambio) ?>">
+    data-texto-roja="<?= e($textoRoja) ?>" data-texto-cambio="<?= e($textoCambio) ?>"
+    data-cronometro-estado="<?= e($partido['cronometro_estado'] ?? 'detenido') ?>"
+    data-cronometro-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
+    data-cronometro-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pagina-vivo-cabecera">
         <div class="d-flex align-items-center gap-2 badge-en-vivo">
             <span class="punto-en-vivo"></span>
             <span id="estadoPartido" class="fw-heading text-uppercase small"><?= $partido['estado'] === 'jugado' ? 'Finalizado' : 'En vivo' ?></span>
+            <span class="opacity-50">·</span>
+            <i class="bi bi-stopwatch"></i>
+            <span id="cronometroVivo" class="cronometro-vivo font-monospace">00:00</span>
         </div>
         <span class="small opacity-75 fw-semibold"><i class="bi bi-trophy me-1"></i><?= e($torneo['nombre']) ?> · <?= e(formatear_fecha_larga($partido['fecha'])) ?></span>
         <button type="button" id="btnPantallaCompleta" class="btn btn-sm btn-outline-luz rounded-pill px-3">
