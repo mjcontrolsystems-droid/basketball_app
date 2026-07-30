@@ -12,7 +12,7 @@ const COLUMNAS_POR_TABLA = [
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
     'jugadores' => ['id', 'torneo_id', 'equipo_id', 'dorsal', 'nombre', 'activo'],
-    'partido_eventos' => ['id', 'torneo_id', 'partido_id', 'tipo', 'equipo_id', 'jugador_id', 'jugador_entra_id', 'minuto', 'tipo_gol', 'asistencia_jugador_id', 'motivo'],
+    'partido_eventos' => ['id', 'torneo_id', 'partido_id', 'tipo', 'equipo_id', 'jugador_id', 'jugador_entra_id', 'minuto', 'tipo_gol', 'asistencia_jugador_id', 'motivo', 'periodo'],
 ];
 
 const COLUMNAS_ENTERAS_POR_TABLA = [
@@ -21,7 +21,7 @@ const COLUMNAS_ENTERAS_POR_TABLA = [
     'patrocinadores' => ['id', 'torneo_id', 'orden'],
     'comentarios' => ['id', 'torneo_id'],
     'jugadores' => ['id', 'torneo_id', 'equipo_id'],
-    'partido_eventos' => ['id', 'torneo_id', 'partido_id', 'equipo_id', 'jugador_id', 'jugador_entra_id', 'minuto', 'asistencia_jugador_id'],
+    'partido_eventos' => ['id', 'torneo_id', 'partido_id', 'equipo_id', 'jugador_id', 'jugador_entra_id', 'minuto', 'asistencia_jugador_id', 'periodo'],
 ];
 
 // Columnas boolean reales (no INTEGER 0/1 como comentarios.leido): con prepares emulados,

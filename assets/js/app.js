@@ -93,14 +93,21 @@ document.addEventListener('DOMContentLoaded', function () {
         var actualizarCronometro = function () {
             var segundos = cronoSegundosActuales();
             var minutos = Math.floor(segundos / 60);
+            var segundosResto = segundos % 60;
             if (cronoTextoEl) {
                 var mm = minutos < 10 ? '0' + minutos : '' + minutos;
-                var ss = (segundos % 60) < 10 ? '0' + (segundos % 60) : '' + (segundos % 60);
+                var ss = segundosResto < 10 ? '0' + segundosResto : '' + segundosResto;
                 cronoTextoEl.textContent = mm + ':' + ss;
+            }
+            // Minuto sugerido para los eventos: se aproxima al minuto siguiente pasando
+            // los 30 segundos (ej. 4:35 -> 5), y nunca baja de 1 (no existe "minuto 0").
+            var minutoSugerido = segundosResto >= 30 ? minutos + 1 : minutos;
+            if (minutoSugerido < 1) {
+                minutoSugerido = 1;
             }
             camposMinuto.forEach(function (campo, i) {
                 if (!camposMinutoTocados[i] && document.activeElement !== campo) {
-                    campo.value = minutos;
+                    campo.value = minutoSugerido;
                 }
             });
         };

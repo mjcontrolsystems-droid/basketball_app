@@ -199,19 +199,29 @@ function evento_descripcion(array $evento, array $jugadoresPorId, ?string $depor
             if ($asistencia !== null) {
                 $texto .= ' (asistencia de ' . jugador_nombre($asistencia) . ')';
             }
-            return $texto;
+            break;
         case 'amarilla':
-            return $minuto . etiqueta_falta_leve($deporte) . ' - ' . $nombreJugador;
+            $texto = $minuto . etiqueta_falta_leve($deporte) . ' - ' . $nombreJugador;
+            break;
         case 'roja':
             $catalogoMotivo = motivos_falta_grave_label($deporte);
             $motivo = $catalogoMotivo[$evento['motivo'] ?? ''] ?? '';
-            return $minuto . etiqueta_falta_grave($deporte) . ($motivo !== '' ? " ({$motivo})" : '') . ' - ' . $nombreJugador;
+            $texto = $minuto . etiqueta_falta_grave($deporte) . ($motivo !== '' ? " ({$motivo})" : '') . ' - ' . $nombreJugador;
+            break;
         case 'cambio':
             $entra = $jugadoresPorId[(int) ($evento['jugador_entra_id'] ?? 0)] ?? null;
-            return $minuto . 'Cambio - Entra ' . jugador_nombre($entra) . ', sale ' . $nombreJugador;
+            $texto = $minuto . 'Cambio - Entra ' . jugador_nombre($entra) . ', sale ' . $nombreJugador;
+            break;
         default:
-            return $minuto . $nombreJugador;
+            $texto = $minuto . $nombreJugador;
     }
+
+    // Periodo en que ocurrió el evento (1er/2do Tiempo en fútbol, Cuarto 1-4 en basketball),
+    // guardado en el evento al momento de cargarlo (ver admin/partido_eventos.php). Los
+    // eventos de antes de este campo no tienen 'periodo' guardado: se asumen del primero.
+    $texto .= ' · ' . partido_periodo_etiqueta($deporte, (int) ($evento['periodo'] ?? 1));
+
+    return $texto;
 }
 
 /**

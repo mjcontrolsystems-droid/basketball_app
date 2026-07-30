@@ -99,9 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje($urlLista, 'success', 'Cronómetro finalizado.');
     }
 
-    // Avanza de periodo (1er a 2do tiempo en fútbol; cuarto a cuarto en basketball). A
-    // propósito NO toca el cronómetro: el reloj sigue corriendo continuo durante todo el
-    // partido, esto solo cambia qué etiqueta se muestra junto a él.
+    // Avanza de periodo (1er a 2do tiempo en fútbol; cuarto a cuarto en basketball). Cada
+    // periodo nuevo lleva su propio cronómetro desde 00:00 (no es continuo entre tiempos/
+    // cuartos, a diferencia de una pausa dentro del mismo periodo).
     if ($accion === 'cronometro_siguiente_periodo') {
         $maximo = partido_periodo_maximo($deporte);
         foreach ($partidos as &$p) {
@@ -109,12 +109,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $periodoActual = (int) ($p['cronometro_periodo'] ?? 1);
                 if ($periodoActual < $maximo) {
                     $p['cronometro_periodo'] = $periodoActual + 1;
+                    $p['cronometro_segundos'] = 0;
+                    if (($p['cronometro_estado'] ?? 'detenido') === 'corriendo') {
+                        $p['cronometro_inicio'] = date('c');
+                    }
                 }
             }
         }
         unset($p);
         db_guardar('partidos', $partidos, $torneo['id']);
-        redirigir_con_mensaje($urlLista, 'success', 'Periodo actualizado.');
+        redirigir_con_mensaje($urlLista, 'success', 'Periodo actualizado y cronómetro reiniciado.');
     }
 
     if ($accion === 'eliminar_evento') {
@@ -147,6 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'tipo_gol' => null,
             'asistencia_jugador_id' => null,
             'motivo' => null,
+            // Periodo tomado del cronómetro en este momento (1er/2do tiempo o cuarto 1-4),
+            // para poder mostrar "4' Cambio ... · 1er Tiempo" en la ficha y la transmisión.
+            'periodo' => (int) ($partido['cronometro_periodo'] ?? 1),
         ];
 
         if ($accion === 'agregar_gol') {
@@ -289,7 +296,7 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
     </div>
     <div class="d-flex gap-2">
         <?php if ($cronometroPeriodo < $cronometroPeriodoMaximo): ?>
-        <form method="post" class="mb-0" data-confirm="¿Pasar a <?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo + 1)) ?>? El cronómetro sigue corriendo, esto solo cambia la etiqueta.">
+        <form method="post" class="mb-0" data-confirm="¿Pasar a <?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo + 1)) ?>? El cronómetro se reinicia a 00:00 para el nuevo periodo.">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="accion" value="cronometro_siguiente_periodo">
             <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
