@@ -77,6 +77,7 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
             <span class="opacity-50">·</span>
             <i class="bi bi-stopwatch"></i>
             <span id="cronometroVivo" class="cronometro-vivo font-monospace">00:00</span>
+            <span id="periodoVivo" class="badge rounded-pill bg-light text-dark"><?= e(partido_periodo_etiqueta($deporte, (int) ($partido['cronometro_periodo'] ?? 1))) ?></span>
         </div>
         <span class="small opacity-75 fw-semibold"><i class="bi bi-trophy me-1"></i><?= e($torneo['nombre']) ?> · <?= e(formatear_fecha_larga($partido['fecha'])) ?></span>
         <button type="button" id="btnPantallaCompleta" class="btn btn-sm btn-outline-luz rounded-pill px-3">

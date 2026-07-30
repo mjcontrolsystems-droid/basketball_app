@@ -106,6 +106,11 @@ ALTER TABLE partidos ADD COLUMN IF NOT EXISTS observaciones TEXT NOT NULL DEFAUL
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_estado TEXT NOT NULL DEFAULT 'detenido';
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_inicio TIMESTAMPTZ;
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_segundos INTEGER NOT NULL DEFAULT 0;
+-- Periodo actual del partido (1er/2do tiempo en fútbol, cuarto 1-4 en basketball). Es
+-- independiente del cronómetro: avanzar de periodo NO reinicia ni pausa el reloj, que
+-- sigue corriendo de forma continua durante todo el partido (ver partido_periodo_maximo()
+-- y partido_periodo_etiqueta() en includes/liga.php).
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_periodo INTEGER NOT NULL DEFAULT 1;
 
 -- Solo se usa en modo 'liga': ficha del partido (goles, tarjetas, cambios), cargada por el admin
 -- después de jugado. tipo = 'gol' | 'amarilla' | 'roja' | 'cambio'. jugador_entra_id solo aplica

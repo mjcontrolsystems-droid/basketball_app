@@ -65,4 +65,5 @@ echo json_encode([
     'cronometro_estado' => $partido['cronometro_estado'] ?? 'detenido',
     'cronometro_segundos' => (int) ($partido['cronometro_segundos'] ?? 0),
     'cronometro_inicio' => $partido['cronometro_inicio'],
+    'periodo_etiqueta' => partido_periodo_etiqueta($deporte, (int) ($partido['cronometro_periodo'] ?? 1)),
 ], JSON_UNESCAPED_UNICODE);

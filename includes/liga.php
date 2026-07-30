@@ -310,6 +310,26 @@ function partido_cronometro_minuto(array $partido): int
 }
 
 /**
+ * Cuántos periodos tiene el partido según el deporte: 2 tiempos en fútbol, 4 cuartos en
+ * basketball. Avanzar de periodo (ver la acción cronometro_siguiente_periodo en
+ * admin/partido_eventos.php) NO reinicia el cronómetro: solo cambia la etiqueta que se
+ * muestra, el reloj sigue corriendo de forma continua durante todo el partido.
+ */
+function partido_periodo_maximo(?string $deporte): int
+{
+    return es_basketball($deporte) ? 4 : 2;
+}
+
+function partido_periodo_etiqueta(?string $deporte, int $periodo): string
+{
+    if (es_basketball($deporte)) {
+        return 'Cuarto ' . max(1, $periodo);
+    }
+    $etiquetas = [1 => '1er Tiempo', 2 => '2do Tiempo'];
+    return $etiquetas[$periodo] ?? ($periodo . 'do Tiempo');
+}
+
+/**
  * Marcador [local, visitante] con el que se debe dar por jugado un partido, calculado
  * desde sus goles. Protege datos históricos: si todavía no hay goles registrados (0-0)
  * pero el partido ya tenía un marcador capturado antes de este modelo, se conserva ese

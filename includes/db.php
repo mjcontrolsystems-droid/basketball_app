@@ -8,7 +8,7 @@ const TABLAS_SINGLETON = ['organizador'];
 
 const COLUMNAS_POR_TABLA = [
     'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion'],
-    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos'],
+    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo'],
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
     'jugadores' => ['id', 'torneo_id', 'equipo_id', 'dorsal', 'nombre', 'activo'],
@@ -17,7 +17,7 @@ const COLUMNAS_POR_TABLA = [
 
 const COLUMNAS_ENTERAS_POR_TABLA = [
     'equipos' => ['id', 'torneo_id'],
-    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'marcador_local', 'marcador_visitante', 'cronometro_segundos'],
+    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'marcador_local', 'marcador_visitante', 'cronometro_segundos', 'cronometro_periodo'],
     'patrocinadores' => ['id', 'torneo_id', 'orden'],
     'comentarios' => ['id', 'torneo_id'],
     'jugadores' => ['id', 'torneo_id', 'equipo_id'],

@@ -49,6 +49,7 @@
     // para mostrar algo) y luego se corrige con cada respuesta de actualizar(), por si el
     // organizador inicia/pausa/finaliza el cronómetro mientras alguien está viendo esta página.
     var cronometroEl = document.getElementById('cronometroVivo');
+    var periodoEl = document.getElementById('periodoVivo');
     var cronoEstado = contenedor.getAttribute('data-cronometro-estado') || 'detenido';
     var cronoSegundosBase = parseInt(contenedor.getAttribute('data-cronometro-segundos'), 10) || 0;
     var cronoInicioAttr = contenedor.getAttribute('data-cronometro-inicio');
@@ -226,6 +227,9 @@
                     cronoSegundosBase = datos.cronometro_segundos || 0;
                     cronoInicioMs = datos.cronometro_inicio ? new Date(datos.cronometro_inicio).getTime() : null;
                     actualizarTextoCronometro();
+                }
+                if (periodoEl && datos.periodo_etiqueta) {
+                    periodoEl.textContent = datos.periodo_etiqueta;
                 }
 
                 datos.eventos.forEach(function (ev) {

@@ -99,6 +99,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje($urlLista, 'success', 'Cronómetro finalizado.');
     }
 
+    // Avanza de periodo (1er a 2do tiempo en fútbol; cuarto a cuarto en basketball). A
+    // propósito NO toca el cronómetro: el reloj sigue corriendo continuo durante todo el
+    // partido, esto solo cambia qué etiqueta se muestra junto a él.
+    if ($accion === 'cronometro_siguiente_periodo') {
+        $maximo = partido_periodo_maximo($deporte);
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId) {
+                $periodoActual = (int) ($p['cronometro_periodo'] ?? 1);
+                if ($periodoActual < $maximo) {
+                    $p['cronometro_periodo'] = $periodoActual + 1;
+                }
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Periodo actualizado.');
+    }
+
     if ($accion === 'eliminar_evento') {
         $id = (int) $_POST['id'];
         $eventos = db_leer_eventos_partido($torneo['id'], $partidoId);
@@ -245,13 +263,18 @@ require __DIR__ . '/includes/admin_layout_top.php';
 <?php
 $cronometroEstado = $partido['cronometro_estado'] ?? 'detenido';
 $cronometroSegundosIniciales = partido_cronometro_segundos($partido);
+$cronometroPeriodo = (int) ($partido['cronometro_periodo'] ?? 1);
+$cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
 ?>
 <div class="card-suave p-3 mb-4 d-flex flex-row align-items-center justify-content-between flex-wrap gap-3"
     id="cronometroPartido" data-estado="<?= e($cronometroEstado) ?>"
     data-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
     data-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>">
     <div class="d-flex align-items-center gap-3">
-        <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosIniciales, 60), $cronometroSegundosIniciales % 60)) ?></div>
+        <div>
+            <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosIniciales, 60), $cronometroSegundosIniciales % 60)) ?></div>
+            <span class="badge rounded-pill text-bg-secondary"><?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo)) ?></span>
+        </div>
         <div class="small text-muted">
             <?php if ($cronometroEstado === 'detenido'): ?>
                 Cronómetro sin iniciar.
@@ -265,6 +288,14 @@ $cronometroSegundosIniciales = partido_cronometro_segundos($partido);
         </div>
     </div>
     <div class="d-flex gap-2">
+        <?php if ($cronometroPeriodo < $cronometroPeriodoMaximo): ?>
+        <form method="post" class="mb-0" data-confirm="¿Pasar a <?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo + 1)) ?>? El cronómetro sigue corriendo, esto solo cambia la etiqueta.">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="cronometro_siguiente_periodo">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-skip-forward-fill me-1"></i><?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo + 1)) ?></button>
+        </form>
+        <?php endif; ?>
         <?php if ($cronometroEstado === 'detenido'): ?>
         <form method="post" class="mb-0">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
