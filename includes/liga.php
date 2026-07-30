@@ -288,6 +288,28 @@ function partido_recalcular_marcador(int $torneoId, int $partidoId, array &$part
 }
 
 /**
+ * Segundos transcurridos del cronómetro del partido: los ya acumulados (cronometro_segundos)
+ * más lo corrido desde cronometro_inicio si en este momento está 'corriendo'. Es la fuente de
+ * verdad tanto para mostrar el cronómetro como para sugerir el minuto al cargar un evento.
+ */
+function partido_cronometro_segundos(array $partido): int
+{
+    $segundos = (int) ($partido['cronometro_segundos'] ?? 0);
+    if (($partido['cronometro_estado'] ?? 'detenido') === 'corriendo' && !empty($partido['cronometro_inicio'])) {
+        $inicio = strtotime((string) $partido['cronometro_inicio']);
+        if ($inicio !== false) {
+            $segundos += max(0, time() - $inicio);
+        }
+    }
+    return $segundos;
+}
+
+function partido_cronometro_minuto(array $partido): int
+{
+    return intdiv(partido_cronometro_segundos($partido), 60);
+}
+
+/**
  * Marcador [local, visitante] con el que se debe dar por jugado un partido, calculado
  * desde sus goles. Protege datos históricos: si todavía no hay goles registrados (0-0)
  * pero el partido ya tenía un marcador capturado antes de este modelo, se conserva ese

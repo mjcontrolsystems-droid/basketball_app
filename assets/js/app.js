@@ -65,6 +65,52 @@ document.addEventListener('DOMContentLoaded', function () {
         actualizarJugadores();
     });
 
+    // Cronómetro del partido (admin/partido_eventos.php): tic visual en vivo y
+    // autocompletar el campo "Min." de los 3 formularios de eventos con el minuto
+    // actual, mientras el organizador no lo haya editado a mano (así se sigue la
+    // cronología real del partido al cargar goles/tarjetas/cambios).
+    var cronometro = document.getElementById('cronometroPartido');
+    if (cronometro) {
+        var cronoEstado = cronometro.getAttribute('data-estado');
+        var cronoSegundosBase = parseInt(cronometro.getAttribute('data-segundos'), 10) || 0;
+        var cronoInicioIso = cronometro.getAttribute('data-inicio');
+        var cronoInicioMs = cronoInicioIso ? new Date(cronoInicioIso).getTime() : null;
+        var cronoTextoEl = document.getElementById('cronometroTexto');
+        var camposMinuto = document.querySelectorAll('input[name="minuto"]');
+        var camposMinutoTocados = {};
+
+        camposMinuto.forEach(function (campo, i) {
+            campo.addEventListener('input', function () { camposMinutoTocados[i] = true; });
+        });
+
+        var cronoSegundosActuales = function () {
+            if (cronoEstado === 'corriendo' && cronoInicioMs !== null && !isNaN(cronoInicioMs)) {
+                return cronoSegundosBase + Math.max(0, Math.floor((Date.now() - cronoInicioMs) / 1000));
+            }
+            return cronoSegundosBase;
+        };
+
+        var actualizarCronometro = function () {
+            var segundos = cronoSegundosActuales();
+            var minutos = Math.floor(segundos / 60);
+            if (cronoTextoEl) {
+                var mm = minutos < 10 ? '0' + minutos : '' + minutos;
+                var ss = (segundos % 60) < 10 ? '0' + (segundos % 60) : '' + (segundos % 60);
+                cronoTextoEl.textContent = mm + ':' + ss;
+            }
+            camposMinuto.forEach(function (campo, i) {
+                if (!camposMinutoTocados[i] && document.activeElement !== campo) {
+                    campo.value = minutos;
+                }
+            });
+        };
+
+        actualizarCronometro();
+        if (cronoEstado === 'corriendo') {
+            setInterval(actualizarCronometro, 1000);
+        }
+    }
+
     // Formulario de encuentros: el campo "Jornada" solo aplica a la fase de grupos
     var selectFase = document.getElementById('selectFase');
     var grupoJornada = document.getElementById('grupoJornada');

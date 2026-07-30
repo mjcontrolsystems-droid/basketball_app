@@ -98,6 +98,14 @@ ALTER TABLE partidos ADD COLUMN IF NOT EXISTS fase TEXT NOT NULL DEFAULT 'grupos
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS torneo_id INTEGER REFERENCES torneos(id) ON DELETE CASCADE;
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS arbitro TEXT NOT NULL DEFAULT '';
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS observaciones TEXT NOT NULL DEFAULT '';
+-- Cronómetro del partido (ficha de eventos): 'detenido' | 'corriendo' | 'pausado' | 'finalizado'.
+-- cronometro_inicio es el momento (con huso horario) en que arrancó el tramo actual, solo
+-- mientras está 'corriendo' (NULL en cualquier otro estado); cronometro_segundos son los
+-- segundos ya acumulados de tramos anteriores. El minuto en vivo se calcula sumando ambos
+-- (ver partido_cronometro_segundos() en includes/liga.php).
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_estado TEXT NOT NULL DEFAULT 'detenido';
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_inicio TIMESTAMPTZ;
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_segundos INTEGER NOT NULL DEFAULT 0;
 
 -- Solo se usa en modo 'liga': ficha del partido (goles, tarjetas, cambios), cargada por el admin
 -- después de jugado. tipo = 'gol' | 'amarilla' | 'roja' | 'cambio'. jugador_entra_id solo aplica

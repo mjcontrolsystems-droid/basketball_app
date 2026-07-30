@@ -50,6 +50,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje($urlLista, 'success', 'Fecha del encuentro actualizada a hoy.');
     }
 
+    // Cronómetro del partido: controla qué minuto se sugiere al cargar un evento (ver
+    // partido_cronometro_minuto() en includes/liga.php y el autocompletado del campo "Min."
+    // en assets/js/app.js). 'iniciar' solo aplica desde 'detenido' para no reiniciar por
+    // accidente un cronómetro que ya venía corriendo.
+    if ($accion === 'cronometro_iniciar') {
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId && ($p['cronometro_estado'] ?? 'detenido') === 'detenido') {
+                $p['cronometro_estado'] = 'corriendo';
+                $p['cronometro_inicio'] = date('c');
+                $p['cronometro_segundos'] = 0;
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Cronómetro iniciado.');
+    }
+
+    if ($accion === 'cronometro_alternar_pausa') {
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId) {
+                $estado = $p['cronometro_estado'] ?? 'detenido';
+                if ($estado === 'corriendo') {
+                    $p['cronometro_segundos'] = partido_cronometro_segundos($p);
+                    $p['cronometro_estado'] = 'pausado';
+                    $p['cronometro_inicio'] = null;
+                } elseif ($estado === 'pausado') {
+                    $p['cronometro_estado'] = 'corriendo';
+                    $p['cronometro_inicio'] = date('c');
+                }
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Cronómetro actualizado.');
+    }
+
+    if ($accion === 'cronometro_finalizar') {
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId && in_array($p['cronometro_estado'] ?? 'detenido', ['corriendo', 'pausado'], true)) {
+                $p['cronometro_segundos'] = partido_cronometro_segundos($p);
+                $p['cronometro_estado'] = 'finalizado';
+                $p['cronometro_inicio'] = null;
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Cronómetro finalizado.');
+    }
+
     if ($accion === 'eliminar_evento') {
         $id = (int) $_POST['id'];
         $eventos = db_leer_eventos_partido($torneo['id'], $partidoId);
@@ -191,6 +240,55 @@ require __DIR__ . '/includes/admin_layout_top.php';
         </div>
     </div>
     <p class="text-center small text-muted mb-0 mt-2">El marcador se calcula automáticamente con los <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> que registres abajo.</p>
+</div>
+
+<?php
+$cronometroEstado = $partido['cronometro_estado'] ?? 'detenido';
+$cronometroSegundosIniciales = partido_cronometro_segundos($partido);
+?>
+<div class="card-suave p-3 mb-4 d-flex flex-row align-items-center justify-content-between flex-wrap gap-3"
+    id="cronometroPartido" data-estado="<?= e($cronometroEstado) ?>"
+    data-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
+    data-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>">
+    <div class="d-flex align-items-center gap-3">
+        <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosIniciales, 60), $cronometroSegundosIniciales % 60)) ?></div>
+        <div class="small text-muted">
+            <?php if ($cronometroEstado === 'detenido'): ?>
+                Cronómetro sin iniciar.
+            <?php elseif ($cronometroEstado === 'corriendo'): ?>
+                <i class="bi bi-record-circle text-danger me-1"></i>Corriendo — el minuto de cada evento se sugiere solo.
+            <?php elseif ($cronometroEstado === 'pausado'): ?>
+                <i class="bi bi-pause-circle me-1"></i>En pausa.
+            <?php else: ?>
+                Cronómetro finalizado.
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <?php if ($cronometroEstado === 'detenido'): ?>
+        <form method="post" class="mb-0">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="cronometro_iniciar">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <button type="submit" class="btn btn-sm btn-degradado rounded-pill px-3"><i class="bi bi-play-fill me-1"></i>Iniciar cronómetro</button>
+        </form>
+        <?php elseif (in_array($cronometroEstado, ['corriendo', 'pausado'], true)): ?>
+        <form method="post" class="mb-0">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="cronometro_alternar_pausa">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <?php if ($cronometroEstado === 'corriendo'): ?><i class="bi bi-pause-fill me-1"></i>Pausar<?php else: ?><i class="bi bi-play-fill me-1"></i>Reanudar<?php endif; ?>
+            </button>
+        </form>
+        <form method="post" class="mb-0">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="cronometro_finalizar">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="¿Finalizar el cronómetro de este partido?"><i class="bi bi-stop-fill me-1"></i>Finalizar</button>
+        </form>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="row g-4">
