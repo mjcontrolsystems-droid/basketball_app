@@ -98,6 +98,19 @@ function url(string $path = ''): string
 }
 
 /**
+ * Igual que url(), pero para assets propios (CSS/JS) agrega ?v=<fecha de modificación
+ * del archivo> para que el navegador pida la versión nueva en cuanto el archivo cambia
+ * en el servidor, en vez de seguir sirviendo una copia cacheada indefinidamente (el
+ * navegador cachea agresivamente un mismo nombre de archivo entre visitas).
+ */
+function asset_url(string $path): string
+{
+    $absoluto = BASE_DIR . '/' . ltrim($path, '/');
+    $version = is_file($absoluto) ? (string) filemtime($absoluto) : '1';
+    return url($path) . '?v=' . $version;
+}
+
+/**
  * URL pública absoluta (con dominio) de una copa cualquiera, sin depender del $torneo
  * de la petición actual. Útil para mostrar/copiar el enlace de cada copa en el admin.
  */

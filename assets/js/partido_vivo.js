@@ -17,21 +17,45 @@
         cambio: '<i class="bi bi-arrow-left-right text-info"></i>',
     };
 
+    // Reacción a pantalla completa por tipo de evento: partículas (mismo motor que el
+    // confeti de un gol, con su propia paleta/cantidad/forma) + el banner grande de
+    // assets/css/style.css (.banner-evento-<tipo>). "cambio" es deliberadamente más
+    // discreto (menos partículas) que un gol o una tarjeta.
+    var reaccionesPorTipo = {
+        gol: { colores: ['#7b2ff7', '#ff6b35', '#22d3ee', '#facc15', '#f472b6', '#4ade80'], cantidad: 160, forma: 'rect' },
+        amarilla: { colores: ['#facc15', '#fde047', '#eab308'], cantidad: 80, forma: 'rect' },
+        roja: { colores: ['#f87171', '#ef4444', '#b91c1c'], cantidad: 80, forma: 'rect' },
+        cambio: { colores: ['#38bdf8', '#0ea5e9', '#7dd3fc'], cantidad: 50, forma: 'circle' },
+    };
+
+    var bannerIconosPorTipo = {
+        gol: '<img src="' + urlBalon + '" alt="" class="banner-evento-balon">',
+        amarilla: '<i class="bi bi-square-fill"></i>',
+        roja: '<i class="bi bi-square-fill"></i>',
+        cambio: '<i class="bi bi-arrow-left-right"></i>',
+    };
+
+    var bannerTextosPorTipo = {
+        gol: contenedor.getAttribute('data-texto-gol') || '¡GOL!',
+        amarilla: contenedor.getAttribute('data-texto-amarilla') || 'TARJETA AMARILLA',
+        roja: contenedor.getAttribute('data-texto-roja') || 'TARJETA ROJA',
+        cambio: contenedor.getAttribute('data-texto-cambio') || 'CAMBIO',
+    };
+
     var idsVistos = {};
     var primeraCargaHecha = false;
 
-    // Confeti hecho con <canvas>, sin librería externa (el CSP del sitio solo permite
+    // Partículas hechas con <canvas>, sin librería externa (el CSP del sitio solo permite
     // scripts propios o de los CDN ya autorizados, y esto evita otra dependencia más).
-    function lanzarConfeti() {
+    function lanzarParticulas(colores, cantidad, forma) {
         var lienzo = document.createElement('canvas');
         lienzo.className = 'confeti-lienzo';
         lienzo.width = window.innerWidth;
         lienzo.height = window.innerHeight;
         document.body.appendChild(lienzo);
         var ctx = lienzo.getContext('2d');
-        var colores = ['#7b2ff7', '#ff6b35', '#22d3ee', '#facc15', '#f472b6', '#4ade80'];
         var piezas = [];
-        for (var i = 0; i < 160; i++) {
+        for (var i = 0; i < cantidad; i++) {
             piezas.push({
                 x: Math.random() * lienzo.width,
                 y: -20 - Math.random() * lienzo.height * 0.6,
@@ -59,7 +83,13 @@
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rot * Math.PI / 180);
                 ctx.fillStyle = p.color;
-                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                if (forma === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                }
                 ctx.restore();
             });
             if (algunaVisible && Date.now() - inicio < 4500) {
@@ -81,17 +111,59 @@
         });
     }
 
-    var bannerGol = document.getElementById('bannerGol');
-    function mostrarBannerGol() {
-        if (!bannerGol) {
+    var bannerEl = document.getElementById('bannerEvento');
+    var bannerIconoEl = document.getElementById('bannerEventoIcono');
+    var bannerTextoEl = document.getElementById('bannerEventoTexto');
+
+    function mostrarBanner(tipo) {
+        if (!bannerEl) {
             return;
         }
-        bannerGol.classList.remove('banner-gol-activo');
-        // Forzar reflow para poder reiniciar la animación si un segundo gol llega
-        // mientras el banner del anterior todavía se estaba ocultando.
-        void bannerGol.offsetWidth;
-        bannerGol.classList.add('banner-gol-activo');
-        window.setTimeout(function () { bannerGol.classList.remove('banner-gol-activo'); }, 2600);
+        // Reinicia clases + contenido en cada reacción (por si un tipo distinto llega
+        // mientras el banner anterior todavía se estaba ocultando).
+        bannerEl.className = 'banner-evento banner-evento-' + tipo;
+        if (bannerIconoEl) { bannerIconoEl.innerHTML = bannerIconosPorTipo[tipo] || ''; }
+        if (bannerTextoEl) { bannerTextoEl.textContent = bannerTextosPorTipo[tipo] || ''; }
+        void bannerEl.offsetWidth; // fuerza reflow para poder reiniciar la animación
+        bannerEl.classList.add('banner-evento-activo');
+        window.setTimeout(function () { bannerEl.classList.remove('banner-evento-activo'); }, 2400);
+    }
+
+    // Si llegan varios eventos nuevos en el mismo ciclo (el admin cargó varios seguido),
+    // se disparan uno tras otro en vez de superponerse todos a la vez.
+    var colaReacciones = [];
+    var procesandoCola = false;
+
+    function dispararReaccion(tipo) {
+        var cfg = reaccionesPorTipo[tipo];
+        if (!cfg) {
+            return;
+        }
+        lanzarParticulas(cfg.colores, cfg.cantidad, cfg.forma);
+        mostrarBanner(tipo);
+        if (tipo === 'gol') {
+            pulsarMarcador();
+        }
+    }
+
+    function procesarCola() {
+        if (procesandoCola || colaReacciones.length === 0) {
+            return;
+        }
+        procesandoCola = true;
+        dispararReaccion(colaReacciones.shift());
+        window.setTimeout(function () {
+            procesandoCola = false;
+            procesarCola();
+        }, 1000);
+    }
+
+    function encolarReaccion(tipo) {
+        if (!reaccionesPorTipo[tipo]) {
+            return;
+        }
+        colaReacciones.push(tipo);
+        procesarCola();
     }
 
     function agregarFila(ev) {
@@ -120,24 +192,17 @@
                 if (marcadorVisitEl) { marcadorVisitEl.textContent = datos.marcador_visitante; }
                 if (estadoEl) { estadoEl.textContent = datos.estado === 'jugado' ? 'Finalizado' : 'En vivo'; }
 
-                var huboGolNuevo = false;
                 datos.eventos.forEach(function (ev) {
                     if (idsVistos[ev.id]) {
                         return;
                     }
                     idsVistos[ev.id] = true;
                     agregarFila(ev);
-                    if (primeraCargaHecha && ev.tipo === 'gol') {
-                        huboGolNuevo = true;
+                    if (primeraCargaHecha) {
+                        encolarReaccion(ev.tipo);
                     }
                 });
                 primeraCargaHecha = true;
-
-                if (huboGolNuevo) {
-                    pulsarMarcador();
-                    lanzarConfeti();
-                    mostrarBannerGol();
-                }
             })
             .catch(function () { /* red intermitente: se reintenta en el próximo ciclo */ });
     }

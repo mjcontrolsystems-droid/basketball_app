@@ -971,9 +971,10 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     pointer-events: none;
 }
 
-/* Banner "¡GOL!" a pantalla completa, con el balón 3D del deporte girando. Oculto por
-   defecto (scale 0 + opacity 0); JS solo agrega/quita .banner-gol-activo. */
-.banner-gol {
+/* Banner de reacción a pantalla completa, uno por tipo de evento (gol, tarjeta amarilla,
+   tarjeta roja, cambio); JS solo cambia el texto/ícono y agrega .banner-evento-activo.
+   Oculto por defecto (scale 0 + opacity 0). */
+.banner-evento {
     position: fixed;
     inset: 0;
     z-index: 2100;
@@ -989,19 +990,24 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     transition: opacity .35s ease, transform .35s ease;
 }
 
-.banner-gol.banner-gol-activo {
+.banner-evento.banner-evento-activo {
     opacity: 1;
     transform: scale(1);
-    animation: sacudirBannerGol .5s ease;
+    animation: sacudirBannerEvento .5s ease;
 }
 
-@keyframes sacudirBannerGol {
+@keyframes sacudirBannerEvento {
     0% { transform: scale(.4); }
     60% { transform: scale(1.12); }
     100% { transform: scale(1); }
 }
 
-.banner-gol-balon {
+.banner-evento-icono {
+    display: flex;
+    line-height: 0;
+}
+
+.banner-evento-balon {
     width: clamp(90px, 16vw, 160px);
     height: clamp(90px, 16vw, 160px);
     filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .5));
@@ -1013,17 +1019,48 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     to { transform: rotate(360deg); }
 }
 
-.banner-gol-texto {
+.banner-evento-icono i {
+    font-size: clamp(70px, 14vw, 130px);
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .5));
+}
+
+.banner-evento-texto {
     font-family: 'Poppins', sans-serif;
     font-weight: 800;
     font-size: clamp(2.5rem, 8vw, 5rem);
     letter-spacing: .05em;
+    text-shadow: 0 0 40px rgba(255, 255, 255, .25);
+}
+
+/* Gol/canasta: degradado de marca de la copa, como una celebración. */
+.banner-evento-gol .banner-evento-texto {
     background: var(--degradado-principal);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 0 0 40px rgba(255, 255, 255, .25);
 }
+
+/* Tarjeta amarilla / falta personal: tono amarillo, sin degradado de marca (identidad
+   propia del evento, no de la copa). */
+.banner-evento-amarilla {
+    background: radial-gradient(circle, rgba(250, 204, 21, .25) 0%, transparent 70%);
+}
+.banner-evento-amarilla .banner-evento-icono i { color: #facc15; }
+.banner-evento-amarilla .banner-evento-texto { color: #facc15; text-shadow: 0 0 40px rgba(250, 204, 21, .55); }
+
+/* Tarjeta roja / falta descalificante: tono rojo. */
+.banner-evento-roja {
+    background: radial-gradient(circle, rgba(248, 113, 113, .3) 0%, transparent 70%);
+}
+.banner-evento-roja .banner-evento-icono i { color: #f87171; }
+.banner-evento-roja .banner-evento-texto { color: #f87171; text-shadow: 0 0 40px rgba(248, 113, 113, .55); }
+
+/* Cambio: tono azul, más discreto que un gol o una tarjeta. */
+.banner-evento-cambio {
+    background: radial-gradient(circle, rgba(56, 189, 248, .22) 0%, transparent 70%);
+}
+.banner-evento-cambio .banner-evento-icono i { color: #38bdf8; }
+.banner-evento-cambio .banner-evento-texto { color: #38bdf8; text-shadow: 0 0 40px rgba(56, 189, 248, .5); }
 
 @media (max-width: 576px) {
     .marcador-vivo { flex-direction: column; gap: 1rem; }

@@ -37,7 +37,12 @@ $basketball = es_basketball($deporte);
 $urlDatos = e(url_copa('partido_vivo_datos.php?id=' . $id));
 $balonImg = $basketball ? 'balon-basketball.png' : 'balon-futbol.png';
 $urlBalon = e(url('assets/img/' . $balonImg));
-$textoBannerGol = $basketball ? '¡CANASTA!' : '¡GOL!';
+// Texto del banner de reacción para cada tipo de evento (goles/puntos, tarjetas o faltas
+// según el deporte, y cambios). Ver assets/js/partido_vivo.js para cómo se dispara cada uno.
+$textoGol = $basketball ? '¡CANASTA!' : '¡GOL!';
+$textoAmarilla = mb_strtoupper(etiqueta_falta_leve($deporte));
+$textoRoja = mb_strtoupper(etiqueta_falta_grave($deporte));
+$textoCambio = 'CAMBIO';
 $colorLocal = color_hex_valido($local['color_primario'] ?? null, '#7b2ff7');
 $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
 ?>
@@ -51,7 +56,7 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= url('assets/css/style.css') ?>" rel="stylesheet">
+    <link href="<?= asset_url('assets/css/style.css') ?>" rel="stylesheet">
     <link rel="icon" href="<?= url('assets/img/logo.png') ?>" type="image/png">
     <?= torneo_variables_css($torneo) ?>
 </head>
@@ -59,7 +64,9 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
 
 <img src="<?= $urlBalon ?>" alt="" class="balon-fondo-vivo">
 
-<div id="partidoVivo" class="pagina-vivo-contenido" data-url-datos="<?= $urlDatos ?>" data-url-balon="<?= $urlBalon ?>">
+<div id="partidoVivo" class="pagina-vivo-contenido" data-url-datos="<?= $urlDatos ?>" data-url-balon="<?= $urlBalon ?>"
+    data-texto-gol="<?= e($textoGol) ?>" data-texto-amarilla="<?= e($textoAmarilla) ?>"
+    data-texto-roja="<?= e($textoRoja) ?>" data-texto-cambio="<?= e($textoCambio) ?>">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pagina-vivo-cabecera">
         <div class="d-flex align-items-center gap-2 badge-en-vivo">
             <span class="punto-en-vivo"></span>
@@ -95,11 +102,11 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
     </div>
 </div>
 
-<div id="bannerGol" class="banner-gol">
-    <img src="<?= $urlBalon ?>" alt="" class="banner-gol-balon">
-    <span class="banner-gol-texto"><?= e($textoBannerGol) ?></span>
+<div id="bannerEvento" class="banner-evento">
+    <span id="bannerEventoIcono" class="banner-evento-icono"></span>
+    <span id="bannerEventoTexto" class="banner-evento-texto"></span>
 </div>
 
-<script src="<?= url('assets/js/partido_vivo.js') ?>"></script>
+<script src="<?= asset_url('assets/js/partido_vivo.js') ?>"></script>
 </body>
 </html>
