@@ -767,27 +767,60 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 }
 
 /* Transmisión en vivo (partido_vivo.php): pantalla pensada para proyectar en un TV/monitor
-   durante el partido, con marcador grande y feed de eventos que se refresca solo. */
+   durante el partido, con marcador grande, balones 3D del deporte y feed de eventos que
+   se refresca solo. */
 .pagina-vivo {
     min-height: 100vh;
     background:
-        radial-gradient(circle at 15% 15%, rgba(var(--color-primario-rgb), .45), transparent 55%),
-        radial-gradient(circle at 85% 85%, rgba(var(--color-secundario-rgb, 100, 116, 139), .35), transparent 55%),
+        radial-gradient(circle at 15% 15%, rgba(var(--color-primario-rgb), .5), transparent 55%),
+        radial-gradient(circle at 85% 85%, rgba(var(--color-secundario-rgb), .4), transparent 55%),
         #120a24;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem 1.25rem;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Balón 3D decorativo, flotando de fondo (mismo asset que el hero de la portada), muy
+   tenue para no competir con el marcador ni el feed. */
+.balon-fondo-vivo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: clamp(420px, 60vw, 780px);
+    height: clamp(420px, 60vw, 780px);
+    transform: translate(-50%, -50%);
+    opacity: .1;
+    filter: blur(1px);
+    pointer-events: none;
+    z-index: 0;
+    animation: girarBalonFondo 60s linear infinite;
+}
+
+@keyframes girarBalonFondo {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .pagina-vivo-contenido {
     width: 100%;
-    max-width: 960px;
+    max-width: 980px;
+    position: relative;
+    z-index: 1;
 }
 
 .pagina-vivo-cabecera {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.badge-en-vivo {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 999px;
+    padding: .4rem .9rem;
 }
 
 .punto-en-vivo {
@@ -811,26 +844,36 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     align-items: center;
     justify-content: center;
     gap: clamp(1rem, 4vw, 3rem);
-    background: rgba(255, 255, 255, .06);
-    border: 1px solid rgba(255, 255, 255, .12);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03));
+    border: 1px solid rgba(255, 255, 255, .14);
     border-radius: 28px;
     padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
     margin-bottom: 2rem;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .6);
 }
 
 .marcador-vivo-equipo {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: .75rem;
+    gap: .85rem;
     width: 30%;
     text-align: center;
+}
+
+.marcador-vivo-logo {
+    position: relative;
+    padding: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-equipo) 55%, transparent) 0%, transparent 72%);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-equipo) 65%, transparent);
 }
 
 .marcador-vivo-nombre {
     font-weight: 700;
     font-size: clamp(.85rem, 2vw, 1.25rem);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .35);
 }
 
 .marcador-vivo-numeros {
@@ -859,7 +902,7 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 }
 
 .pagina-vivo-feed {
-    background: rgba(255, 255, 255, .05);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
     border: 1px solid rgba(255, 255, 255, .1);
     border-radius: 20px;
     padding: 1.5rem;
@@ -869,17 +912,33 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 
 .feed-eventos li.feed-evento {
     display: flex;
-    align-items: baseline;
-    gap: .6rem;
-    padding: .55rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .75rem;
+    margin-bottom: .4rem;
+    border-radius: 12px;
+    border-left: 3px solid rgba(255, 255, 255, .25);
+    background: rgba(255, 255, 255, .04);
     font-size: clamp(.85rem, 1.6vw, 1.05rem);
     opacity: 1;
     transition: opacity .4s ease, transform .4s ease;
 }
 
-.feed-eventos li.feed-evento:last-child {
-    border-bottom: none;
+.feed-eventos li.feed-evento-gol {
+    border-left-color: #4ade80;
+    background: rgba(74, 222, 128, .08);
+}
+
+.feed-eventos li.feed-evento-amarilla {
+    border-left-color: #facc15;
+}
+
+.feed-eventos li.feed-evento-roja {
+    border-left-color: #f87171;
+}
+
+.feed-eventos li.feed-evento-cambio {
+    border-left-color: #38bdf8;
 }
 
 .feed-eventos li.feed-evento-nuevo {
@@ -889,6 +948,16 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 
 .feed-icono {
     font-size: 1.15em;
+    width: 1.6em;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.feed-balon {
+    width: 1.5em;
+    height: 1.5em;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .5));
 }
 
 .feed-equipo {
@@ -900,6 +969,60 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     inset: 0;
     z-index: 2000;
     pointer-events: none;
+}
+
+/* Banner "¡GOL!" a pantalla completa, con el balón 3D del deporte girando. Oculto por
+   defecto (scale 0 + opacity 0); JS solo agrega/quita .banner-gol-activo. */
+.banner-gol {
+    position: fixed;
+    inset: 0;
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: radial-gradient(circle, rgba(0, 0, 0, .55) 0%, transparent 70%);
+    opacity: 0;
+    transform: scale(.6);
+    pointer-events: none;
+    transition: opacity .35s ease, transform .35s ease;
+}
+
+.banner-gol.banner-gol-activo {
+    opacity: 1;
+    transform: scale(1);
+    animation: sacudirBannerGol .5s ease;
+}
+
+@keyframes sacudirBannerGol {
+    0% { transform: scale(.4); }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+.banner-gol-balon {
+    width: clamp(90px, 16vw, 160px);
+    height: clamp(90px, 16vw, 160px);
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .5));
+    animation: girarBalonGol 1.4s linear infinite;
+}
+
+@keyframes girarBalonGol {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.banner-gol-texto {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    letter-spacing: .05em;
+    background: var(--degradado-principal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(255, 255, 255, .25);
 }
 
 @media (max-width: 576px) {

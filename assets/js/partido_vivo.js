@@ -5,12 +5,17 @@
     }
 
     var urlDatos = contenedor.getAttribute('data-url-datos');
-    var basketball = contenedor.getAttribute('data-basketball') === '1';
+    var urlBalon = contenedor.getAttribute('data-url-balon');
     var marcadorLocalEl = document.getElementById('marcadorLocal');
     var marcadorVisitEl = document.getElementById('marcadorVisitante');
     var feedEl = document.getElementById('feedEventos');
     var estadoEl = document.getElementById('estadoPartido');
-    var iconos = { gol: basketball ? '🏀' : '⚽', amarilla: '🟨', roja: '🟥', cambio: '🔄' };
+    var iconosPorTipo = {
+        gol: '<img src="' + urlBalon + '" alt="" class="feed-balon">',
+        amarilla: '<i class="bi bi-square-fill text-warning"></i>',
+        roja: '<i class="bi bi-square-fill text-danger"></i>',
+        cambio: '<i class="bi bi-arrow-left-right text-info"></i>',
+    };
 
     var idsVistos = {};
     var primeraCargaHecha = false;
@@ -76,16 +81,30 @@
         });
     }
 
+    var bannerGol = document.getElementById('bannerGol');
+    function mostrarBannerGol() {
+        if (!bannerGol) {
+            return;
+        }
+        bannerGol.classList.remove('banner-gol-activo');
+        // Forzar reflow para poder reiniciar la animación si un segundo gol llega
+        // mientras el banner del anterior todavía se estaba ocultando.
+        void bannerGol.offsetWidth;
+        bannerGol.classList.add('banner-gol-activo');
+        window.setTimeout(function () { bannerGol.classList.remove('banner-gol-activo'); }, 2600);
+    }
+
     function agregarFila(ev) {
         var vacio = feedEl.querySelector('.feed-evento-vacio');
         if (vacio) {
             vacio.remove();
         }
         var li = document.createElement('li');
-        li.className = 'feed-evento feed-evento-nuevo';
-        var minuto = ev.minuto !== null ? ev.minuto + "' " : '';
-        li.innerHTML = '<span class="feed-icono">' + (iconos[ev.tipo] || '•') + '</span>' +
-            '<span class="feed-texto">' + minuto + ev.descripcion + ' <span class="feed-equipo">— ' + ev.equipo + '</span></span>';
+        li.className = 'feed-evento feed-evento-nuevo feed-evento-' + ev.tipo;
+        // ev.descripcion ya viene con el minuto incluido (evento_descripcion() en PHP),
+        // no hay que anteponerlo de nuevo aquí o el minuto se ve repetido dos veces.
+        li.innerHTML = '<span class="feed-icono">' + (iconosPorTipo[ev.tipo] || '•') + '</span>' +
+            '<span class="feed-texto">' + ev.descripcion + ' <span class="feed-equipo">— ' + ev.equipo + '</span></span>';
         feedEl.insertBefore(li, feedEl.firstChild);
         window.setTimeout(function () { li.classList.remove('feed-evento-nuevo'); }, 50);
     }
@@ -117,6 +136,7 @@
                 if (huboGolNuevo) {
                     pulsarMarcador();
                     lanzarConfeti();
+                    mostrarBannerGol();
                 }
             })
             .catch(function () { /* red intermitente: se reintenta en el próximo ciclo */ });
