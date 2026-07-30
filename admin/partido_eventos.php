@@ -269,17 +269,22 @@ require __DIR__ . '/includes/admin_layout_top.php';
 
 <?php
 $cronometroEstado = $partido['cronometro_estado'] ?? 'detenido';
-$cronometroSegundosIniciales = partido_cronometro_segundos($partido);
+// En basketball el reloj se muestra en cuenta regresiva (de DURACION_CUARTO_BASKETBALL_MIN
+// a 00:00); en fútbol cuenta hacia adelante desde 00:00. El dato guardado (cronometro_segundos)
+// siempre es tiempo transcurrido en ambos casos, esto solo cambia cómo se muestra.
+$cronometroSegundosMostrados = $basketball ? partido_cronometro_restante_segundos($partido) : partido_cronometro_segundos($partido);
 $cronometroPeriodo = (int) ($partido['cronometro_periodo'] ?? 1);
 $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
 ?>
 <div class="card-suave p-3 mb-4 d-flex flex-row align-items-center justify-content-between flex-wrap gap-3"
     id="cronometroPartido" data-estado="<?= e($cronometroEstado) ?>"
     data-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
-    data-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>">
+    data-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>"
+    data-basketball="<?= $basketball ? '1' : '0' ?>"
+    data-duracion-segundos="<?= DURACION_CUARTO_BASKETBALL_MIN * 60 ?>">
     <div class="d-flex align-items-center gap-3">
         <div>
-            <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosIniciales, 60), $cronometroSegundosIniciales % 60)) ?></div>
+            <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosMostrados, 60), $cronometroSegundosMostrados % 60)) ?></div>
             <span class="badge rounded-pill text-bg-secondary"><?= e(partido_periodo_etiqueta($deporte, $cronometroPeriodo)) ?></span>
         </div>
         <div class="small text-muted">

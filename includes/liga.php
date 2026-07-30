@@ -319,11 +319,29 @@ function partido_cronometro_minuto(array $partido): int
     return intdiv(partido_cronometro_segundos($partido), 60);
 }
 
+// Duración de un cuarto en basketball, en minutos: a diferencia del fútbol (que cuenta
+// hacia adelante desde 00:00), el cronómetro de basketball se muestra en cuenta regresiva
+// desde este valor hasta 00:00. No es una regla oficial fija de ninguna liga en particular,
+// así que queda como una sola constante ajustable aquí si hiciera falta cambiarla.
+const DURACION_CUARTO_BASKETBALL_MIN = 15;
+
+/**
+ * Segundos que le quedan al cronómetro en basketball (cuenta regresiva desde
+ * DURACION_CUARTO_BASKETBALL_MIN), nunca negativo. partido_cronometro_segundos() sigue
+ * siendo la fuente de verdad (tiempo transcurrido); esto solo lo invierte para mostrarlo
+ * como cuenta regresiva, que es como se ve un cronómetro de basketball en la cancha.
+ */
+function partido_cronometro_restante_segundos(array $partido): int
+{
+    return max(0, (DURACION_CUARTO_BASKETBALL_MIN * 60) - partido_cronometro_segundos($partido));
+}
+
 /**
  * Cuántos periodos tiene el partido según el deporte: 2 tiempos en fútbol, 4 cuartos en
  * basketball. Avanzar de periodo (ver la acción cronometro_siguiente_periodo en
- * admin/partido_eventos.php) NO reinicia el cronómetro: solo cambia la etiqueta que se
- * muestra, el reloj sigue corriendo de forma continua durante todo el partido.
+ * admin/partido_eventos.php) reinicia el cronómetro a 00:00 (o a
+ * DURACION_CUARTO_BASKETBALL_MIN en basketball, por la cuenta regresiva): cada tiempo/cuarto
+ * lleva su propio conteo, no es continuo entre periodos.
  */
 function partido_periodo_maximo(?string $deporte): int
 {

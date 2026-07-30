@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var cronoSegundosBase = parseInt(cronometro.getAttribute('data-segundos'), 10) || 0;
         var cronoInicioIso = cronometro.getAttribute('data-inicio');
         var cronoInicioMs = cronoInicioIso ? new Date(cronoInicioIso).getTime() : null;
+        var cronoBasketball = cronometro.getAttribute('data-basketball') === '1';
+        var cronoDuracionSegundos = parseInt(cronometro.getAttribute('data-duracion-segundos'), 10) || 0;
         var cronoTextoEl = document.getElementById('cronometroTexto');
         var camposMinuto = document.querySelectorAll('input[name="minuto"]');
         var camposMinutoTocados = {};
@@ -83,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function () {
             campo.addEventListener('input', function () { camposMinutoTocados[i] = true; });
         });
 
+        // Siempre tiempo TRANSCURRIDO (cuenta hacia adelante desde 00:00), sin importar el
+        // deporte: es la fuente de verdad para el minuto sugerido y para lo que se guarda.
         var cronoSegundosActuales = function () {
             if (cronoEstado === 'corriendo' && cronoInicioMs !== null && !isNaN(cronoInicioMs)) {
                 return cronoSegundosBase + Math.max(0, Math.floor((Date.now() - cronoInicioMs) / 1000));
@@ -91,17 +95,25 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         var actualizarCronometro = function () {
-            var segundos = cronoSegundosActuales();
-            var minutos = Math.floor(segundos / 60);
-            var segundosResto = segundos % 60;
+            var segundosTranscurridos = cronoSegundosActuales();
+
+            // En basketball el reloj se MUESTRA en cuenta regresiva (de cronoDuracionSegundos
+            // a 0); en fútbol se muestra tal cual, contando hacia adelante.
+            var segundosMostrados = cronoBasketball
+                ? Math.max(0, cronoDuracionSegundos - segundosTranscurridos)
+                : segundosTranscurridos;
             if (cronoTextoEl) {
-                var mm = minutos < 10 ? '0' + minutos : '' + minutos;
-                var ss = segundosResto < 10 ? '0' + segundosResto : '' + segundosResto;
-                cronoTextoEl.textContent = mm + ':' + ss;
+                var mm = Math.floor(segundosMostrados / 60);
+                var ss = segundosMostrados % 60;
+                cronoTextoEl.textContent = (mm < 10 ? '0' + mm : '' + mm) + ':' + (ss < 10 ? '0' + ss : '' + ss);
             }
-            // Minuto sugerido para los eventos: se aproxima al minuto siguiente pasando
-            // los 30 segundos (ej. 4:35 -> 5), y nunca baja de 1 (no existe "minuto 0").
-            var minutoSugerido = segundosResto >= 30 ? minutos + 1 : minutos;
+
+            // El minuto sugerido para los eventos SIEMPRE se calcula sobre lo transcurrido
+            // (no sobre la cuenta regresiva mostrada): se aproxima al minuto siguiente
+            // pasando los 30 segundos (ej. 4:35 -> 5), y nunca baja de 1.
+            var minutosTranscurridos = Math.floor(segundosTranscurridos / 60);
+            var segundosRestoTranscurridos = segundosTranscurridos % 60;
+            var minutoSugerido = segundosRestoTranscurridos >= 30 ? minutosTranscurridos + 1 : minutosTranscurridos;
             if (minutoSugerido < 1) {
                 minutoSugerido = 1;
             }

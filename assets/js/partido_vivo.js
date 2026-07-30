@@ -54,7 +54,10 @@
     var cronoSegundosBase = parseInt(contenedor.getAttribute('data-cronometro-segundos'), 10) || 0;
     var cronoInicioAttr = contenedor.getAttribute('data-cronometro-inicio');
     var cronoInicioMs = cronoInicioAttr ? new Date(cronoInicioAttr).getTime() : null;
+    var cronoBasketball = contenedor.getAttribute('data-basketball') === '1';
+    var cronoDuracionSegundos = parseInt(contenedor.getAttribute('data-duracion-segundos'), 10) || 0;
 
+    // Tiempo TRANSCURRIDO desde que arrancó el periodo actual (fuente de verdad guardada).
     function cronoSegundosActuales() {
         if (cronoEstado === 'corriendo' && cronoInicioMs !== null && !isNaN(cronoInicioMs)) {
             return cronoSegundosBase + Math.max(0, Math.floor((Date.now() - cronoInicioMs) / 1000));
@@ -66,9 +69,12 @@
         if (!cronometroEl) {
             return;
         }
-        var segundos = cronoSegundosActuales();
-        var mm = Math.floor(segundos / 60);
-        var ss = segundos % 60;
+        var transcurridos = cronoSegundosActuales();
+        // En basketball se MUESTRA en cuenta regresiva (de cronoDuracionSegundos a 0); en
+        // fútbol se muestra tal cual, contando hacia adelante desde 00:00.
+        var mostrados = cronoBasketball ? Math.max(0, cronoDuracionSegundos - transcurridos) : transcurridos;
+        var mm = Math.floor(mostrados / 60);
+        var ss = mostrados % 60;
         cronometroEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
     }
 
