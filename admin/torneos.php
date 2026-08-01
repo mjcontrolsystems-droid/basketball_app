@@ -412,8 +412,11 @@ require __DIR__ . '/includes/admin_layout_top.php';
                       // trunque con "..." dentro de la tarjeta: sin él, un flex item no
                       // encoge por debajo de su contenido y la URL empujaba el ancho de
                       // toda la página en el teléfono (se veía cortada y con scroll lateral). ?>
-                <div class="d-flex align-items-center gap-1 mb-1">
-                    <code class="small text-truncate flex-grow-1" style="min-width:0;"><?= e(url_copa_de($t)) ?></code>
+                <?php // Los estilos de truncado van INLINE a propósito: son la garantía de que
+                      // la URL larga jamás ensanche la tarjeta en el teléfono, aunque el
+                      // navegador tenga una hoja de estilos vieja en caché. ?>
+                <div class="d-flex align-items-center gap-1 mb-1" style="min-width:0;max-width:100%;">
+                    <code class="small flex-grow-1" style="display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e(url_copa_de($t)) ?></code>
                     <button type="button" class="btn btn-sm btn-link p-0 ms-1 flex-shrink-0 btn-copiar-url" data-url="<?= e(url_copa_de($t)) ?>" title="Copiar enlace"><i class="bi bi-clipboard"></i></button>
                 </div>
                 <div class="d-flex align-items-center gap-1 mb-3">

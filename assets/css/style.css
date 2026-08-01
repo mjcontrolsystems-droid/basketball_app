@@ -1125,6 +1125,16 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     .marcador-vivo-equipo { width: auto; }
 }
 
+/* El <main> del panel admin es un flex item (hermano del sidebar). Un flex item
+   tiene min-width:auto por defecto: basta UN texto sin cortes (p. ej. la URL de
+   una copa) para que TODO el contenido principal se ensanche más allá de la
+   pantalla del teléfono — se veía el título y los botones cortados a la derecha.
+   min-width:0 rompe esa cadena: el main nunca supera el viewport y los
+   truncados (text-truncate) vuelven a funcionar dentro de él. */
+main.flex-grow-1 {
+    min-width: 0;
+}
+
 /* ==========================================================================
    Capa de refinamiento visual
    Va al final del archivo a propósito: gana la cascada sobre las reglas base
