@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $partidos = array_values(array_filter($partidos, fn($p) => $p['id'] !== $id));
         db_guardar('partidos', $partidos, $torneo['id']);
         db_guardar_eventos_partido($torneo['id'], $id, []);
+        bitacora_registrar('partido_eliminado', 'Encuentro #' . $id . ' eliminado con todos sus eventos', $torneo['id']);
         redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro eliminado correctamente.');
     }
 
@@ -51,7 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             unset($p);
             db_guardar('partidos', $partidos, $torneo['id']);
-            redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como programado.');
+            bitacora_registrar('partido_reabierto', 'Encuentro #' . $id . ' reabierto para corrección de resultado', $torneo['id']);
+            redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro reabierto para corrección. Márcalo como jugado de nuevo cuando termines.');
         }
 
         // El marcador se toma de los goles registrados en Eventos (fuente de verdad). Si
@@ -71,7 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         unset($p);
         db_guardar('partidos', $partidos, $torneo['id']);
-        redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como jugado.');
+        bitacora_registrar('partido_jugado', "Encuentro #{$id} en firme con marcador {$mLocal}-{$mVisit}", $torneo['id']);
+        redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como jugado. El resultado queda en firme.');
     }
 
     if (($_POST['accion'] ?? '') === 'guardar') {
@@ -144,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             db_guardar('partidos', $partidos, $torneo['id']);
+            bitacora_registrar($id > 0 ? 'partido_editado' : 'partido_creado', 'Encuentro ' . ($id > 0 ? "#{$id}" : "#{$datos['id']}") . ' — ' . ($equiposPorId[$local]['nombre'] ?? '?') . ' vs ' . ($equiposPorId[$visitante]['nombre'] ?? '?') . ' (' . $datos['fecha'] . ')', $torneo['id']);
             redirigir_con_mensaje(url('admin/partidos.php'), 'success', $mensaje);
         } else {
             $partidoEditar = array_merge($_POST, ['id' => $id]);

@@ -94,6 +94,8 @@ function auth_iniciar_sesion_usuario(array $usuario): void
     $_SESSION['usuario_autenticado'] = true;
     $_SESSION['usuario_id'] = (int) $usuario['id'];
     $_SESSION['organizador_usuario'] = $usuario['usuario'];
+    // Trazabilidad de accesos en la bitácora (nunca falla la sesión por esto).
+    bitacora_registrar('login', 'Sesión iniciada (' . ($usuario['email'] ?? $usuario['usuario']) . ')');
 }
 
 function auth_logout(): void

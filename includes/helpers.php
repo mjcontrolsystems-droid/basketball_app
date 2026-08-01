@@ -140,7 +140,10 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
 
     // Enlace público de transmisión en vivo: se puede abrir en una pantalla/TV para la
     // afición (marcador grande y feed de eventos que se refresca solo) o copiar y compartir.
-    $urlVivo = e(url_copa('partido_vivo.php?id=' . $id));
+    // El enlace que se COPIA debe ser ABSOLUTO (con https://dominio): antes se copiaba la
+    // ruta relativa (/copa/partido_vivo.php?id=N) y al pegarla en WhatsApp no era un link
+    // válido — quien lo recibía no podía abrir nada.
+    $urlVivo = e(SITE_ORIGIN . url_copa('partido_vivo.php?id=' . $id));
     $botonVivo = "<a href=\"{$urlVivo}\" target=\"_blank\" class=\"btn btn-sm btn-outline-secondary\" title=\"Abrir transmisión en vivo\"><i class=\"bi bi-broadcast\"></i></a>";
     $botonCopiarVivo = "<button type=\"button\" class=\"btn btn-sm btn-outline-secondary btn-copiar-url\" data-url=\"{$urlVivo}\" title=\"Copiar enlace de transmisión en vivo\"><i class=\"bi bi-link-45deg\"></i></button>";
 
@@ -158,12 +161,17 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
     // (útil a mitad de temporada, cuando hay que ir capturando encuentros seguidos). Lleva
     // texto visible ("Jugado") porque un switch sin etiqueta no comunica qué hace.
     $toggleChecked = $jugado ? 'checked' : '';
+    // Desmarcar un encuentro ya jugado es REABRIR un resultado en firme (sale de la tabla
+    // de posiciones hasta volver a marcarlo): lleva confirmación explícita y va a bitácora.
+    $confirmarReapertura = $jugado
+        ? ' data-confirm="Este resultado ya está en firme. ¿Reabrirlo para corrección? Saldrá de la tabla de posiciones hasta que lo marques como jugado de nuevo, y quedará registrado en la bitácora."'
+        : '';
     $toggleJugado = <<<HTML
-<form method="post" class="d-flex align-items-center gap-1 mb-0" title="Marcar como jugado">
+<form method="post" class="d-flex align-items-center gap-1 mb-0" title="Marcar como jugado"{$confirmarReapertura}>
     <input type="hidden" name="csrf_token" value="{$csrf}">
     <input type="hidden" name="accion" value="alternar_jugado">
     <input type="hidden" name="id" value="{$id}">
-    <input class="form-check-input m-0" type="checkbox" role="switch" id="switchJugado{$id}" style="cursor:pointer;" onchange="this.form.submit()" {$toggleChecked}>
+    <input class="form-check-input m-0" type="checkbox" role="switch" id="switchJugado{$id}" style="cursor:pointer;" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" {$toggleChecked}>
     <label class="form-check-label small text-muted mb-0" for="switchJugado{$id}" style="cursor:pointer;">Jugado</label>
 </form>
 HTML;

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/upload.php';
 require_once __DIR__ . '/../includes/tabla.php';
 require_once __DIR__ . '/../includes/usuarios.php';
+require_once __DIR__ . '/../includes/liga.php';
 
 auth_requerir();
 $usuarioId = (int) $_SESSION['usuario_id'];
@@ -70,6 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
     $deporte = (string) $_POST['deporte'] === 'futbol' ? 'futbol' : 'basketball';
     $genero = in_array($_POST['genero'] ?? '', ['femenino', 'masculino'], true) ? $_POST['genero'] : 'mixto';
 
+    // Modalidad válida para el deporte elegido (fútbol 11/7/5 o basketball FIBA/NBA);
+    // si no coincide, se usa la modalidad por defecto del deporte. La duración
+    // personalizada es opcional (vacía = usar la reglamentaria de la modalidad).
+    $modalidad = (string) ($_POST['modalidad'] ?? '');
+    if (!isset(MODALIDADES_POR_DEPORTE[$deporte][$modalidad])) {
+        $modalidad = MODALIDAD_POR_DEFECTO[$deporte];
+    }
+    $duracionPeriodo = ($_POST['duracion_periodo_min'] ?? '') !== '' ? max(1, min(90, (int) $_POST['duracion_periodo_min'])) : null;
+
     $fasesElegidas = array_values(array_intersect((array) ($_POST['fases_playoff'] ?? []), FASES_PLAYOFF_CATALOGO));
 
     if ($nombre === '') {
@@ -110,6 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'hero_frase' => trim((string) $_POST['hero_frase']),
             'deporte' => $deporte,
             'genero' => $genero,
+            'modalidad' => $modalidad,
+            'duracion_periodo_min' => $duracionPeriodo,
             'num_equipos' => max(2, (int) $_POST['num_equipos']),
             'fases_playoff' => $fasesElegidas,
             'permite_empates' => isset($_POST['permite_empates']),
@@ -121,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
         ];
 
         $idGuardado = torneos_guardar($datos, $usuarioId);
+        bitacora_registrar($id ? 'torneo_editado' : 'torneo_creado', '"' . $nombre . '" (' . $deporte . ')', $idGuardado);
 
         if (empty($_SESSION['torneo_activo_id'])) {
             $_SESSION['torneo_activo_id'] = $idGuardado;
@@ -137,7 +150,9 @@ if (($_SERVER['REQUEST_METHOD'] === 'POST') && ($_POST['accion'] ?? '') === 'eli
     csrf_validar();
     $id = (int) $_POST['id'];
     try {
+        $torneoBorrar = torneos_obtener_por_id($id, $usuarioId);
         torneos_eliminar($id, $usuarioId);
+        bitacora_registrar('torneo_eliminado', '"' . ($torneoBorrar['nombre'] ?? "#{$id}") . '" eliminada con todos sus datos');
         if (($_SESSION['torneo_activo_id'] ?? null) === $id) {
             unset($_SESSION['torneo_activo_id']);
         }
@@ -152,6 +167,7 @@ if (($_SERVER['REQUEST_METHOD'] === 'POST') && ($_POST['accion'] ?? '') === 'reg
     $id = (int) $_POST['id'];
     try {
         torneos_regenerar_codigo($id, $usuarioId);
+        bitacora_registrar('codigo_regenerado', 'Código de acceso regenerado', $id);
         redirigir_con_mensaje(url('admin/torneos.php'), 'success', 'Código regenerado.');
     } catch (RuntimeException $e) {
         redirigir_con_mensaje(url('admin/torneos.php'), 'error', $e->getMessage());
@@ -216,6 +232,29 @@ require __DIR__ . '/includes/admin_layout_top.php';
                     <option value="masculino" <?= $generoPorDefecto === 'masculino' ? 'selected' : '' ?>>Masculino</option>
                 </select>
                 <div class="form-text">Ajusta "entrenador/a", "jugador/a", etc. en todo el sitio.</div>
+            </div>
+
+            <?php
+            // Modalidad + duración de periodo: definen cuántos minutos dura cada tiempo/
+            // cuarto (cronómetro y transmisión en vivo). El JS de app.js sugiere la
+            // duración reglamentaria al elegir la modalidad; el organizador puede
+            // sobreescribirla (muchas ligas amateur juegan tiempos más cortos).
+            $modalidadActual = (string) ($torneoEditar['modalidad'] ?? '');
+            $duracionActual = (int) ($torneoEditar['duracion_periodo_min'] ?? 0);
+            ?>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Modalidad</label>
+                <select name="modalidad" id="selectModalidad" class="form-select">
+                    <?php foreach (MODALIDADES_POR_DEPORTE as $dep => $catalogo): foreach ($catalogo as $clave => $m): ?>
+                    <option value="<?= e($clave) ?>" data-deporte="<?= e($dep) ?>" data-duracion="<?= (int) $m['duracion_min'] ?>" <?= $modalidadActual === $clave ? 'selected' : '' ?>><?= e($m['label']) ?></option>
+                    <?php endforeach; endforeach; ?>
+                </select>
+                <div class="form-text">Fútbol: 11, 7 o sala/5. Basketball: FIBA o estilo NBA. Define los tiempos reglamentarios.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Minutos por tiempo/cuarto</label>
+                <input type="number" name="duracion_periodo_min" id="campoDuracionPeriodo" class="form-control" min="1" max="90" value="<?= $duracionActual > 0 ? $duracionActual : '' ?>" placeholder="Reglamentario de la modalidad">
+                <div class="form-text">Déjalo vacío para usar el reglamentario. Cámbialo si tu liga juega tiempos distintos (ej. cuartos de 15 min).</div>
             </div>
             <div class="col-md-4">
                 <label class="form-label small fw-semibold">Subtítulo</label>

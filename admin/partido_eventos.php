@@ -33,9 +33,35 @@ $basketball = es_basketball($deporte);
 
 $urlLista = url('admin/partido_eventos.php?partido_id=' . $partidoId);
 
+// Regla de integridad (aplica a fútbol y basketball por igual): un encuentro marcado como
+// JUGADO tiene su resultado en firme — alimenta la tabla de posiciones y pudo haberse
+// publicado/compartido. Sus eventos, cronómetro y fecha quedan bloqueados; solo se pueden
+// tocar reabriéndolo explícitamente para corrección (botón con confirmación + bitácora).
+$resultadoBloqueado = ($partido['estado'] ?? '') === 'jugado';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
     $accion = (string) ($_POST['accion'] ?? '');
+
+    // Reabrir para corrección: vuelve el encuentro a "programado" (sale de la tabla hasta
+    // volver a marcarlo jugado) y desbloquea la ficha. Queda registrado en la bitácora.
+    if ($accion === 'reabrir_correccion') {
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId) {
+                $p['estado'] = 'programado';
+            }
+        }
+        unset($p);
+        db_guardar('partidos', $partidos, $torneo['id']);
+        bitacora_registrar('partido_reabierto', 'Encuentro #' . $partidoId . ' reabierto para corrección de resultado', $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', 'Encuentro reabierto para corrección. Cuando termines, márcalo como jugado de nuevo para que vuelva a contar en la tabla.');
+    }
+
+    // Cualquier otra acción de escritura sobre un encuentro con resultado en firme se
+    // rechaza (protege contra pestañas viejas o envíos directos del formulario).
+    if ($resultadoBloqueado) {
+        redirigir_con_mensaje($urlLista, 'error', 'Este encuentro ya está finalizado y su resultado quedó en firme. Usa "Reabrir para corrección" si hubo un error.');
+    }
 
     // El partido se está jugando/registrando antes de la fecha programada: el modal de
     // confirmación ofrece adelantar la fecha del encuentro a hoy sin salir de la ficha.
@@ -47,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         unset($p);
         db_guardar('partidos', $partidos, $torneo['id']);
+        bitacora_registrar('fecha_adelantada', 'Encuentro #' . $partidoId . ' adelantado a ' . date('Y-m-d'), $torneo['id']);
         redirigir_con_mensaje($urlLista, 'success', 'Fecha del encuentro actualizada a hoy.');
     }
 
@@ -132,6 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($eventoBorrado !== null && ($eventoBorrado['tipo'] ?? '') === 'gol') {
             partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
         }
+        if ($eventoBorrado !== null) {
+            bitacora_registrar('evento_eliminado', 'Encuentro #' . $partidoId . ': ' . evento_descripcion($eventoBorrado, $jugadoresPorId, $deporte), $torneo['id']);
+        }
         redirigir_con_mensaje($urlLista, 'success', 'Evento eliminado.');
     }
 
@@ -211,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($accion === 'agregar_gol') {
             partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
         }
+        bitacora_registrar('evento_agregado', 'Encuentro #' . $partidoId . ': ' . evento_descripcion($evento, $jugadoresPorId, $deporte), $torneo['id']);
         redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.');
     }
 }
@@ -267,21 +298,40 @@ require __DIR__ . '/includes/admin_layout_top.php';
     <p class="text-center small text-muted mb-0 mt-2">El marcador se calcula automáticamente con los <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> que registres abajo.</p>
 </div>
 
+<?php if ($resultadoBloqueado): ?>
+<div class="card-suave p-3 mb-4 border border-success-subtle d-flex flex-row align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-lock-fill text-success fs-5"></i>
+        <div>
+            <div class="fw-semibold">Resultado en firme</div>
+            <div class="small text-muted">El encuentro está finalizado: los eventos y el marcador ya no se pueden modificar. Si hubo un error, reábrelo para corregir.</div>
+        </div>
+    </div>
+    <form method="post" class="mb-0" data-confirm="¿Reabrir este encuentro para corrección? El resultado saldrá de la tabla de posiciones hasta que lo marques como jugado otra vez, y la reapertura quedará registrada en la bitácora.">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="accion" value="reabrir_correccion">
+        <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="bi bi-unlock me-1"></i>Reabrir para corrección</button>
+    </form>
+</div>
+<?php endif; ?>
+
 <?php
 $cronometroEstado = $partido['cronometro_estado'] ?? 'detenido';
 // En basketball el reloj se muestra en cuenta regresiva (de DURACION_CUARTO_BASKETBALL_MIN
 // a 00:00); en fútbol cuenta hacia adelante desde 00:00. El dato guardado (cronometro_segundos)
 // siempre es tiempo transcurrido en ambos casos, esto solo cambia cómo se muestra.
-$cronometroSegundosMostrados = $basketball ? partido_cronometro_restante_segundos($partido) : partido_cronometro_segundos($partido);
+$cronometroSegundosMostrados = $basketball ? partido_cronometro_restante_segundos($partido, $torneo) : partido_cronometro_segundos($partido);
 $cronometroPeriodo = (int) ($partido['cronometro_periodo'] ?? 1);
 $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
 ?>
+<?php if (!$resultadoBloqueado): ?>
 <div class="card-suave p-3 mb-4 d-flex flex-row align-items-center justify-content-between flex-wrap gap-3"
     id="cronometroPartido" data-estado="<?= e($cronometroEstado) ?>"
     data-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
     data-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>"
     data-basketball="<?= $basketball ? '1' : '0' ?>"
-    data-duracion-segundos="<?= DURACION_CUARTO_BASKETBALL_MIN * 60 ?>">
+    data-duracion-segundos="<?= torneo_duracion_periodo_min($torneo) * 60 ?>">
     <div class="d-flex align-items-center gap-3">
         <div>
             <div class="fs-2 fw-bold font-monospace" id="cronometroTexto"><?= e(sprintf('%02d:%02d', intdiv($cronometroSegundosMostrados, 60), $cronometroSegundosMostrados % 60)) ?></div>
@@ -333,8 +383,10 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
         <?php endif; ?>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="row g-4">
+    <?php if (!$resultadoBloqueado): ?>
     <div class="col-lg-5">
         <div class="card-suave p-4 mb-3">
             <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-dribbble me-1"></i>Agregar <?= e(mb_strtolower(etiqueta_anotacion($deporte))) ?></h6>
@@ -383,9 +435,13 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
 
         <div class="card-suave p-4 mb-3">
             <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-square-fill text-warning"></i><i class="bi bi-square-fill text-danger me-1"></i>Agregar <?= $basketball ? 'falta' : 'tarjeta' ?> (<?= e(mb_strtolower(etiqueta_falta_leve($deporte))) ?> o <?= e(mb_strtolower(etiqueta_falta_grave($deporte))) ?>)</h6>
-            <?php if ($basketball): ?>
-            <p class="small text-muted mb-2">Al llegar a <?= LIMITE_FALTAS_EXPULSION ?> faltas personales en el partido, el jugador queda expulsado automáticamente (regla FIBA).</p>
-            <?php endif; ?>
+            <p class="small text-muted mb-2">
+                <?php if ($basketball): ?>
+                Al llegar a <?= LIMITE_FALTAS_EXPULSION ?> faltas personales en el partido, el jugador queda expulsado automáticamente (regla FIBA).
+                <?php else: ?>
+                Dos tarjetas amarillas en el mismo partido = expulsión por doble amarilla (regla IFAB). El aviso aparece solo al registrar la segunda.
+                <?php endif; ?>
+            </p>
             <form method="post" class="row g-2">
                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="accion" value="agregar_tarjeta">
@@ -466,21 +522,25 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
             </form>
         </div>
     </div>
+    <?php endif; ?>
 
-    <div class="col-lg-7">
-        <?php if ($basketball): ?>
-        <?php $faltasPorJugador = faltas_por_jugador($eventos); ?>
-        <?php $expulsados = array_filter($faltasPorJugador, fn($n) => $n >= LIMITE_FALTAS_EXPULSION); ?>
+    <div class="<?= $resultadoBloqueado ? 'col-12' : 'col-lg-7' ?>">
+        <?php
+        // Expulsión por acumulación, en ambos deportes: 5 faltas personales en basketball
+        // (FIBA) o 2 amarillas en fútbol (doble amarilla, IFAB).
+        $faltasPorJugador = faltas_por_jugador($eventos);
+        $limiteExpulsion = limite_faltas_expulsion($deporte);
+        $expulsados = array_filter($faltasPorJugador, fn($n) => $n >= $limiteExpulsion);
+        ?>
         <?php if (!empty($expulsados)): ?>
         <div class="card-suave p-3 mb-3 border border-danger-subtle">
-            <h6 class="text-uppercase small fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Expulsados por faltas</h6>
+            <h6 class="text-uppercase small fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Expulsados', 'Expulsadas')) ?> por acumulación</h6>
             <ul class="list-unstyled mb-0 small">
                 <?php foreach ($expulsados as $jid => $n): $j = $jugadoresPorId[$jid] ?? null; ?>
-                <li><?= e(jugador_nombre($j)) ?> — <?= $n ?> faltas personales</li>
+                <li><?= e(jugador_nombre($j)) ?> — <?= e(texto_expulsion_acumulacion($deporte, $n)) ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
-        <?php endif; ?>
         <?php endif; ?>
         <div class="card-suave p-4">
             <h6 class="text-uppercase small fw-bold text-muted mb-3">Eventos cargados (<?= count($eventos) ?>)</h6>
@@ -492,6 +552,7 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 <?php foreach ($eventos as $ev): ?>
                 <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                     <span class="small"><?= $iconosEvento[$ev['tipo']] ?? '' ?> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?> <span class="text-muted">— <?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?></span></span>
+                    <?php if (!$resultadoBloqueado): ?>
                     <form method="post" data-confirm="¿Eliminar este evento?">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="accion" value="eliminar_evento">
@@ -499,6 +560,7 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                         <input type="hidden" name="id" value="<?= $ev['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x-lg"></i></button>
                     </form>
+                    <?php endif; ?>
                 </li>
                 <?php endforeach; ?>
             </ul>

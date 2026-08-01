@@ -20,11 +20,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Confirmación para acciones destructivas en el panel del organizador
+    // Confirmación para acciones destructivas en el panel del organizador. Si el usuario
+    // cancela, el formulario se resetea: importante para el switch de "Jugado", que si no
+    // quedaría visualmente cambiado aunque la acción nunca se envió.
     document.querySelectorAll('[data-confirm]').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             if (!window.confirm(form.getAttribute('data-confirm'))) {
                 e.preventDefault();
+                form.reset();
             }
         });
     });
@@ -183,6 +186,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 actualizarPreviewUrl();
             }
         });
+    }
+
+    // Formulario de copas: el select de Modalidad solo muestra las del deporte elegido
+    // (fútbol 11/7/5 o basketball FIBA/NBA) y sugiere la duración reglamentaria del
+    // tiempo/cuarto como placeholder. Mismo patrón de quitar/restaurar opciones que el
+    // filtro de jugadores (option.hidden no funciona en Safari/iPhone).
+    var selectModalidad = document.getElementById('selectModalidad');
+    var campoDuracion = document.getElementById('campoDuracionPeriodo');
+    var selectDeporteRef = document.getElementById('selectDeporte');
+    if (selectModalidad && selectDeporteRef) {
+        var todasModalidades = Array.prototype.slice.call(selectModalidad.options);
+        var filtrarModalidades = function (conservarSeleccion) {
+            var dep = selectDeporteRef.value;
+            var seleccionPrevia = selectModalidad.value;
+            while (selectModalidad.firstChild) {
+                selectModalidad.removeChild(selectModalidad.firstChild);
+            }
+            todasModalidades.forEach(function (op) {
+                if (op.getAttribute('data-deporte') === dep) {
+                    selectModalidad.appendChild(op);
+                }
+            });
+            if (conservarSeleccion && seleccionPrevia) {
+                selectModalidad.value = seleccionPrevia;
+            }
+            if (!selectModalidad.value && selectModalidad.options.length > 0) {
+                selectModalidad.selectedIndex = 0;
+            }
+            sugerirDuracion();
+        };
+        var sugerirDuracion = function () {
+            if (!campoDuracion) { return; }
+            var op = selectModalidad.options[selectModalidad.selectedIndex];
+            if (op) {
+                campoDuracion.placeholder = op.getAttribute('data-duracion') + ' min (reglamentario)';
+            }
+        };
+        selectDeporteRef.addEventListener('change', function () { filtrarModalidades(false); });
+        selectModalidad.addEventListener('change', sugerirDuracion);
+        filtrarModalidades(true);
     }
 
     // Formulario de copas: al elegir el deporte, sugiere si hay empates y cuántos puntos vale cada resultado

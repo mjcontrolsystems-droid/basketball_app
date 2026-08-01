@@ -1123,3 +1123,151 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     .marcador-vivo { flex-direction: column; gap: 1rem; }
     .marcador-vivo-equipo { width: auto; }
 }
+
+/* ==========================================================================
+   Capa de refinamiento visual
+   Va al final del archivo a propósito: gana la cascada sobre las reglas base
+   sin tener que reescribirlas. Objetivo: bordes y sombras más finos y
+   consistentes en toda la app (tarjetas, botones, formularios, tablas).
+   ========================================================================== */
+
+/* Sombra en dos capas para las tarjetas: un halo ambiental muy suave + una
+   sombra de apoyo corta. Se ve "asentada" en vez de flotando con una mancha. */
+.card-suave {
+    border: 1px solid rgba(var(--color-primario-oscuro-rgb), .07);
+    box-shadow:
+        0 1px 2px rgba(var(--color-primario-oscuro-rgb), .05),
+        0 10px 28px -20px rgba(var(--color-primario-oscuro-rgb), .22);
+}
+
+.card-suave:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--color-primario-rgb), .16);
+    box-shadow:
+        0 2px 4px rgba(var(--color-primario-oscuro-rgb), .06),
+        0 18px 38px -20px rgba(var(--color-primario-oscuro-rgb), .3);
+}
+
+.stat-tile {
+    border: 1px solid rgba(var(--color-primario-oscuro-rgb), .07);
+    box-shadow:
+        0 1px 2px rgba(var(--color-primario-oscuro-rgb), .05),
+        0 8px 22px -18px rgba(var(--color-primario-oscuro-rgb), .2);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.stat-tile:hover {
+    border-color: rgba(var(--color-primario-rgb), .18);
+}
+
+/* Filas de la tabla de posiciones: borde fino además de la sombra, para que
+   la separación se lea igual de bien en pantallas de bajo contraste. */
+.tabla-posiciones tbody tr td {
+    border-top: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+    border-bottom: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+.tabla-posiciones tbody tr td:first-child {
+    border-left: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+.tabla-posiciones tbody tr td:last-child {
+    border-right: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+/* Formularios: borde neutro en reposo y anillo del color de la copa al enfocar
+   (en vez del azul Bootstrap genérico, que desentona con cada copa). */
+.form-control, .form-select {
+    border-color: rgba(var(--color-primario-oscuro-rgb), .16);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: rgba(var(--color-primario-rgb), .55);
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .12);
+}
+
+.form-check-input:checked {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+
+.form-check-input:focus {
+    border-color: rgba(var(--color-primario-rgb), .55);
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .12);
+}
+
+/* Botones outline: borde más fino y hover que rellena suave con el color de
+   la copa en vez del gris plano de Bootstrap. */
+.btn-outline-secondary {
+    --bs-btn-color: #5d5478;
+    --bs-btn-border-color: rgba(var(--color-primario-oscuro-rgb), .22);
+    --bs-btn-hover-bg: rgba(var(--color-primario-rgb), .07);
+    --bs-btn-hover-border-color: rgba(var(--color-primario-rgb), .45);
+    --bs-btn-hover-color: var(--color-primario-oscuro);
+    --bs-btn-active-bg: rgba(var(--color-primario-rgb), .12);
+    --bs-btn-active-border-color: rgba(var(--color-primario-rgb), .5);
+    --bs-btn-active-color: var(--color-primario-oscuro);
+}
+
+/* Botón principal degradado: brillo interior sutil en el borde superior, como
+   luz cayendo sobre la superficie (detalle pequeño, acabado mucho más fino). */
+.btn-degradado {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .25),
+        0 8px 20px -10px rgba(var(--color-primario-rgb), .55);
+}
+
+.btn-degradado:hover {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .3),
+        0 14px 30px -10px rgba(var(--color-primario-rgb), .6);
+}
+
+/* Accesibilidad + acabado: anillo de foco visible SOLO al navegar con teclado
+   (focus-visible), del color de la copa. */
+.btn:focus-visible, a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .3);
+}
+
+/* Sidebar del admin: la sección activa lleva una barrita de acento a la
+   izquierda además del fondo, para ubicarse de un vistazo. */
+.sidebar-admin .nav-link {
+    position: relative;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.sidebar-admin .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--color-acento);
+}
+
+/* Badges de estado con borde fino del mismo tono (se ven impresos, no pegados) */
+.badge-estado-jugado { box-shadow: inset 0 0 0 1px rgba(25, 135, 84, .25); }
+.badge-estado-programado { box-shadow: inset 0 0 0 1px rgba(var(--color-primario-oscuro-rgb), .15); }
+
+/* Alertas flash: barra de acento a la izquierda según el tipo */
+.alert-success { border-left: 4px solid #198754 !important; }
+.alert-danger { border-left: 4px solid #dc3545 !important; }
+.alert-warning { border-left: 4px solid #f0b429 !important; }
+
+/* Scrollbars discretos en las áreas con scroll propio (WebKit/Chromium) */
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-primario-oscuro-rgb), .18);
+    border-radius: 999px;
+}
+.table-responsive::-webkit-scrollbar-track { background: transparent; }
+
+/* Selección de texto con la identidad de la copa */
+::selection {
+    background: rgba(var(--color-primario-rgb), .2);
+}

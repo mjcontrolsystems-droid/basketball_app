@@ -40,7 +40,7 @@ const COLUMNAS_TORNEO = [
     'color_primario', 'color_secundario', 'color_acento', 'fecha_inicio', 'fecha_fin', 'formato',
     'instagram', 'hero_frase', 'deporte', 'num_equipos', 'fases_playoff', 'permite_empates',
     'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'es_predeterminado', 'activo',
-    'genero',
+    'genero', 'modalidad', 'duracion_periodo_min',
 ];
 
 /**
@@ -326,7 +326,7 @@ function db_parsear_array_pg(?string $valor): array
 
 function db_normalizar_torneo(array $fila): array
 {
-    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota'] as $col) {
+    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'duracion_periodo_min'] as $col) {
         if (array_key_exists($col, $fila) && $fila[$col] !== null) {
             $fila[$col] = (int) $fila[$col];
         }
@@ -400,11 +400,79 @@ function db_migrar_automatico(): void
                 PRIMARY KEY (torneo_id, fecha)
             )'
         );
+        // Bitácora de acciones del panel (sin FK a torneos: la entrada debe sobrevivir
+        // aunque la copa se borre después — es historial, no dato vivo).
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS bitacora (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER,
+                torneo_id INTEGER,
+                accion TEXT NOT NULL,
+                detalle TEXT NOT NULL DEFAULT \'\',
+                creado_en TIMESTAMP NOT NULL DEFAULT now()
+            )'
+        );
+        // Modalidad del deporte (fútbol 11/7/5, basketball FIBA) y duración de cada
+        // tiempo/cuarto en minutos (personalizable por copa; NULL = usar el estándar).
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS modalidad TEXT NOT NULL DEFAULT ''");
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS duracion_periodo_min INTEGER');
         $_SESSION['migraciones_ok'] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya
         // tienen sus propias redes de seguridad. Se reintentará en la próxima sesión.
         error_log('db_migrar_automatico: ' . $e->getMessage());
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bitácora de acciones del panel (logs): quién hizo qué y cuándo. Da trazabilidad a
+// las acciones sensibles (resultados, reaperturas, cupos, accesos) — imprescindible
+// cuando un resultado se disputa o hay que auditar un cambio.
+// ---------------------------------------------------------------------------
+
+/**
+ * Registra una acción en la bitácora. Nunca lanza excepción: el registro es un extra,
+ * no debe tumbar la acción principal (misma filosofía que visitas y correos).
+ */
+function bitacora_registrar(string $accion, string $detalle = '', ?int $torneoId = null): void
+{
+    try {
+        $pdo = db_conexion();
+        $stmt = $pdo->prepare(
+            'INSERT INTO bitacora (usuario_id, torneo_id, accion, detalle) VALUES (:usuario_id, :torneo_id, :accion, :detalle)'
+        );
+        db_bind($stmt, ':usuario_id', !empty($_SESSION['usuario_id']) ? (int) $_SESSION['usuario_id'] : null);
+        db_bind($stmt, ':torneo_id', $torneoId);
+        $stmt->bindValue(':accion', $accion, PDO::PARAM_STR);
+        $stmt->bindValue(':detalle', mb_substr($detalle, 0, 500), PDO::PARAM_STR);
+        $stmt->execute();
+    } catch (Throwable $e) {
+        error_log('bitacora_registrar: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Últimas entradas de la bitácora. Con $usuarioId solo las de ese usuario (lo que ve un
+ * organizador normal); sin él, todas (vista de super-admin).
+ */
+function bitacora_listar(?int $usuarioId = null, int $limite = 200): array
+{
+    try {
+        $pdo = db_conexion();
+        $sql = 'SELECT b.*, u.nombre AS usuario_nombre, u.usuario AS usuario_usuario, t.nombre AS torneo_nombre
+                FROM bitacora b
+                LEFT JOIN usuarios u ON u.id = b.usuario_id
+                LEFT JOIN torneos t ON t.id = b.torneo_id'
+            . ($usuarioId !== null ? ' WHERE b.usuario_id = :usuario_id' : '')
+            . ' ORDER BY b.creado_en DESC LIMIT ' . max(1, min(500, $limite));
+        $stmt = $pdo->prepare($sql);
+        if ($usuarioId !== null) {
+            $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
     }
 }
 

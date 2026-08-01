@@ -71,7 +71,7 @@ $colorVisit = color_hex_valido($visit['color_primario'] ?? null, '#ff6b35');
     data-cronometro-segundos="<?= (int) ($partido['cronometro_segundos'] ?? 0) ?>"
     data-cronometro-inicio="<?= e($partido['cronometro_inicio'] ?? '') ?>"
     data-basketball="<?= $basketball ? '1' : '0' ?>"
-    data-duracion-segundos="<?= DURACION_CUARTO_BASKETBALL_MIN * 60 ?>">
+    data-duracion-segundos="<?= torneo_duracion_periodo_min($torneo) * 60 ?>">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pagina-vivo-cabecera">
         <div class="d-flex align-items-center gap-2 badge-en-vivo">
             <span class="punto-en-vivo"></span>

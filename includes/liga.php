@@ -49,6 +49,30 @@ const MOTIVOS_FALTA_LABEL = [
 // personales en un mismo partido, el jugador queda expulsado del resto del encuentro.
 const LIMITE_FALTAS_EXPULSION = 5;
 
+// Regla IFAB (fútbol): dos tarjetas amarillas en el mismo partido = expulsión
+// (doble amarilla). Se usa para avisar la expulsión igual que en basketball.
+const LIMITE_AMARILLAS_EXPULSION_FUTBOL = 2;
+
+/**
+ * Faltas leves acumuladas que expulsan a un jugador en un mismo partido, según el
+ * deporte: 5 faltas personales en basketball (FIBA), 2 amarillas en fútbol (IFAB).
+ * Con esto ambos deportes tienen el mismo aviso automático de expulsión en la ficha.
+ */
+function limite_faltas_expulsion(?string $deporte): int
+{
+    return es_basketball($deporte) ? LIMITE_FALTAS_EXPULSION : LIMITE_AMARILLAS_EXPULSION_FUTBOL;
+}
+
+/**
+ * Texto del motivo de expulsión por acumulación, según el deporte.
+ */
+function texto_expulsion_acumulacion(?string $deporte, int $cantidad): string
+{
+    return es_basketball($deporte)
+        ? "{$cantidad} faltas personales (regla FIBA)"
+        : 'doble tarjeta amarilla';
+}
+
 function es_basketball(?string $deporte): bool
 {
     return $deporte === 'basketball';
@@ -319,21 +343,75 @@ function partido_cronometro_minuto(array $partido): int
     return intdiv(partido_cronometro_segundos($partido), 60);
 }
 
-// Duración de un cuarto en basketball, en minutos: a diferencia del fútbol (que cuenta
-// hacia adelante desde 00:00), el cronómetro de basketball se muestra en cuenta regresiva
-// desde este valor hasta 00:00. No es una regla oficial fija de ninguna liga en particular,
-// así que queda como una sola constante ajustable aquí si hiciera falta cambiarla.
-const DURACION_CUARTO_BASKETBALL_MIN = 15;
+// ---------------------------------------------------------------------------
+// Modalidades por deporte y reglas de tiempo/expulsión asociadas.
+//
+// Cada copa/liga declara su modalidad (torneos.modalidad) y, si el organizador lo
+// necesita, una duración de periodo personalizada (torneos.duracion_periodo_min) —
+// muchas ligas amateur juegan tiempos más cortos que los reglamentarios.
+//
+// Duraciones reglamentarias por modalidad:
+//   Fútbol 11 (FIFA):        2 tiempos de 45 min
+//   Fútbol 7:                2 tiempos de 25 min (uso más extendido)
+//   Fútbol sala / 5 (futsal):2 tiempos de 20 min
+//   Basketball FIBA (5v5):   4 cuartos de 10 min
+//   Basketball NBA:          4 cuartos de 12 min
+// ---------------------------------------------------------------------------
+
+const MODALIDADES_POR_DEPORTE = [
+    'futbol' => [
+        'futbol11' => ['label' => 'Fútbol 11 (2 tiempos de 45 min)', 'duracion_min' => 45],
+        'futbol7' => ['label' => 'Fútbol 7 (2 tiempos de 25 min)', 'duracion_min' => 25],
+        'futbol5' => ['label' => 'Fútbol sala / 5 (2 tiempos de 20 min)', 'duracion_min' => 20],
+    ],
+    'basketball' => [
+        'fiba' => ['label' => 'FIBA 5v5 (4 cuartos de 10 min)', 'duracion_min' => 10],
+        'nba' => ['label' => 'Estilo NBA (4 cuartos de 12 min)', 'duracion_min' => 12],
+    ],
+];
+
+// Modalidad que se asume cuando la copa no declaró ninguna (copas creadas antes de que
+// existiera este campo): la más común de cada deporte.
+const MODALIDAD_POR_DEFECTO = ['futbol' => 'futbol11', 'basketball' => 'fiba'];
+
+// Compatibilidad con código previo que usaba una constante fija para basketball.
+const DURACION_CUARTO_BASKETBALL_MIN = 10;
+
+function modalidades_catalogo(?string $deporte): array
+{
+    return MODALIDADES_POR_DEPORTE[es_basketball($deporte) ? 'basketball' : 'futbol'];
+}
 
 /**
- * Segundos que le quedan al cronómetro en basketball (cuenta regresiva desde
- * DURACION_CUARTO_BASKETBALL_MIN), nunca negativo. partido_cronometro_segundos() sigue
- * siendo la fuente de verdad (tiempo transcurrido); esto solo lo invierte para mostrarlo
- * como cuenta regresiva, que es como se ve un cronómetro de basketball en la cancha.
+ * Duración de cada tiempo/cuarto de esta copa, en minutos. Prioridad: la duración
+ * personalizada de la copa; si no, la reglamentaria de su modalidad; si no, la de la
+ * modalidad por defecto del deporte.
  */
-function partido_cronometro_restante_segundos(array $partido): int
+function torneo_duracion_periodo_min(array $torneo): int
 {
-    return max(0, (DURACION_CUARTO_BASKETBALL_MIN * 60) - partido_cronometro_segundos($partido));
+    $personalizada = (int) ($torneo['duracion_periodo_min'] ?? 0);
+    if ($personalizada > 0) {
+        return $personalizada;
+    }
+    $deporte = es_basketball($torneo['deporte'] ?? null) ? 'basketball' : 'futbol';
+    $modalidad = (string) ($torneo['modalidad'] ?? '');
+    $catalogo = MODALIDADES_POR_DEPORTE[$deporte];
+    if (!isset($catalogo[$modalidad])) {
+        $modalidad = MODALIDAD_POR_DEFECTO[$deporte];
+    }
+    return $catalogo[$modalidad]['duracion_min'];
+}
+
+/**
+ * Segundos que le quedan al cronómetro en basketball (cuenta regresiva desde la duración
+ * del cuarto de ESTA copa), nunca negativo. partido_cronometro_segundos() sigue siendo la
+ * fuente de verdad (tiempo transcurrido); esto solo lo invierte para mostrarlo como cuenta
+ * regresiva, que es como se ve un cronómetro de basketball en la cancha.
+ */
+function partido_cronometro_restante_segundos(array $partido, ?array $torneo = null): int
+{
+    $duracionMin = $torneo !== null ? torneo_duracion_periodo_min($torneo) : DURACION_CUARTO_BASKETBALL_MIN;
+    return max(0, ($duracionMin * 60) - partido_cronometro_segundos($partido));
 }
 
 /**

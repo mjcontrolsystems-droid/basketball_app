@@ -140,11 +140,11 @@ require __DIR__ . '/includes/layout_top.php';
                     <li class="mb-2 small"><span class="fw-semibold"><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?>:</span> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?></li>
                     <?php endforeach; ?>
                 </ul>
-                <?php if ($basketball): $expulsados = array_filter(faltas_por_jugador($amarillas), fn($n) => $n >= LIMITE_FALTAS_EXPULSION); ?>
+                <?php // Expulsión por acumulación en ambos deportes: 5 faltas (FIBA) o doble amarilla (IFAB) ?>
+                <?php $expulsados = array_filter(faltas_por_jugador($amarillas), fn($n) => $n >= limite_faltas_expulsion($deporte)); ?>
                 <?php foreach ($expulsados as $jid => $n): ?>
-                <p class="small text-danger fw-semibold mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i><?= e(jugador_nombre($jugadoresPorId[$jid] ?? null)) ?> expulsado por acumular <?= $n ?> faltas.</p>
+                <p class="small text-danger fw-semibold mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i><?= e(jugador_nombre($jugadoresPorId[$jid] ?? null)) ?> — <?= e(forma_genero($torneo['genero'] ?? null, 'expulsado', 'expulsada')) ?> por <?= e(texto_expulsion_acumulacion($deporte, $n)) ?>.</p>
                 <?php endforeach; ?>
-                <?php endif; ?>
             </div>
             <?php endif; ?>
 

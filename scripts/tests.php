@@ -124,6 +124,24 @@ check('jugador 7 acumula 5 faltas (límite FIBA)', $conteo[7], LIMITE_FALTAS_EXP
 check('jugador 8 solo 1', $conteo[8], 1);
 
 // ---------------------------------------------------------------------------
+echo "\n== Reglas por deporte: expulsión y duración de periodos ==\n";
+
+check('fútbol: expulsión a las 2 amarillas (IFAB)', limite_faltas_expulsion('futbol'), 2);
+check('basketball: expulsión a las 5 faltas (FIBA)', limite_faltas_expulsion('basketball'), 5);
+
+check('fútbol 11 reglamentario: 45 min', torneo_duracion_periodo_min(['deporte' => 'futbol', 'modalidad' => 'futbol11']), 45);
+check('fútbol 7 reglamentario: 25 min', torneo_duracion_periodo_min(['deporte' => 'futbol', 'modalidad' => 'futbol7']), 25);
+check('fútbol sala reglamentario: 20 min', torneo_duracion_periodo_min(['deporte' => 'futbol', 'modalidad' => 'futbol5']), 20);
+check('basketball FIBA reglamentario: 10 min', torneo_duracion_periodo_min(['deporte' => 'basketball', 'modalidad' => 'fiba']), 10);
+check('basketball NBA: 12 min', torneo_duracion_periodo_min(['deporte' => 'basketball', 'modalidad' => 'nba']), 12);
+check('duración personalizada gana a la reglamentaria', torneo_duracion_periodo_min(['deporte' => 'basketball', 'modalidad' => 'fiba', 'duracion_periodo_min' => 15]), 15);
+check('copa vieja sin modalidad: default del deporte', torneo_duracion_periodo_min(['deporte' => 'futbol']), 45);
+check('modalidad inválida cae al default', torneo_duracion_periodo_min(['deporte' => 'basketball', 'modalidad' => 'rarisima']), 10);
+
+check('periodos fútbol: 2 tiempos', partido_periodo_maximo('futbol'), 2);
+check('periodos basketball: 4 cuartos', partido_periodo_maximo('basketball'), 4);
+
+// ---------------------------------------------------------------------------
 echo "\n============================\n";
 printf("%d pruebas, %d fallos\n", $pruebas, $fallos);
 echo $fallos === 0 ? "TODAS LAS PRUEBAS PASARON\n" : "HAY FALLOS - revisar antes de desplegar\n";

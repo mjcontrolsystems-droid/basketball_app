@@ -231,6 +231,23 @@ CREATE TABLE IF NOT EXISTS intentos_registro (
 );
 CREATE INDEX IF NOT EXISTS idx_intentos_registro_ip_fecha ON intentos_registro (ip, intentado_en);
 
+-- Modalidad del deporte (futbol11/futbol7/futbol5 o fiba/nba) y duración personalizada
+-- de cada tiempo/cuarto en minutos (NULL = usar la reglamentaria de la modalidad).
+-- Ver MODALIDADES_POR_DEPORTE en includes/liga.php.
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS modalidad TEXT NOT NULL DEFAULT '';
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS duracion_periodo_min INTEGER;
+
+-- Bitácora de acciones del panel (quién hizo qué y cuándo). Sin FK a torneos a propósito:
+-- la entrada es historial y debe sobrevivir aunque la copa se borre después.
+CREATE TABLE IF NOT EXISTS bitacora (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER,
+    torneo_id INTEGER,
+    accion TEXT NOT NULL,
+    detalle TEXT NOT NULL DEFAULT '',
+    creado_en TIMESTAMP NOT NULL DEFAULT now()
+);
+
 -- Tokens de "olvidé mi contraseña". Se guarda el hash SHA-256 del token (nunca el token
 -- en claro), vence en 1 hora y se borra al usarse. Un token vigente por cuenta.
 CREATE TABLE IF NOT EXISTS password_resets (
