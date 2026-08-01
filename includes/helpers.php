@@ -145,9 +145,13 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
     $botonCopiarVivo = "<button type=\"button\" class=\"btn btn-sm btn-outline-secondary btn-copiar-url\" data-url=\"{$urlVivo}\" title=\"Copiar enlace de transmisión en vivo\"><i class=\"bi bi-link-45deg\"></i></button>";
 
     $botonDescargar = '';
+    $botonImagen = '';
     if ($jugado) {
         $urlDescargar = e(url_copa('partido.php?id=' . $id . '&imprimir=1'));
         $botonDescargar = "<a href=\"{$urlDescargar}\" target=\"_blank\" class=\"btn btn-sm btn-outline-secondary\" title=\"Descargar ficha en PDF\"><i class=\"bi bi-download\"></i></a>";
+        // Imagen del marcador lista para Instagram/WhatsApp (ver partido_imagen.php)
+        $urlImagen = e(url_copa('partido_imagen.php?id=' . $id));
+        $botonImagen = "<a href=\"{$urlImagen}\" target=\"_blank\" class=\"btn btn-sm btn-outline-secondary\" title=\"Imagen del resultado para compartir\"><i class=\"bi bi-image\"></i></a>";
     }
 
     // Interruptor rápido para marcar jugado/programado sin abrir el formulario completo
@@ -199,6 +203,7 @@ HTML;
                 {$botonVivo}
                 {$botonCopiarVivo}
                 {$botonDescargar}
+                {$botonImagen}
                 <a href="{$urlEditar}" class="btn btn-sm btn-outline-secondary">{$botonEditar}</a>
                 <form method="post" data-confirm="¿Eliminar este encuentro?">
                     <input type="hidden" name="csrf_token" value="{$csrf}">

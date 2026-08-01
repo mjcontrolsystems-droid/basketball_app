@@ -69,8 +69,38 @@ if (!headers_sent()) {
 
 // Evita filtrar detalles internos (rutas, credenciales de conexión, stack traces) a los visitantes
 ini_set('display_errors', '0');
+
+/**
+ * Monitoreo de errores sin dependencias: si la variable de entorno ERROR_WEBHOOK_URL
+ * está configurada (un webhook de Discord o Slack sirve tal cual), cada error fatal de
+ * producción se avisa ahí en el momento — sin esperar a que lo reporte un cliente.
+ * Si no está configurada, no hace nada (el error igual queda en el log del servidor).
+ */
+function notificar_error_webhook(Throwable $e): void
+{
+    $webhook = getenv('ERROR_WEBHOOK_URL') ?: '';
+    if ($webhook === '' || !function_exists('curl_init')) {
+        return;
+    }
+    // Formato compatible con Discord ("content") y Slack ("text") a la vez.
+    $mensaje = '⚠️ Error en la plataforma: ' . $e->getMessage()
+        . "\nArchivo: " . basename($e->getFile()) . ':' . $e->getLine()
+        . "\nURL: " . (($_SERVER['REQUEST_METHOD'] ?? '') . ' ' . ($_SERVER['REQUEST_URI'] ?? 'cli'));
+    $ch = curl_init($webhook);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 3,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode(['content' => $mensaje, 'text' => $mensaje]),
+    ]);
+    @curl_exec($ch);
+    curl_close($ch);
+}
+
 set_exception_handler(function (Throwable $e): void {
     error_log($e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+    notificar_error_webhook($e);
     if (!headers_sent()) {
         http_response_code(500);
     }

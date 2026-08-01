@@ -47,3 +47,19 @@ if ($torneo === null) {
     <?php
     exit;
 }
+
+// Estadística de visitas del sitio público de la copa: se suma una visita por sesión de
+// navegador por día (no por página vista, para no inflar el número recargando). Solo un
+// contador agregado por día — no se guarda IP ni ningún dato identificable del visitante.
+// El propio organizador logueado no cuenta como visita de su copa.
+$visitaClave = 'visita_' . (int) $torneo['id'] . '_' . date('Y-m-d');
+if (empty($_SESSION[$visitaClave]) && empty($_SESSION['usuario_autenticado'])) {
+    $_SESSION[$visitaClave] = true;
+    try {
+        visitas_registrar((int) $torneo['id']);
+    } catch (Throwable $e) {
+        // La estadística nunca debe tumbar el sitio público (p. ej. si la tabla
+        // visitas_diarias todavía no existe porque no se corrió la migración).
+        error_log('visitas_registrar: ' . $e->getMessage());
+    }
+}

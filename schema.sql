@@ -216,6 +216,11 @@ CREATE TABLE IF NOT EXISTS correos_autorizados (
     email TEXT UNIQUE NOT NULL,
     creado_en TIMESTAMP NOT NULL DEFAULT now()
 );
+-- Cuántas copas o ligas puede tener creadas ese correo (modelo de cobro por torneo: el
+-- super-admin autoriza cupos conforme el organizador va pagando). DEFAULT 1 para que un
+-- correo recién autorizado pueda crear su primer torneo sin configurar nada extra.
+-- Los super-admin (SUPERADMIN_EMAILS) no tienen límite, ver usuario_limite_torneos().
+ALTER TABLE correos_autorizados ADD COLUMN IF NOT EXISTS limite_torneos INTEGER NOT NULL DEFAULT 1;
 
 -- Rate-limit de registro de cuentas nuevas, mismo patrón que intentos_login pero en su propia
 -- tabla para no arriesgar el límite de login que ya funciona en producción.
@@ -225,6 +230,26 @@ CREATE TABLE IF NOT EXISTS intentos_registro (
     intentado_en TIMESTAMP NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_intentos_registro_ip_fecha ON intentos_registro (ip, intentado_en);
+
+-- Tokens de "olvidé mi contraseña". Se guarda el hash SHA-256 del token (nunca el token
+-- en claro), vence en 1 hora y se borra al usarse. Un token vigente por cuenta.
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    token_hash TEXT UNIQUE NOT NULL,
+    expira_en TIMESTAMPTZ NOT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- Visitas al sitio público de cada copa, agregadas por día (no se guarda IP ni nada
+-- identificable: solo un contador). Alimenta el dashboard del organizador para que
+-- pueda ver cuánta gente sigue su torneo.
+CREATE TABLE IF NOT EXISTS visitas_diarias (
+    torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    visitas INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (torneo_id, fecha)
+);
 
 -- Rate-limit de búsquedas por código de copa (evita fuerza bruta/scraping del formulario).
 CREATE TABLE IF NOT EXISTS intentos_codigo (

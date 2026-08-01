@@ -73,9 +73,12 @@ $flash = obtener_flash();
                 <label class="form-label small fw-semibold">Usuario</label>
                 <input type="text" name="usuario" class="form-control form-control-lg" value="<?= e($_POST['usuario'] ?? '') ?>" autofocus required>
             </div>
-            <div class="mb-4">
+            <div class="mb-2">
                 <label class="form-label small fw-semibold">Contraseña</label>
                 <input type="password" name="password" class="form-control form-control-lg" required>
+            </div>
+            <div class="text-end mb-4">
+                <a href="<?= url('olvide_password.php') ?>" class="small text-muted text-decoration-none">¿Olvidaste tu contraseña?</a>
             </div>
             <button type="submit" class="btn btn-degradado btn-lg w-100 rounded-pill">Ingresar</button>
         </form>

@@ -54,6 +54,17 @@ foreach ($equipos as $eq) { $equiposPorId[$eq['id']] = $eq; }
     </div>
 </div>
 
+<?php $visitas = visitas_resumen($torneo['id']); ?>
+<div class="card-suave p-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center gap-3 gap-md-4">
+        <span class="small fw-semibold text-muted text-uppercase"><i class="bi bi-eye me-1"></i>Visitas al sitio público</span>
+        <span class="small">Hoy: <strong class="fs-6"><?= $visitas['hoy'] ?></strong></span>
+        <span class="small">Últimos 7 días: <strong class="fs-6"><?= $visitas['semana'] ?></strong></span>
+        <span class="small">Total: <strong class="fs-6"><?= $visitas['total'] ?></strong></span>
+        <span class="small text-muted ms-auto d-none d-md-inline">Se cuenta una visita por persona por día.</span>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="card-suave p-4">

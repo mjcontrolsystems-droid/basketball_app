@@ -175,20 +175,24 @@ require __DIR__ . '/includes/admin_layout_top.php';
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
         <?php foreach ($equipos as $eq): ?>
         <div class="col">
-            <div class="card-suave p-3 d-flex flex-row align-items-center gap-3">
-                <?= logo_equipo($eq, 56) ?>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold"><?= e($eq['nombre']) ?></div>
-                    <div class="small text-muted"><?= e($eq['ciudad']) ?> · <?= e($eq['entrenador']) ?></div>
+            <div class="card-suave p-3">
+                <div class="d-flex flex-row align-items-center gap-3 mb-2">
+                    <?= logo_equipo($eq, 56) ?>
+                    <div class="flex-grow-1" style="min-width:0;">
+                        <div class="fw-semibold text-truncate"><?= e($eq['nombre']) ?></div>
+                        <div class="small text-muted text-truncate"><?= e($eq['ciudad']) ?><?= $eq['entrenador'] !== '' ? ' · ' . e($eq['entrenador']) : '' ?></div>
+                    </div>
                 </div>
-                <div class="d-flex flex-column gap-1">
-                    <a href="<?= url('admin/jugadores.php?equipo_id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary" title="<?= e(forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras')) ?>"><i class="bi bi-people"></i></a>
-                    <a href="<?= url('admin/equipos.php?accion=editar&id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                <div class="d-flex gap-1 flex-wrap">
+                    <?php // Botón con texto y no solo icono: la plantilla es el paso natural
+                          // después de crear el equipo, no debe quedar escondida. ?>
+                    <a href="<?= url('admin/jugadores.php?equipo_id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-people me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras')) ?></a>
+                    <a href="<?= url('admin/equipos.php?accion=editar&id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary" title="Editar equipo"><i class="bi bi-pencil"></i></a>
                     <form method="post" data-confirm="¿Eliminar a <?= e($eq['nombre']) ?>? Esta acción no se puede deshacer.">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="id" value="<?= $eq['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar equipo"><i class="bi bi-trash"></i></button>
                     </form>
                 </div>
             </div>

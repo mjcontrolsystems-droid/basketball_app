@@ -30,7 +30,26 @@ function nav_activa(string $clave, string $activa): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($titulo_pagina) ?></title>
-    <meta name="description" content="<?= e($torneo['descripcion'] ?? '') ?>">
+    <meta name="description" content="<?= e($torneo['descripcion'] ?? 'Plataforma de copas y ligas deportivas: tabla de posiciones, calendario y resultados en vivo.') ?>">
+
+    <?php
+    // Open Graph + Twitter Card: al compartir el enlace por WhatsApp, Instagram o
+    // redes, se muestra una tarjeta con el nombre de la copa, descripción y logo en
+    // vez de un link pelón — la primera impresión del torneo empieza en el chat.
+    $ogImagen = !empty($torneo['logo']) ? SITE_ORIGIN . url_imagen((string) $torneo['logo']) : SITE_ORIGIN . url('assets/img/logo.png');
+    ?>
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= e($torneo['nombre'] ?? 'Plataforma de Copas y Ligas') ?>">
+    <meta property="og:title" content="<?= e($titulo_pagina) ?>">
+    <meta property="og:description" content="<?= e($torneo['descripcion'] ?? 'Tabla de posiciones, calendario y resultados.') ?>">
+    <meta property="og:image" content="<?= e($ogImagen) ?>">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<?= e($titulo_pagina) ?>">
+    <meta name="twitter:description" content="<?= e($torneo['descripcion'] ?? 'Tabla de posiciones, calendario y resultados.') ?>">
+    <meta name="twitter:image" content="<?= e($ogImagen) ?>">
+
+    <?php // La barra del navegador móvil toma el color de la copa (detalle de app nativa) ?>
+    <meta name="theme-color" content="<?= e(color_hex_valido($torneo['color_primario'] ?? null, '#475569')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">

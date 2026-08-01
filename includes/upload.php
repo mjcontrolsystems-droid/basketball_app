@@ -42,6 +42,15 @@ function manejar_subida_imagen(string $campo, string $subcarpeta = ''): ?string
         throw new RuntimeException('No se pudo leer la imagen subida. Intenta de nuevo.');
     }
 
+    // Optimización: las fotos de celular llegan de 3-10MB y aquí se sirven como logos de
+    // menos de 200px — redimensionar al subir hace el sitio mucho más rápido en datos
+    // móviles y ahorra espacio en la base. Si GD no está disponible o la imagen no se
+    // puede procesar, se guarda la original tal cual (nunca se bloquea la subida por esto).
+    $optimizada = optimizar_imagen($datosImagen, $tipoDetectado);
+    if ($optimizada !== null) {
+        [$datosImagen, $tipoDetectado] = $optimizada;
+    }
+
     $pdo = db_conexion();
     $stmt = $pdo->prepare('INSERT INTO imagenes (mime, datos) VALUES (:mime, :datos) RETURNING id');
     $stmt->bindValue(':mime', $tipoDetectado, PDO::PARAM_STR);
@@ -50,6 +59,69 @@ function manejar_subida_imagen(string $campo, string $subcarpeta = ''): ?string
 
     $id = $stmt->fetchColumn();
     return $id !== false ? (string) $id : null;
+}
+
+// Lado máximo tras optimizar: suficiente para el uso más grande del sitio (logo del
+// equipo en su página, foto del organizador) manteniendo el archivo pequeño.
+const IMAGEN_LADO_MAXIMO = 1000;
+
+/**
+ * Redimensiona (si hace falta) y recomprime una imagen subida. Devuelve [datos, mime]
+ * o null si no se pudo/necesitó procesar (GD ausente, imagen corrupta, o ya pequeña y
+ * más liviana que la versión reprocesada).
+ *
+ * @return array{0:string,1:string}|null
+ */
+function optimizar_imagen(string $datos, string $mime): ?array
+{
+    if (!function_exists('imagecreatefromstring')) {
+        return null;
+    }
+
+    $origen = @imagecreatefromstring($datos);
+    if ($origen === false) {
+        return null;
+    }
+
+    $ancho = imagesx($origen);
+    $alto = imagesy($origen);
+    $ladoMayor = max($ancho, $alto);
+
+    if ($ladoMayor > IMAGEN_LADO_MAXIMO) {
+        $factor = IMAGEN_LADO_MAXIMO / $ladoMayor;
+        $nuevoAncho = max(1, (int) round($ancho * $factor));
+        $nuevoAlto = max(1, (int) round($alto * $factor));
+        $reducida = imagecreatetruecolor($nuevoAncho, $nuevoAlto);
+        // Conservar transparencia de PNG/WEBP (logos con fondo transparente)
+        imagealphablending($reducida, false);
+        imagesavealpha($reducida, true);
+        imagecopyresampled($reducida, $origen, 0, 0, 0, 0, $nuevoAncho, $nuevoAlto, $ancho, $alto);
+        imagedestroy($origen);
+        $origen = $reducida;
+    }
+
+    ob_start();
+    if ($mime === 'image/jpeg') {
+        imagejpeg($origen, null, 84);
+    } elseif ($mime === 'image/webp' && function_exists('imagewebp')) {
+        imagewebp($origen, null, 82);
+    } else {
+        // PNG (o WEBP sin soporte de reencodeo): PNG conserva transparencia
+        imagepng($origen, null, 8);
+        $mime = 'image/png';
+    }
+    $resultado = ob_get_clean();
+    imagedestroy($origen);
+
+    if ($resultado === false || $resultado === '') {
+        return null;
+    }
+    // Si la "optimizada" quedó más pesada que la original (pasa con PNGs ya comprimidos
+    // que no había que redimensionar), mejor conservar la original.
+    if (strlen($resultado) >= strlen($datos) && $ladoMayor <= IMAGEN_LADO_MAXIMO) {
+        return null;
+    }
+    return [$resultado, $mime];
 }
 
 /**

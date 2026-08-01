@@ -9,6 +9,10 @@ require_once __DIR__ . '/../../includes/helpers.php';
 auth_requerir();
 $usuarioIdSesion = (int) $_SESSION['usuario_id'];
 
+// Migraciones automáticas de la base (idempotentes, una vez por sesión): mantienen el
+// esquema al día sin necesidad de correr scripts a mano en el servidor.
+db_migrar_automatico();
+
 // Copa activa, solo para mostrarla en el sidebar (las páginas que de verdad la necesitan
 // la exigen ellas mismas con admin_requerir_torneo_activo() antes de llegar aquí).
 $torneoActivoId = $_SESSION['torneo_activo_id'] ?? null;

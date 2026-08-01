@@ -1,0 +1,12 @@
+# Los buscadores pueden indexar el sitio publico de cada copa (tabla, calendario,
+# equipos), pero no el panel de administracion ni las rutas de autenticacion.
+User-agent: *
+Disallow: /admin/
+Disallow: /login.php
+Disallow: /registro.php
+Disallow: /logout.php
+Disallow: /google_iniciar.php
+Disallow: /google_callback.php
+Disallow: /olvide_password.php
+Disallow: /restablecer_password.php
+Allow: /

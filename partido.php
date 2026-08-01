@@ -97,8 +97,11 @@ require __DIR__ . '/includes/layout_top.php';
             <?php if (!empty($partido['arbitro'])): ?> · <i class="bi bi-person-badge me-1"></i>Árbitro: <?= e($partido['arbitro']) ?><?php endif; ?>
         </p>
         <?php if ($hayFicha): ?>
-        <div class="text-center mt-3">
+        <div class="text-center mt-3 d-flex justify-content-center gap-2 flex-wrap">
             <button type="button" class="btn btn-outline-luz btn-sm rounded-pill px-3 btn-imprimir-pdf"><i class="bi bi-download me-1"></i>Descargar PDF</button>
+            <?php if ($jugado): ?>
+            <a href="<?= url_copa('partido_imagen.php?id=' . $id) ?>" class="btn btn-outline-luz btn-sm rounded-pill px-3"><i class="bi bi-image me-1"></i>Imagen para compartir</a>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>

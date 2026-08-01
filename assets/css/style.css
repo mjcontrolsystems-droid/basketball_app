@@ -445,19 +445,35 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     padding: 1.1rem 1.2rem;
 }
 
-.partido-card .equipo-col {
+/* Columna de equipo (logo + nombre) de una tarjeta de encuentro. Se define suelta y no
+   solo bajo .partido-card porque el panel admin reutiliza la misma estructura dentro de
+   .card-suave (ver admin_tarjeta_partido() en includes/helpers.php): sin esta regla,
+   en el teléfono el logo y el nombre no se centraban ni se encogían, y la fila
+   equipo-marcador-equipo se salía de la tarjeta en la pantalla de Encuentros.
+   min-width:0 es lo que permite que un nombre largo encoja en vez de empujar la fila. */
+.equipo-col {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: .4rem;
-    width: 40%;
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
 }
 
-.partido-card .equipo-col .nombre {
+.equipo-col .nombre {
     font-weight: 700;
     font-size: .88rem;
-    line-height: 1.1;
+    line-height: 1.15;
+    /* Nombres de equipo largos o sin espacios no deben romper el ancho de la tarjeta */
+    overflow-wrap: anywhere;
+}
+
+/* El sitio público ya tenía su proporción propia (40% por equipo); se conserva tal cual
+   para no alterar un diseño que ya se veía bien. */
+.partido-card .equipo-col {
+    flex: 0 1 auto;
+    width: 40%;
 }
 
 .partido-card .marcador {
@@ -703,8 +719,43 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 }
 
 @media (max-width: 767.98px) {
-    .partido-card .equipo-col .nombre { font-size: .78rem; }
+    .equipo-col .nombre { font-size: .78rem; }
     .hero-copa { padding-top: 6rem; }
+
+    /* Panel admin en teléfono ------------------------------------------------
+       El panel se usa desde la cancha (cargar goles, cambios y marcador en vivo),
+       así que en pantallas angostas hay que evitar cualquier desborde horizontal. */
+
+    /* Red de seguridad global: aunque algún elemento puntual se pase de ancho,
+       la página nunca desarrolla scroll lateral (el desborde se recorta y el
+       contenido problemático se trunca dentro de su tarjeta). */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+
+    /* Los <code> con URLs o códigos nunca fuerzan el ancho de su contenedor */
+    code { overflow-wrap: anywhere; }
+
+    /* Ninguna tarjeta ni imagen debe empujar el ancho de la página */
+    .card-suave { overflow-wrap: anywhere; }
+    .card-suave img { max-width: 100%; }
+
+    /* Las pestañas de fases (Grupos, Cuartos, Semifinal...) y cualquier fila de
+       pills se acomodan en varias líneas en vez de salirse a la derecha. */
+    .nav-pills { flex-wrap: wrap; gap: .35rem; }
+
+    /* Marcador en vivo de la ficha de eventos: los escudos se encogen y el
+       resultado deja de ser display-6 para que quepan los 3 bloques en una línea. */
+    .marcador-ficha .display-6 { font-size: 1.9rem; }
+
+    /* Los grupos de botones de cada encuentro (Eventos, En vivo, PDF, editar,
+       borrar) se envuelven en vez de desbordar la tarjeta. */
+    .card-suave .d-flex.gap-1,
+    .card-suave .d-flex.gap-2 { flex-wrap: wrap; }
+}
+
+/* Las tablas del panel admin conservan scroll horizontal propio dentro de su tarjeta
+   (Bootstrap ya lo hace con .table-responsive) en vez de estirar toda la página. */
+@media (max-width: 575.98px) {
+    .table-responsive { -webkit-overflow-scrolling: touch; }
 }
 
 /* Ficha de partido descargable en PDF (partido.php): usa window.print() del

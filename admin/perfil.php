@@ -43,6 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/perfil.php'), 'error', 'Ese correo ya está en uso por otra cuenta.');
         }
 
+        // El rol de super-admin se define por correo (SUPERADMIN_EMAILS), así que dejar
+        // que cualquiera escriba aquí uno de esos correos equivaldría a dejarle otorgarse
+        // el rol (y el control de la lista blanca y los cupos) a sí mismo. Solo se permite
+        // si la cuenta YA es super-admin (está corrigiendo mayúsculas o similar).
+        $emailAnterior = usuarios_obtener_por_id((int) $organizador['id'])['email'] ?? '';
+        $nuevoEsSuperadmin = in_array(mb_strtolower($organizador['email']), SUPERADMIN_EMAILS, true);
+        $yaEraSuperadmin = in_array(mb_strtolower($emailAnterior), SUPERADMIN_EMAILS, true);
+        if ($nuevoEsSuperadmin && !$yaEraSuperadmin) {
+            redirigir_con_mensaje(url('admin/perfil.php'), 'error', 'Ese correo está reservado y no puede asignarse a esta cuenta.');
+        }
+
         usuarios_guardar($organizador);
         redirigir_con_mensaje(url('admin/perfil.php'), 'success', 'Perfil actualizado correctamente.');
     }

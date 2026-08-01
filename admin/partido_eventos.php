@@ -249,7 +249,7 @@ require __DIR__ . '/includes/admin_layout_top.php';
     <a href="<?= url('admin/partidos.php') ?>" class="btn btn-sm btn-degradado rounded-pill px-3"><i class="bi bi-check2-circle me-1"></i>Guardar y volver a Encuentros</a>
 </div>
 
-<div class="card-suave p-3 mb-4">
+<div class="card-suave p-3 mb-4 marcador-ficha">
     <div class="d-flex align-items-center justify-content-center gap-3 gap-md-4 flex-wrap">
         <div class="text-center" style="min-width:120px;">
             <?= logo_equipo($equipoLocal ?? ['nombre' => '?'], 44) ?>

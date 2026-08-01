@@ -6,11 +6,25 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/upload.php';
 require_once __DIR__ . '/../includes/tabla.php';
+require_once __DIR__ . '/../includes/usuarios.php';
 
 auth_requerir();
 $usuarioId = (int) $_SESSION['usuario_id'];
 
+// Cupo de copas/ligas del organizador (modelo de cobro por torneo). Los super-admin no
+// tienen límite; el resto depende de lo que se les haya autorizado en su correo.
+$usuarioSesion = usuarios_obtener_por_id($usuarioId);
+$limiteTorneos = usuario_limite_torneos($usuarioSesion);
+$torneosCreados = torneos_contar_por_usuario($usuarioId);
+$puedeCrearTorneo = $limiteTorneos === null || $torneosCreados < $limiteTorneos;
+
 $accion = $_GET['accion'] ?? 'lista';
+
+// Sin cupo disponible no se abre siquiera el formulario de "Nueva copa o liga": se avisa
+// desde el listado en vez de dejar llenar todo el formulario para fallar al guardar.
+if ($accion === 'nuevo' && !$puedeCrearTorneo) {
+    redirigir_con_mensaje(url('admin/torneos.php'), 'error', mensaje_limite_torneos($limiteTorneos));
+}
 
 // Cambiar de copa activa (no necesita CSRF: es solo un cambio de contexto, no una escritura de datos)
 if ($accion === 'entrar' && isset($_GET['id'])) {
@@ -44,6 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
     if ($id > 0 && torneos_obtener_por_id($id, $usuarioId) === null) {
         http_response_code(403);
         exit('No tienes permiso para editar esta copa o liga.');
+    }
+    // Segunda barrera del cupo: el bloqueo de arriba solo cubre abrir el formulario, así
+    // que un POST directo (o una pestaña abierta desde antes de que se agotara el cupo)
+    // todavía podría crear una copa de más. Editar una existente no consume cupo nuevo.
+    if ($id === 0 && !$puedeCrearTorneo) {
+        redirigir_con_mensaje(url('admin/torneos.php'), 'error', mensaje_limite_torneos($limiteTorneos));
     }
     $nombre = trim((string) $_POST['nombre']);
     $slug = torneos_slugificar((string) ($_POST['slug'] ?: $nombre));
@@ -313,9 +333,30 @@ require __DIR__ . '/includes/admin_layout_top.php';
 <?php else: ?>
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Mis Copas y Ligas (<?= count($torneos) ?>)</h3>
+        <div>
+            <h3 class="mb-0">Mis Copas y Ligas (<?= count($torneos) ?>)</h3>
+            <?php if ($limiteTorneos !== null): ?>
+            <p class="text-muted small mb-0 mt-1">
+                <i class="bi bi-ticket-perforated me-1"></i>Usas <?= $torneosCreados ?> de <?= $limiteTorneos ?> <?= $limiteTorneos === 1 ? 'copa o liga autorizada' : 'copas o ligas autorizadas' ?>.
+            </p>
+            <?php endif; ?>
+        </div>
+        <?php if ($puedeCrearTorneo): ?>
         <a href="<?= url('admin/torneos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nueva copa o liga</a>
+        <?php else: ?>
+        <button type="button" class="btn btn-degradado rounded-pill px-3 disabled" disabled title="<?= e(mensaje_limite_torneos($limiteTorneos)) ?>"><i class="bi bi-lock me-1"></i>Nueva copa o liga</button>
+        <?php endif; ?>
     </div>
+
+    <?php if (!$puedeCrearTorneo): ?>
+    <div class="alert alert-warning rounded-4 border-0 shadow-sm d-flex align-items-start gap-2">
+        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+        <div>
+            <div class="fw-semibold">Sin cupo disponible</div>
+            <div class="small"><?= e(mensaje_limite_torneos($limiteTorneos)) ?></div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
         <?php foreach ($torneos as $t): ?>
@@ -328,9 +369,13 @@ require __DIR__ . '/includes/admin_layout_top.php';
                     <?php if ($t['es_predeterminado']): ?><span class="badge rounded-pill text-bg-warning small">Predeterminada</span><?php endif; ?>
                 </div>
                 <div class="fw-semibold mb-1"><?= e($t['nombre']) ?></div>
+                <?php // min-width:0 en el <code> es lo que permite que la URL larga se
+                      // trunque con "..." dentro de la tarjeta: sin él, un flex item no
+                      // encoge por debajo de su contenido y la URL empujaba el ancho de
+                      // toda la página en el teléfono (se veía cortada y con scroll lateral). ?>
                 <div class="d-flex align-items-center gap-1 mb-1">
-                    <code class="small text-truncate" style="max-width:100%;"><?= e(url_copa_de($t)) ?></code>
-                    <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-copiar-url" data-url="<?= e(url_copa_de($t)) ?>" title="Copiar enlace"><i class="bi bi-clipboard"></i></button>
+                    <code class="small text-truncate flex-grow-1" style="min-width:0;"><?= e(url_copa_de($t)) ?></code>
+                    <button type="button" class="btn btn-sm btn-link p-0 ms-1 flex-shrink-0 btn-copiar-url" data-url="<?= e(url_copa_de($t)) ?>" title="Copiar enlace"><i class="bi bi-clipboard"></i></button>
                 </div>
                 <div class="d-flex align-items-center gap-1 mb-3">
                     <span class="small text-muted">Código:</span>

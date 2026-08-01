@@ -367,6 +367,106 @@ function torneos_listar(bool $soloActivos = true, ?int $usuarioId = null): array
     return array_map('db_normalizar_torneo', $stmt->fetchAll());
 }
 
+/**
+ * Migraciones automáticas: crea las tablas/columnas nuevas si aún no existen. Todas las
+ * instrucciones son idempotentes (IF NOT EXISTS), así que correrlas de más no daña nada.
+ *
+ * Se ejecuta una vez por sesión del panel admin (ver admin_layout_top.php): evita el
+ * paso manual de "corre el script de migración en el servidor", que en un hosting sin
+ * acceso a terminal (como el plan gratuito de Render) es difícil de hacer.
+ */
+function db_migrar_automatico(): void
+{
+    if (!empty($_SESSION['migraciones_ok'])) {
+        return;
+    }
+    try {
+        $pdo = db_conexion();
+        $pdo->exec('ALTER TABLE correos_autorizados ADD COLUMN IF NOT EXISTS limite_torneos INTEGER NOT NULL DEFAULT 1');
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS password_resets (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                token_hash TEXT UNIQUE NOT NULL,
+                expira_en TIMESTAMPTZ NOT NULL,
+                creado_en TIMESTAMP NOT NULL DEFAULT now()
+            )'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS visitas_diarias (
+                torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+                fecha DATE NOT NULL,
+                visitas INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (torneo_id, fecha)
+            )'
+        );
+        $_SESSION['migraciones_ok'] = true;
+    } catch (Throwable $e) {
+        // No bloquear el panel por esto: las funciones que dependen de estas tablas ya
+        // tienen sus propias redes de seguridad. Se reintentará en la próxima sesión.
+        error_log('db_migrar_automatico: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Suma una visita de hoy al sitio público de la copa (contador agregado por día).
+ */
+function visitas_registrar(int $torneoId): void
+{
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare(
+        'INSERT INTO visitas_diarias (torneo_id, fecha, visitas) VALUES (:torneo_id, CURRENT_DATE, 1)
+         ON CONFLICT (torneo_id, fecha) DO UPDATE SET visitas = visitas_diarias.visitas + 1'
+    );
+    $stmt->bindValue(':torneo_id', $torneoId, PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+/**
+ * Resumen de visitas de una copa para el dashboard del organizador:
+ * hoy, últimos 7 días y total histórico.
+ *
+ * @return array{hoy:int, semana:int, total:int}
+ */
+function visitas_resumen(int $torneoId): array
+{
+    try {
+        $pdo = db_conexion();
+        $stmt = $pdo->prepare(
+            "SELECT
+                COALESCE(SUM(visitas) FILTER (WHERE fecha = CURRENT_DATE), 0) AS hoy,
+                COALESCE(SUM(visitas) FILTER (WHERE fecha > CURRENT_DATE - 7), 0) AS semana,
+                COALESCE(SUM(visitas), 0) AS total
+             FROM visitas_diarias WHERE torneo_id = :torneo_id"
+        );
+        $stmt->bindValue(':torneo_id', $torneoId, PDO::PARAM_INT);
+        $stmt->execute();
+        $fila = $stmt->fetch();
+        return [
+            'hoy' => (int) ($fila['hoy'] ?? 0),
+            'semana' => (int) ($fila['semana'] ?? 0),
+            'total' => (int) ($fila['total'] ?? 0),
+        ];
+    } catch (Throwable $e) {
+        // Sin la tabla (migración pendiente) el dashboard muestra ceros en vez de caerse.
+        return ['hoy' => 0, 'semana' => 0, 'total' => 0];
+    }
+}
+
+/**
+ * Cuántas copas o ligas tiene creadas este usuario ahora mismo. Lo usa el control de cupo
+ * por usuario (ver usuario_puede_crear_torneo() en includes/usuarios.php). Cuenta también
+ * las inactivas: siguen ocupando un lugar mientras no se borren.
+ */
+function torneos_contar_por_usuario(int $usuarioId): int
+{
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM torneos WHERE usuario_id = :usuario_id');
+    $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
+    $stmt->execute();
+    return (int) $stmt->fetchColumn();
+}
+
 function torneos_obtener_por_slug(string $slug): ?array
 {
     $pdo = db_conexion();

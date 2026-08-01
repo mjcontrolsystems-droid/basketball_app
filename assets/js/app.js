@@ -41,6 +41,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Ficha de eventos del partido (admin/partido_eventos.php): cada select de
     // jugador solo debe mostrar la plantilla del equipo elegido en el mismo
     // formulario, para no mezclar jugadores de ambos equipos al cargar un evento.
+    //
+    // Las opciones que no corresponden se QUITAN del DOM en vez de marcarlas con
+    // option.hidden: Safari (iPhone/iPad) ignora tanto `hidden` como `display:none`
+    // en un <option>, así que con el método anterior el organizador seguía viendo
+    // -y podía elegir- jugadores del equipo contrario desde el teléfono. Se guarda
+    // la lista completa aparte para poder restaurarla al cambiar de equipo.
     document.querySelectorAll('form').forEach(function (form) {
         var equipoSelect = form.querySelector('select[name="equipo_id"]');
         var jugadorSelects = form.querySelectorAll('select[data-filtra-jugador]');
@@ -48,14 +54,24 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        var opcionesPorSelect = [];
+        Array.prototype.forEach.call(jugadorSelects, function (select) {
+            opcionesPorSelect.push(Array.prototype.slice.call(select.options));
+        });
+
         var actualizarJugadores = function () {
             var equipoId = equipoSelect.value;
-            jugadorSelects.forEach(function (select) {
-                Array.prototype.forEach.call(select.options, function (opcion) {
-                    if (opcion.value === '') {
-                        return;
+            Array.prototype.forEach.call(jugadorSelects, function (select, i) {
+                var todas = opcionesPorSelect[i];
+                while (select.firstChild) {
+                    select.removeChild(select.firstChild);
+                }
+                todas.forEach(function (opcion) {
+                    // El placeholder ("Jugador que anota...", "Sin asistencia") no
+                    // pertenece a ningún equipo y siempre debe seguir disponible.
+                    if (opcion.value === '' || opcion.getAttribute('data-equipo') === equipoId) {
+                        select.appendChild(opcion);
                     }
-                    opcion.hidden = opcion.getAttribute('data-equipo') !== equipoId;
                 });
                 select.value = '';
             });
