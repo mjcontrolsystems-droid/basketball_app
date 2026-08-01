@@ -4,19 +4,20 @@
    ========================================================= */
 
 :root {
-    /* Estos son solo el respaldo para el primer instante de carga (antes de que
-       torneo_variables_css() los sobreescriba): neutros, no rosa/morado fijo, para
-       que nunca se vea la marca de Copa Estrellas en una copa o página genérica. */
-    --color-primario: #475569;
-    --color-primario-oscuro: #2e3744;
-    --color-secundario: #64748b;
-    --color-acento: #94a3b8;
-    --color-rosa: #94a3b8;
-    --color-primario-rgb: 71, 85, 105;
-    --color-primario-oscuro-rgb: 46, 55, 68;
-    --color-secundario-rgb: 100, 116, 139;
-    --color-acento-rgb: 148, 163, 184;
-    --color-rosa-rgb: 148, 163, 184;
+    /* Respaldo para el primer instante de carga (antes de que torneo_variables_css()
+       los sobreescriba): la paleta VIBRANTE de la marca (morado -> naranja del logo),
+       en sintonía con lo que inyecta el PHP para el contexto genérico. Cada copa
+       activa sigue sobreescribiendo esto con sus propios colores. */
+    --color-primario: #7b2ff7;
+    --color-primario-oscuro: #501fa0;
+    --color-secundario: #ff6b35;
+    --color-acento: #ffc93c;
+    --color-rosa: #ffc93c;
+    --color-primario-rgb: 123, 47, 247;
+    --color-primario-oscuro-rgb: 80, 31, 160;
+    --color-secundario-rgb: 255, 107, 53;
+    --color-acento-rgb: 255, 201, 60;
+    --color-rosa-rgb: 255, 201, 60;
     --color-noche: #120a24;
     --color-noche-2: #1c0f38;
     --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

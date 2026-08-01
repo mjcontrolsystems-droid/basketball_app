@@ -387,9 +387,14 @@ function color_hex_a_rgb(string $hex): string
  */
 function torneo_variables_css(?array $torneo): string
 {
-    $primario = color_hex_valido($torneo['color_primario'] ?? null, '#475569');
-    $secundario = color_hex_valido($torneo['color_secundario'] ?? null, '#64748b');
-    $acento = color_hex_valido($torneo['color_acento'] ?? null, '#94a3b8');
+    // Contexto genérico (portada, login, listado de copas — sin copa activa): usa la
+    // paleta VIBRANTE de la marca (morado -> naranja del logo), no grises neutros. Los
+    // grises pizarra que había antes apagaban toda la primera impresión del sitio:
+    // botones, círculos de pasos y acentos se veían desteñidos. Cada copa sigue
+    // pintándose con SUS propios colores cuando está activa.
+    $primario = color_hex_valido($torneo['color_primario'] ?? null, '#7b2ff7');
+    $secundario = color_hex_valido($torneo['color_secundario'] ?? null, '#ff6b35');
+    $acento = color_hex_valido($torneo['color_acento'] ?? null, '#ffc93c');
     $oscuro = color_oscurecer($primario, 0.35);
 
     $variables = [
