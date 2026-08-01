@@ -45,6 +45,15 @@ usort($eventos, fn($a, $b) => ((int) ($a['id'] ?? 0)) <=> ((int) ($b['id'] ?? 0)
     $deporte
 );
 
+// Partidos históricos: si no hay eventos cargados (0-0) pero el partido ya tenía un
+// marcador capturado antes del modelo de eventos, se muestra ese marcador en vez de
+// pisarlo con 0-0 (misma protección que marcador_jugado_desde_eventos en liga.php).
+if ($marcadorLocal === 0 && $marcadorVisitante === 0
+    && ($partido['marcador_local'] !== null || $partido['marcador_visitante'] !== null)) {
+    $marcadorLocal = (int) $partido['marcador_local'];
+    $marcadorVisitante = (int) $partido['marcador_visitante'];
+}
+
 $eventosSalida = array_map(function (array $ev) use ($jugadoresPorId, $equiposPorId, $deporte) {
     return [
         'id' => (int) $ev['id'],
