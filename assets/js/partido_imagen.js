@@ -101,30 +101,37 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.font = '700 34px Poppins, Arial, sans-serif';
         ctx.fillText('RESULTADO FINAL', W / 2, 250);
 
-        // Logos y nombres de los equipos
-        var yLogos = 470, radio = 130;
-        var xLocal = 270, xVisit = W - 270;
+        // Logos y nombres de los equipos (fila propia, arriba); el marcador va DEBAJO en
+        // su propia línea — antes se dibujaba a la misma altura y el número gigante se
+        // encimaba sobre los logos.
+        var yLogos = 430, radio = 120;
+        var xLocal = 280, xVisit = W - 280;
         dibujarLogo(logoLocal, xLocal, yLogos, radio, d.localColor, d.localNombre);
         dibujarLogo(logoVisit, xVisit, yLogos, radio, d.visitColor, d.visitNombre);
 
-        ctx.fillStyle = '#ffffff';
-        var pxL = fuenteQueQuepa(d.localNombre, 'Poppins, Arial, sans-serif', 40, 420);
-        ctx.font = '700 ' + pxL + 'px Poppins, Arial, sans-serif';
-        ctx.fillText(d.localNombre, xLocal, yLogos + radio + 70);
-        var pxV = fuenteQueQuepa(d.visitNombre, 'Poppins, Arial, sans-serif', 40, 420);
-        ctx.font = '700 ' + pxV + 'px Poppins, Arial, sans-serif';
-        ctx.fillText(d.visitNombre, xVisit, yLogos + radio + 70);
+        // "VS" pequeño entre los logos (en su fila, sin invadirlos)
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        ctx.font = '800 44px Poppins, Arial, sans-serif';
+        ctx.fillText('VS', W / 2, yLogos + 16);
 
-        // Marcador gigante al centro
         ctx.fillStyle = '#ffffff';
-        ctx.font = '800 150px Poppins, Arial, sans-serif';
-        ctx.fillText(d.marcadorLocal + ' - ' + d.marcadorVisit, W / 2, 530);
+        var pxL = fuenteQueQuepa(d.localNombre, 'Poppins, Arial, sans-serif', 40, 440);
+        ctx.font = '700 ' + pxL + 'px Poppins, Arial, sans-serif';
+        ctx.fillText(d.localNombre, xLocal, yLogos + radio + 64);
+        var pxV = fuenteQueQuepa(d.visitNombre, 'Poppins, Arial, sans-serif', 40, 440);
+        ctx.font = '700 ' + pxV + 'px Poppins, Arial, sans-serif';
+        ctx.fillText(d.visitNombre, xVisit, yLogos + radio + 64);
+
+        // Marcador gigante en su propia línea, centrado bajo los nombres
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 170px Poppins, Arial, sans-serif';
+        ctx.fillText(d.marcadorLocal + ' - ' + d.marcadorVisit, W / 2, 830);
 
         // Fecha y cancha
         ctx.fillStyle = 'rgba(255,255,255,.6)';
         ctx.font = '500 32px Inter, Arial, sans-serif';
         var linea = d.fecha + (d.cancha ? '  ·  ' + d.cancha : '');
-        ctx.fillText(linea, W / 2, 860);
+        ctx.fillText(linea, W / 2, 930);
 
         // Pie con la marca
         ctx.fillStyle = 'rgba(255,255,255,.35)';
