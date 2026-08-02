@@ -114,6 +114,13 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
         return '';
     }
 
+    // Textos según el deporte de la copa activa: en basketball se habla de puntos y
+    // faltas, no de goles y tarjetas (mismo criterio que la ficha de eventos).
+    global $torneo;
+    $deporteCopa = $torneo['deporte'] ?? null;
+    $txtAnotaciones = mb_strtolower(etiqueta_anotaciones($deporteCopa));
+    $txtFaltas = mb_strtolower(etiqueta_faltas_leves($deporteCopa));
+
     $jugado = $p['estado'] === 'jugado';
     $fecha = e(formatear_fecha_larga($p['fecha']));
     $hora = e($p['hora']);
@@ -136,7 +143,8 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
     // árbitro/admin suele ir llenando la ficha -goles, tarjetas, cambios- a medida que
     // ocurren, no solo después de capturar el marcador final.
     $urlEventos = e(url('admin/partido_eventos.php?partido_id=' . $id));
-    $botonEventos = "<a href=\"{$urlEventos}\" class=\"btn btn-sm btn-outline-secondary\" title=\"Goles, tarjetas y cambios\"><i class=\"bi bi-clipboard-data\"></i> Eventos</a>";
+    $tituloEventos = e(ucfirst($txtAnotaciones) . ', ' . $txtFaltas . ' y cambios');
+    $botonEventos = "<a href=\"{$urlEventos}\" class=\"btn btn-sm btn-outline-secondary\" title=\"{$tituloEventos}\"><i class=\"bi bi-clipboard-data\"></i> Eventos</a>";
 
     // Enlace público de transmisión en vivo: se puede abrir en una pantalla/TV para la
     // afición (marcador grande y feed de eventos que se refresca solo) o copiar y compartir.
@@ -182,7 +190,7 @@ HTML;
     $valorLocal = $p['marcador_local'] !== null ? (int) $p['marcador_local'] : '–';
     $valorVisit = $p['marcador_visitante'] !== null ? (int) $p['marcador_visitante'] : '–';
     $marcadorDisplay = <<<HTML
-<div class="d-flex align-items-center gap-2" title="El marcador se calcula desde los goles registrados en Eventos">
+<div class="d-flex align-items-center gap-2" title="El marcador se calcula desde los {$txtAnotaciones} registrados en Eventos">
     <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorLocal}</span>
     <span class="text-muted">-</span>
     <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorVisit}</span>

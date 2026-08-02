@@ -76,12 +76,12 @@ function nav_activa(string $clave, string $activa): string
         <div class="collapse navbar-collapse" id="navPrincipal">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                 <?php if ($torneo): ?>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('inicio', $pagina_activa) ?>" href="<?= url_copa('index.php') ?>">Inicio</a></li>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('tabla', $pagina_activa) ?>" href="<?= url_copa('tabla.php') ?>">Tabla de Posiciones</a></li>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('calendario', $pagina_activa) ?>" href="<?= url_copa('calendario.php') ?>">Calendario</a></li>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('equipos', $pagina_activa) ?>" href="<?= url_copa('equipos.php') ?>">Equipos</a></li>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('patrocinadores', $pagina_activa) ?>" href="<?= url_copa('patrocinadores.php') ?>">Patrocinadores</a></li>
-                <li class="nav-item"><a class="nav-link <?= nav_activa('organizador', $pagina_activa) ?>" href="<?= url_copa('organizador.php') ?>">Organizador</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('inicio', $pagina_activa) ?>" href="<?= url_copa('index.php') ?>"><i class="bi bi-house-door me-1"></i>Inicio</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('tabla', $pagina_activa) ?>" href="<?= url_copa('tabla.php') ?>"><i class="bi bi-trophy me-1"></i>Tabla de Posiciones</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('calendario', $pagina_activa) ?>" href="<?= url_copa('calendario.php') ?>"><i class="bi bi-calendar2-week me-1"></i>Calendario</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('equipos', $pagina_activa) ?>" href="<?= url_copa('equipos.php') ?>"><i class="bi bi-people me-1"></i>Equipos</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('patrocinadores', $pagina_activa) ?>" href="<?= url_copa('patrocinadores.php') ?>"><i class="bi bi-award me-1"></i>Patrocinadores</a></li>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('organizador', $pagina_activa) ?>" href="<?= url_copa('organizador.php') ?>"><i class="bi bi-person-badge me-1"></i>Organizador</a></li>
                 <?php endif; ?>
                 <li class="nav-item ms-lg-2">
                     <button type="button" class="btn btn-outline-luz btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalCompartir">

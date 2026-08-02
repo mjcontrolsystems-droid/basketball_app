@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // marcador histórico si ya estaba capturado y todavía no hay goles que lo sustituyan.
         [$mLocal, $mVisit] = marcador_jugado_desde_eventos($torneo['id'], $partidoActual, $torneo['deporte'] ?? null);
         if ($mLocal === $mVisit && empty($torneo['permite_empates'])) {
-            redirigir_con_mensaje(url('admin/partido_eventos.php?partido_id=' . $id), 'error', 'Esta copa no permite empates: registra los goles en Eventos para definir un ganador antes de marcar el encuentro como jugado.');
+            redirigir_con_mensaje(url('admin/partido_eventos.php?partido_id=' . $id), 'error', 'Esta copa no permite empates: registra los ' . mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null)) . ' en Eventos para definir un ganador antes de marcar el encuentro como jugado.');
         }
 
         foreach ($partidos as &$p) {
@@ -107,10 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($estado === 'jugado' && $marcadorLocal === $marcadorVisitante && empty($torneo['permite_empates'])) {
+            $txtAnot = mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null));
             if ($partidoExistente !== null) {
-                $errores[] = 'Esta copa no permite empates: registra los goles en la ficha de Eventos para definir un ganador antes de marcar el encuentro como jugado.';
+                $errores[] = "Esta copa no permite empates: registra los {$txtAnot} en la ficha de Eventos para definir un ganador antes de marcar el encuentro como jugado.";
             } else {
-                $errores[] = 'Esta copa no permite empates. Guarda el encuentro como "Programado", registra los goles en Eventos y luego márcalo como jugado.';
+                $errores[] = "Esta copa no permite empates. Guarda el encuentro como \"Programado\", registra los {$txtAnot} en Eventos y luego márcalo como jugado.";
             }
         }
 
@@ -259,10 +260,10 @@ require __DIR__ . '/includes/admin_layout_top.php';
                         <?= ($partidoEditar['marcador_visitante'] ?? '') !== '' && ($partidoEditar['marcador_visitante'] ?? null) !== null ? (int) $partidoEditar['marcador_visitante'] : '–' ?>
                     </span>
                     <?php if (($partidoEditar['id'] ?? 0) > 0): ?>
-                    <a href="<?= url('admin/partido_eventos.php?partido_id=' . (int) $partidoEditar['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clipboard-data me-1"></i>Registrar goles</a>
+                    <a href="<?= url('admin/partido_eventos.php?partido_id=' . (int) $partidoEditar['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clipboard-data me-1"></i>Registrar <?= e(mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null))) ?></a>
                     <?php endif; ?>
                 </div>
-                <div class="form-text">El marcador se calcula automáticamente con los goles registrados en la ficha de Eventos.</div>
+                <div class="form-text">El marcador se calcula automáticamente con los <?= e(mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null))) ?> registrados en la ficha de Eventos.</div>
             </div>
 
             <div class="col-md-6">
