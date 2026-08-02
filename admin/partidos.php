@@ -142,6 +142,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensaje = 'Encuentro actualizado correctamente.';
             } else {
                 $datos['id'] = db_siguiente_id_global('partidos');
+                // Estado inicial del cronómetro: estas columnas son NOT NULL en la base,
+                // así que un encuentro NUEVO debe traerlas explícitas — sin esto, el
+                // INSERT fallaba con "error inesperado" al programar cualquier encuentro.
+                // En una edición no se tocan (array_merge conserva las del partido).
+                $datos['cronometro_estado'] = 'detenido';
+                $datos['cronometro_inicio'] = null;
+                $datos['cronometro_segundos'] = 0;
+                $datos['cronometro_periodo'] = 1;
                 $partidos[] = $datos;
                 $mensaje = 'Encuentro programado correctamente.';
             }

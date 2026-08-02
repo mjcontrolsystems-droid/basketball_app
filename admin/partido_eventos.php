@@ -268,7 +268,7 @@ $titulo_pagina = 'Ficha del partido';
 require __DIR__ . '/includes/admin_layout_top.php';
 ?>
 
-<div class="d-flex align-items-center gap-2 mb-4">
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
     <a href="<?= url('admin/partidos.php') ?>" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-arrow-left"></i></a>
     <div class="flex-grow-1">
         <h3 class="mb-0">Ficha del partido</h3>
