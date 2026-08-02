@@ -101,7 +101,20 @@ document.addEventListener('DOMContentLoaded', function () {
         var camposMinutoTocados = {};
 
         camposMinuto.forEach(function (campo, i) {
-            campo.addEventListener('input', function () { camposMinutoTocados[i] = true; });
+            campo.addEventListener('input', function () {
+                // Editar a mano pausa el autocompletado de ESTE campo (para poder anotar
+                // un gol que se pasó, con su minuto real)... pero no para siempre:
+                // BORRAR el número (dejarlo vacío) lo vuelve a enganchar al cronómetro.
+                camposMinutoTocados[i] = campo.value !== '';
+            });
+            // Al enviar el formulario del evento, el campo suelta el valor manual y
+            // vuelve a seguir al cronómetro para el siguiente evento — antes quedaba
+            // estancado en el número escrito hasta recargar la página.
+            if (campo.form) {
+                campo.form.addEventListener('submit', function () {
+                    camposMinutoTocados[i] = false;
+                });
+            }
         });
 
         // Siempre tiempo TRANSCURRIDO (cuenta hacia adelante desde 00:00), sin importar el
