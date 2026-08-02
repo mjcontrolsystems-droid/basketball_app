@@ -262,6 +262,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Controles que envían su formulario al cambiar (ej. el switch "Jugado" de cada
+    // encuentro). Va aquí y no en un onchange inline porque el CSP del sitio bloquea
+    // todo JavaScript dentro del HTML — el switch se veía pero no hacía nada.
+    // requestSubmit (y no submit) para que dispare el evento 'submit' y el data-confirm
+    // de reapertura de resultados pueda interceptarlo.
+    document.querySelectorAll('[data-envia-al-cambiar]').forEach(function (control) {
+        control.addEventListener('change', function () {
+            if (!control.form) {
+                return;
+            }
+            if (control.form.requestSubmit) {
+                control.form.requestSubmit();
+            } else {
+                control.form.submit();
+            }
+        });
+    });
+
+    // Ficha del partido con ?imprimir=1: abre el diálogo de impresión apenas carga
+    // (mismo motivo CSP: el <script> inline que hacía esto nunca llegaba a ejecutarse).
+    if (document.querySelector('[data-imprimir-al-cargar]')) {
+        window.addEventListener('load', function () {
+            window.print();
+        });
+    }
+
     // Modales que deben abrirse solos al cargar la página (ej. aviso de fecha futura en
     // la ficha de eventos del partido). Se hace aquí, en el JS externo, porque el CSP del
     // sitio no permite <script> inline en las páginas.

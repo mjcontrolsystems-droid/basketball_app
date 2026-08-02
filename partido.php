@@ -286,15 +286,10 @@ require __DIR__ . '/includes/layout_top.php';
     </div>
 </div>
 
+<?php // El auto-print de ?imprimir=1 vive en assets/js/app.js (data-imprimir-al-cargar):
+      // un <script> inline aquí quedaba BLOQUEADO por el CSP del sitio y nunca corría. ?>
 <?php if ($hayFicha && ($_GET['imprimir'] ?? '') === '1'): ?>
-<script>
-    // Se llega aquí desde el botón "Descargar PDF" del panel admin: en vez de
-    // obligar a un segundo clic en esta página, se abre directo el diálogo de
-    // impresión del navegador con la ficha ya lista.
-    window.addEventListener('load', function () {
-        window.print();
-    });
-</script>
+<span data-imprimir-al-cargar hidden></span>
 <?php endif; ?>
 
 <?php require __DIR__ . '/includes/layout_bottom.php'; ?>

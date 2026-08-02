@@ -171,7 +171,7 @@ function admin_tarjeta_partido(array $p, array $equiposPorId): string
     <input type="hidden" name="csrf_token" value="{$csrf}">
     <input type="hidden" name="accion" value="alternar_jugado">
     <input type="hidden" name="id" value="{$id}">
-    <input class="form-check-input m-0" type="checkbox" role="switch" id="switchJugado{$id}" style="cursor:pointer;" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" {$toggleChecked}>
+    <input class="form-check-input m-0" type="checkbox" role="switch" id="switchJugado{$id}" style="cursor:pointer;" data-envia-al-cambiar {$toggleChecked}>
     <label class="form-check-label small text-muted mb-0" for="switchJugado{$id}" style="cursor:pointer;">Jugado</label>
 </form>
 HTML;
