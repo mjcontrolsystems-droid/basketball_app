@@ -293,6 +293,18 @@ function icono_multideporte(int $size = 24): string
 }
 
 /**
+ * Balón REAL del deporte (las fotos PNG de assets/img) como icono inline. Es el toque
+ * visual característico de la app: donde un sitio genérico pondría un punto o un emoji,
+ * aquí aparece el balón del deporte de la copa (basketball naranja o fútbol clásico).
+ */
+function icono_balon_img(?string $deporte, int $size = 20, string $clase = ''): string
+{
+    $archivo = ($deporte === 'futbol') ? 'balon-futbol.png' : 'balon-basketball.png';
+    $src = e(url('assets/img/' . $archivo));
+    return "<img src=\"{$src}\" width=\"{$size}\" height=\"{$size}\" class=\"{$clase}\" style=\"object-fit:contain;vertical-align:-0.18em;\" alt=\"\">";
+}
+
+/**
  * Icono según el deporte de la copa, para que basketball y fútbol se vean distintos
  * en el navbar, footer y panel admin (no solo en el nombre). Sin deporte (contexto
  * genérico, sin copa activa) usa el ícono multideporte en vez de asumir basketball.

@@ -70,31 +70,31 @@ require __DIR__ . '/includes/layout_top.php';
     <div class="container">
         <div class="row g-4 mb-5">
             <div class="col-6 col-md-3">
-                <div class="stat-tile text-center"><div class="fs-3 fw-bold"><?= e($equipo['entrenador']) ?></div><div class="small text-muted"><?= e(forma_genero($torneo['genero'] ?? null, 'Entrenador', 'Entrenadora')) ?></div></div>
+                <div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-person-badge-fill"></i></span><div class="fs-3 fw-bold"><?= e($equipo['entrenador']) ?></div><div class="small text-muted"><?= e(forma_genero($torneo['genero'] ?? null, 'Entrenador', 'Entrenadora')) ?></div></div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-tile text-center"><div class="fs-3 fw-bold"><?= e($equipo['sede']) ?></div><div class="small text-muted">Sede local</div></div>
+                <div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-geo-alt-fill"></i></span><div class="fs-3 fw-bold"><?= e($equipo['sede']) ?></div><div class="small text-muted">Sede local</div></div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-tile text-center"><div class="fs-3 fw-bold"><?= e($equipo['fundacion']) ?></div><div class="small text-muted">Fundación</div></div>
+                <div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-calendar-heart-fill"></i></span><div class="fs-3 fw-bold"><?= e($equipo['fundacion']) ?></div><div class="small text-muted">Fundación</div></div>
             </div>
             <div class="col-6 col-md-3">
                 <?php if ($torneo['permite_empates']): ?>
-                <div class="stat-tile text-center"><div class="fs-3 fw-bold"><?= $filaEquipo['pg'] ?? 0 ?>-<?= $filaEquipo['pe'] ?? 0 ?>-<?= $filaEquipo['pp'] ?? 0 ?></div><div class="small text-muted">Récord (G-E-P)</div></div>
+                <div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-trophy-fill"></i></span><div class="fs-3 fw-bold"><?= $filaEquipo['pg'] ?? 0 ?>-<?= $filaEquipo['pe'] ?? 0 ?>-<?= $filaEquipo['pp'] ?? 0 ?></div><div class="small text-muted">Récord (G-E-P)</div></div>
                 <?php else: ?>
-                <div class="stat-tile text-center"><div class="fs-3 fw-bold"><?= $filaEquipo['pg'] ?? 0 ?>-<?= $filaEquipo['pp'] ?? 0 ?></div><div class="small text-muted">Récord (G-P)</div></div>
+                <div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-trophy-fill"></i></span><div class="fs-3 fw-bold"><?= $filaEquipo['pg'] ?? 0 ?>-<?= $filaEquipo['pp'] ?? 0 ?></div><div class="small text-muted">Récord (G-P)</div></div>
                 <?php endif; ?>
             </div>
         </div>
 
         <?php if ($filaEquipo): ?>
         <div class="row g-4 mb-5">
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold"><?= $filaEquipo['pj'] ?></div><div class="small text-muted">Jugados</div></div></div>
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold"><?= $filaEquipo['pf'] ?></div><div class="small text-muted">Puntos a favor</div></div></div>
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold"><?= $filaEquipo['pc'] ?></div><div class="small text-muted">Puntos en contra</div></div></div>
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold <?= $filaEquipo['dif'] >= 0 ? 'text-success' : 'text-danger' ?>"><?= $filaEquipo['dif'] >= 0 ? '+' : '' ?><?= $filaEquipo['dif'] ?></div><div class="small text-muted">Diferencia</div></div></div>
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold"><?= $filaEquipo['porcentaje'] ?>%</div><div class="small text-muted">% Victorias</div></div></div>
-            <div class="col-6 col-md-2"><div class="stat-tile text-center"><div class="fs-4 fw-bold"><?= $filaEquipo['pts'] ?></div><div class="small text-muted">Puntos tabla</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><?= icono_balon_img($torneo['deporte'] ?? null, 18) ?></span><div class="fs-4 fw-bold"><?= $filaEquipo['pj'] ?></div><div class="small text-muted">Jugados</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-graph-up-arrow"></i></span><div class="fs-4 fw-bold"><?= $filaEquipo['pf'] ?></div><div class="small text-muted">Puntos a favor</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-graph-down-arrow"></i></span><div class="fs-4 fw-bold"><?= $filaEquipo['pc'] ?></div><div class="small text-muted">Puntos en contra</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-plus-slash-minus"></i></span><div class="fs-4 fw-bold <?= $filaEquipo['dif'] >= 0 ? 'text-success' : 'text-danger' ?>"><?= $filaEquipo['dif'] >= 0 ? '+' : '' ?><?= $filaEquipo['dif'] ?></div><div class="small text-muted">Diferencia</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-percent"></i></span><div class="fs-4 fw-bold"><?= $filaEquipo['porcentaje'] ?>%</div><div class="small text-muted">% Victorias</div></div></div>
+            <div class="col-6 col-md-2"><div class="stat-tile text-center"><span class="stat-icono"><i class="bi bi-star-fill"></i></span><div class="fs-4 fw-bold"><?= $filaEquipo['pts'] ?></div><div class="small text-muted">Puntos tabla</div></div></div>
         </div>
         <?php endif; ?>
 

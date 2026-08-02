@@ -123,7 +123,7 @@ require __DIR__ . '/includes/layout_top.php';
 
             <?php if (!empty($goles)): ?>
             <div class="card-suave p-4 mb-3">
-                <h6 class="text-uppercase small fw-bold text-muted mb-3"><?= $basketball ? '🏀' : '⚽' ?> <?= e(etiqueta_anotaciones($deporte)) ?></h6>
+                <h6 class="text-uppercase small fw-bold text-muted mb-3"><?= icono_balon_img($deporte, 18) ?> <?= e(etiqueta_anotaciones($deporte)) ?></h6>
                 <ul class="list-unstyled mb-0">
                     <?php foreach ($goles as $ev): ?>
                     <li class="mb-2 small"><span class="fw-semibold"><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?>:</span> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?></li>
@@ -134,7 +134,7 @@ require __DIR__ . '/includes/layout_top.php';
 
             <?php if (!empty($amarillas)): ?>
             <div class="card-suave p-4 mb-3">
-                <h6 class="text-uppercase small fw-bold text-muted mb-3">🟨 <?= e(etiqueta_faltas_leves($deporte)) ?></h6>
+                <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-square-fill text-warning me-1"></i><?= e(etiqueta_faltas_leves($deporte)) ?></h6>
                 <ul class="list-unstyled mb-0">
                     <?php foreach ($amarillas as $ev): ?>
                     <li class="mb-2 small"><span class="fw-semibold"><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?>:</span> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?></li>
@@ -150,7 +150,7 @@ require __DIR__ . '/includes/layout_top.php';
 
             <?php if (!empty($rojas)): ?>
             <div class="card-suave p-4 mb-3">
-                <h6 class="text-uppercase small fw-bold text-muted mb-3">🟥 <?= e(etiqueta_faltas_graves($deporte)) ?></h6>
+                <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-square-fill text-danger me-1"></i><?= e(etiqueta_faltas_graves($deporte)) ?></h6>
                 <ul class="list-unstyled mb-0">
                     <?php foreach ($rojas as $ev): ?>
                     <li class="mb-2 small"><span class="fw-semibold"><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?>:</span> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?></li>
@@ -161,7 +161,7 @@ require __DIR__ . '/includes/layout_top.php';
 
             <?php if (!empty($cambios)): ?>
             <div class="card-suave p-4 mb-3">
-                <h6 class="text-uppercase small fw-bold text-muted mb-3">🔄 Cambios</h6>
+                <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-arrow-left-right text-info me-1"></i>Cambios</h6>
                 <ul class="list-unstyled mb-0">
                     <?php foreach ($cambios as $ev): ?>
                     <li class="mb-2 small"><span class="fw-semibold"><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?>:</span> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?></li>

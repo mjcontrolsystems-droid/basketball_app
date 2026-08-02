@@ -61,10 +61,10 @@ require __DIR__ . '/includes/layout_top.php';
                     <a href="<?= url_copa('calendario.php') ?>" class="btn btn-outline-luz btn-lg rounded-pill px-4">Calendario completo</a>
                 </div>
                 <div class="row row-cols-2 row-cols-sm-4 g-3">
-                    <div class="col"><div class="hero-stat"><div class="valor"><?= count($equipos) ?></div><div class="etiqueta">Equipos</div></div></div>
-                    <div class="col"><div class="hero-stat"><div class="valor"><?= count($partidos) ?></div><div class="etiqueta">Partidos</div></div></div>
-                    <div class="col"><div class="hero-stat"><div class="valor"><?= $totalJugados ?></div><div class="etiqueta">Jugados</div></div></div>
-                    <div class="col"><div class="hero-stat"><div class="valor"><?= $jornadaActual ?></div><div class="etiqueta">Jornadas</div></div></div>
+                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-people-fill"></i></span><div class="valor"><?= count($equipos) ?></div><div class="etiqueta">Equipos</div></div></div>
+                    <div class="col"><div class="hero-stat"><span class="stat-icono"><?= icono_balon_img($deporte, 20) ?></span><div class="valor"><?= count($partidos) ?></div><div class="etiqueta">Partidos</div></div></div>
+                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-check2-circle"></i></span><div class="valor"><?= $totalJugados ?></div><div class="etiqueta">Jugados</div></div></div>
+                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-calendar2-week"></i></span><div class="valor"><?= $jornadaActual ?></div><div class="etiqueta">Jornadas</div></div></div>
                 </div>
             </div>
             <div class="col-lg-5">

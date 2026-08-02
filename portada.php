@@ -51,21 +51,24 @@ require __DIR__ . '/includes/layout_top.php';
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="card-suave p-4 h-100 text-center">
-                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;">1</span>
+                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;"><i class="bi bi-key-fill"></i></span>
+                    <p class="eyebrow mb-1">Paso 1</p>
                     <h5 class="mb-2">Pide el código</h5>
                     <p class="text-muted small mb-0">El organizador de tu copa o liga te comparte un código de 6 caracteres, un QR o un enlace directo.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card-suave p-4 h-100 text-center">
-                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;">2</span>
+                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;"><i class="bi bi-lightning-charge-fill"></i></span>
+                    <p class="eyebrow mb-1">Paso 2</p>
                     <h5 class="mb-2">Entra en segundos</h5>
                     <p class="text-muted small mb-0">Escribe el código arriba, escanea el QR o abre el enlace: no necesitas crear cuenta para ver la copa.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card-suave p-4 h-100 text-center">
-                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;">3</span>
+                    <span class="badge-pill-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.4rem;"><i class="bi bi-broadcast"></i></span>
+                    <p class="eyebrow mb-1">Paso 3</p>
                     <h5 class="mb-2">Sigue todo en vivo</h5>
                     <p class="text-muted small mb-0">Tabla de posiciones, calendario, resultados y, en modo liga, goles y tarjetas de cada partido.</p>
                 </div>

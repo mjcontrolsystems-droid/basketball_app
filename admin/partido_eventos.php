@@ -389,7 +389,7 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
     <?php if (!$resultadoBloqueado): ?>
     <div class="col-lg-5">
         <div class="card-suave p-4 mb-3">
-            <h6 class="text-uppercase small fw-bold text-muted mb-3"><i class="bi bi-dribbble me-1"></i>Agregar <?= e(mb_strtolower(etiqueta_anotacion($deporte))) ?></h6>
+            <h6 class="text-uppercase small fw-bold text-muted mb-3"><?= icono_balon_img($deporte, 16) ?> Agregar <?= e(mb_strtolower(etiqueta_anotacion($deporte))) ?></h6>
             <form method="post" class="row g-2">
                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="accion" value="agregar_gol">
@@ -548,7 +548,14 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 <p class="text-muted small mb-0">Todavía no hay <?= $basketball ? 'puntos, faltas' : 'goles, tarjetas' ?> ni cambios cargados en este partido.</p>
             <?php else: ?>
             <ul class="list-group list-group-flush">
-                <?php $iconosEvento = ['gol' => $basketball ? '🏀' : '⚽', 'amarilla' => '🟨', 'roja' => '🟥', 'cambio' => '🔄']; ?>
+                <?php // Iconos consistentes con la transmisión en vivo: el balón real del
+                      // deporte para las anotaciones, cuadros de color para las faltas.
+                $iconosEvento = [
+                    'gol' => icono_balon_img($deporte, 16),
+                    'amarilla' => '<i class="bi bi-square-fill text-warning"></i>',
+                    'roja' => '<i class="bi bi-square-fill text-danger"></i>',
+                    'cambio' => '<i class="bi bi-arrow-left-right text-info"></i>',
+                ]; ?>
                 <?php foreach ($eventos as $ev): ?>
                 <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                     <span class="small"><?= $iconosEvento[$ev['tipo']] ?? '' ?> <?= e(evento_descripcion($ev, $jugadoresPorId, $deporte)) ?> <span class="text-muted">— <?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '') ?></span></span>
