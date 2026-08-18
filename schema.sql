@@ -40,9 +40,15 @@ CREATE TABLE IF NOT EXISTS torneos (
 -- respalda con un usuario_id/codigo y luego pone estas columnas NOT NULL.
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS usuario_id INTEGER;
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS codigo TEXT UNIQUE;
--- 'copa' (formato clásico, marcador final) | 'liga' (además lleva plantilla de jugadores
--- y ficha de partido: goles/tarjetas/cambios). Con DEFAULT, las copas ya existentes
--- quedan en 'copa' automáticamente, sin necesitar backfill.
+-- FORMATO de la competencia:
+--   'copa' = campeonato: fase de grupos + el cuadro de eliminación directa habilitado
+--            en fases_playoff (comportamiento clásico).
+--   'liga' = temporada regular y nada más: todo se decide en la tabla de puntos, no hay
+--            fases de eliminación directa en ningún lado.
+-- Ver torneo_es_liga()/torneo_fases_playoff() en app/Support/liga.php. Con DEFAULT, las
+-- copas ya existentes quedan en 'copa' automáticamente, sin necesitar backfill.
+-- (Esta columna existía antes con otro significado —activar plantilla/ficha solo en
+-- "modo liga"—; esas funciones hoy están disponibles siempre, así que se reutilizó.)
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS modo TEXT NOT NULL DEFAULT 'copa';
 -- 'femenino' | 'masculino' | 'mixto' (no aplica / no se distingue). Ajusta "entrenador/a",
 -- "jugador/a", etc. en todo el sitio sin tener que hardcodear un género fijo. DEFAULT
@@ -78,6 +84,11 @@ CREATE TABLE IF NOT EXISTS jugadores (
     nombre TEXT NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE
 );
+-- Posición habitual del jugador (portero/defensa/medio/delantero en fútbol;
+-- base/escolta/alero/ala_pivot/pivot en basketball; vacío = sin definir). Ver
+-- POSICIONES_POR_DEPORTE en app/Support/liga.php. Solo es el valor SUGERIDO: la posición
+-- real de cada encuentro se guarda en partido_alineacion.
+ALTER TABLE jugadores ADD COLUMN IF NOT EXISTS posicion TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS partidos (
     id INTEGER PRIMARY KEY,
@@ -102,15 +113,37 @@ ALTER TABLE partidos ADD COLUMN IF NOT EXISTS observaciones TEXT NOT NULL DEFAUL
 -- cronometro_inicio es el momento (con huso horario) en que arrancó el tramo actual, solo
 -- mientras está 'corriendo' (NULL en cualquier otro estado); cronometro_segundos son los
 -- segundos ya acumulados de tramos anteriores. El minuto en vivo se calcula sumando ambos
--- (ver partido_cronometro_segundos() en includes/liga.php).
+-- (ver partido_cronometro_segundos() en app/Support/liga.php).
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_estado TEXT NOT NULL DEFAULT 'detenido';
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_inicio TIMESTAMPTZ;
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_segundos INTEGER NOT NULL DEFAULT 0;
 -- Periodo actual del partido (1er/2do tiempo en fútbol, cuarto 1-4 en basketball). Avanzar
--- de periodo reinicia el cronómetro a 00:00 (cada tiempo/cuarto lleva su propio conteo),
--- ver la acción cronometro_siguiente_periodo en admin/partido_eventos.php y
--- partido_periodo_maximo()/partido_periodo_etiqueta() en includes/liga.php.
+-- de periodo pone cronometro_segundos y cronometro_extra_min en 0, o sea que el reloj
+-- vuelve a la duración completa configurada para la copa (cada tiempo/cuarto lleva su
+-- propio conteo), ver la acción cronometro_siguiente_periodo en admin/partido_eventos.php
+-- y partido_periodo_maximo()/partido_periodo_etiqueta() en app/Support/liga.php.
 ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_periodo INTEGER NOT NULL DEFAULT 1;
+-- Minutos extra (tiempo añadido / reposición) que el árbitro sumó al periodo EN CURSO.
+-- El cronómetro cuenta hacia atrás desde (duración configurada de la copa + estos
+-- minutos); se reinicia a 0 al pasar de periodo, igual que cronometro_segundos.
+-- Ver partido_duracion_periodo_segundos() en app/Support/liga.php.
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS cronometro_extra_min INTEGER NOT NULL DEFAULT 0;
+
+-- Alineación de cada encuentro: quién sale de titular, quién de banca y en qué posición
+-- juega ese día. Cuántos titulares admite cada equipo lo define la modalidad de la copa
+-- (5, 7 u 11 jugadores en cancha, ver torneo_jugadores_en_cancha() en app/Support/liga.php).
+-- Sin FK a partidos(id)/jugadores(id) a propósito, mismo criterio que el resto del
+-- esquema: la integridad se valida en PHP. partidos.id es una PK global, así que
+-- (partido_id, jugador_id) identifica la fila sin ambigüedad entre copas.
+CREATE TABLE IF NOT EXISTS partido_alineacion (
+    torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+    partido_id INTEGER NOT NULL,
+    jugador_id INTEGER NOT NULL,
+    equipo_id INTEGER NOT NULL,
+    titular BOOLEAN NOT NULL DEFAULT FALSE,
+    posicion TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (partido_id, jugador_id)
+);
 
 -- Solo se usa en modo 'liga': ficha del partido (goles, tarjetas, cambios), cargada por el admin
 -- después de jugado. tipo = 'gol' | 'amarilla' | 'roja' | 'cambio'. jugador_entra_id solo aplica
@@ -233,9 +266,15 @@ CREATE INDEX IF NOT EXISTS idx_intentos_registro_ip_fecha ON intentos_registro (
 
 -- Modalidad del deporte (futbol11/futbol7/futbol5 o fiba/nba) y duración personalizada
 -- de cada tiempo/cuarto en minutos (NULL = usar la reglamentaria de la modalidad).
--- Ver MODALIDADES_POR_DEPORTE en includes/liga.php.
+-- Ver MODALIDADES_POR_DEPORTE en app/Support/liga.php.
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS modalidad TEXT NOT NULL DEFAULT '';
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS duracion_periodo_min INTEGER;
+
+-- Vueltas de la temporada regular: 1 = todos contra todos una vez; 2 = ida y vuelta
+-- (cada par se enfrenta dos veces, invirtiendo la localía). Es lo que usa el generador
+-- automático de calendario para saber cuántas jornadas armar; ver app/Support/fixture.php.
+-- DEFAULT 1 para que las copas existentes no cambien de comportamiento.
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS vueltas INTEGER NOT NULL DEFAULT 1;
 
 -- Bitácora de acciones del panel (quién hizo qué y cuándo). Sin FK a torneos a propósito:
 -- la entrada es historial y debe sobrevivir aunque la copa se borre después.

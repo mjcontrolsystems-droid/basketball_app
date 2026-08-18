@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . "/../config/bootstrap.php";
+
 /**
  * Agrega el control de cupos de copas/ligas por organizador (cobro por torneo).
  *
@@ -17,9 +19,6 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(403);
     exit('Este script solo puede ejecutarse desde la línea de comandos (CLI).');
 }
-
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/db.php';
 
 echo "== Migración: cupos de copas y ligas por organizador ==\n\n";
 

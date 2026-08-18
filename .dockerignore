@@ -4,3 +4,4 @@
 *.md
 schema.sql
 scripts
+router.php

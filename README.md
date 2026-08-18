@@ -20,10 +20,26 @@ Los datos (equipos, partidos, patrocinadores, comentarios, torneo, organizador) 
    ```
    php scripts/migrar_json_a_postgres.php
    ```
-3. Levanta el servidor:
+3. Levanta el servidor (con `-t public`, que es la raíz web):
    ```
-   php -S localhost:8000 router.php
+   php -S localhost:8000 -t public router.php
    ```
+
+### Probar contra una base local (sin tocar producción)
+
+```
+docker run -d --name copa-pg -e POSTGRES_PASSWORD=copa -e POSTGRES_USER=copa \
+  -e POSTGRES_DB=copa_test -p 55432:5432 postgres:16-alpine
+docker exec -i copa-pg psql -U copa -d copa_test < schema.sql
+
+export DATABASE_URL="postgresql://copa:copa@127.0.0.1:55432/copa_test?sslmode=disable"
+php scripts/seed_pruebas.php        # datos de ejemplo: una liga y un campeonato
+php -S localhost:8000 -t public router.php
+```
+
+El seed crea dos torneos que cubren los caminos que se comportan distinto (liga a ida y
+vuelta en fútbol, y campeonato con playoffs en basketball) y una cuenta de prueba
+(`prueba` / `prueba123`). Se niega a correr si `DATABASE_URL` no apunta a `copa_test`.
 
 ## Acceso al panel del organizador
 
@@ -37,13 +53,48 @@ Los datos (equipos, partidos, patrocinadores, comentarios, torneo, organizador) 
 
 ```
 schema.sql               Esquema de la base de datos PostgreSQL
-scripts/                 Script de migración (JSON antiguo → PostgreSQL)
-includes/                Lógica compartida (auth, acceso a datos, cálculo de tabla, helpers, filtro de groserías)
-assets/                  CSS y JS (las imágenes ya no se guardan aquí, van en la base de datos)
-admin/                   Panel del organizador (protegido por sesión)
-imagen.php               Sirve las imágenes guardadas en la base de datos
-*.php (raíz)              Páginas públicas del sitio
+public/                  ÚNICO directorio accesible desde la web (DocumentRoot)
+  index.php              Front controller: recibe todas las peticiones y despacha
+  assets/                CSS y JS (las imágenes van en la base de datos, no aquí)
+
+app/
+  Controllers/           Reciben la petición, deciden qué hacer y llaman a una vista
+    Publico/             Sitio público de cada copa (inicio, tabla, calendario, en vivo...)
+    Admin/               Panel del organizador (exige sesión)
+    Auth/                Login, registro, recuperación de contraseña, Google
+  Models/                Acceso a datos, uno por entidad (Torneo, Equipo, Partido...)
+  Views/                 Plantillas: solo presentación, no consultan la base
+    layouts/             Navbar/footer del sitio y sidebar del panel
+    parciales/           Trozos reutilizables (tarjeta de encuentro, modales)
+    publico/ admin/ auth/
+  Support/               Infraestructura y reglas del dominio
+                         bd, auth, vista, helpers, upload, correo, filtro,
+                         liga (reglas por deporte), tabla (posiciones), fixture
+
+config/
+  config.php             Constantes, sesión, cabeceras de seguridad, url()
+  bootstrap.php          Arranque: carga soporte y modelos
+  rutas.php              Mapa de URL → controlador
+
+schema.sql               Esquema de la base de datos PostgreSQL
+scripts/                 Migraciones, datos de prueba y pruebas automatizadas
 ```
+
+### Cómo fluye una petición
+
+```
+GET /liga-municipal/tabla.php
+   │
+   ├─ Apache (o router.php en local) → public/index.php
+   ├─ front controller: separa el slug "liga-municipal" de la ruta "tabla.php",
+   │  busca la copa y la deja disponible con copa_actual()
+   ├─ config/rutas.php: tabla.php → Controllers/Publico/Tabla.php
+   ├─ el controlador pide datos a los modelos y calcula lo que hace falta
+   └─ vista_publica('publico/tabla', [...]) pinta layout + plantilla
+```
+
+Las URLs terminadas en `.php` **no** corresponden a archivos reales: se mantienen así a
+propósito porque hay códigos QR impresos y enlaces compartidos apuntando a ellas.
 
 ## Base de datos gratuita: Neon
 
@@ -70,3 +121,14 @@ Este proyecto incluye un `Dockerfile` porque Render no ejecuta PHP de forma nati
 ### Nota sobre el plan gratuito de Render
 
 El servicio se "duerme" tras ~15 minutos sin visitas y tarda unos segundos en despertar con la siguiente visita — normal en el plan gratuito, no es un error.
+
+## Pruebas
+
+```
+php scripts/tests.php
+```
+
+Cubren la lógica donde un error pasa desapercibido más tiempo y hace más daño: cálculo de
+la tabla de posiciones, marcador derivado de los eventos, reglas de cada deporte,
+cronómetro con tiempo extra, formato liga vs campeonato, alineaciones y el generador de
+calendario. No necesitan base de datos ni servidor.

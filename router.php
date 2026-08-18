@@ -2,40 +2,20 @@
 declare(strict_types=1);
 
 /**
- * Router para el servidor embebido de PHP ("php -S ... router.php"), para que en
- * desarrollo local las URLs por copa (/slug/...) se comporten igual que en producción
- * (donde Apache hace esta misma reescritura vía apache-vhost.conf).
+ * Router para el servidor embebido de PHP en desarrollo local:
+ *
+ *     php -S 127.0.0.1:8000 -t public router.php
+ *
+ * Cuando se le pasa un router, el servidor embebido manda TODAS las peticiones aquí,
+ * incluidas las de archivos reales: devolver false es la forma de decirle "este lo
+ * sirves tú". Todo lo demás va al front controller, igual que hace Apache en
+ * producción (ver apache-vhost.conf).
  */
 
-$uri = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$docRoot = __DIR__;
+$uri = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
-// Archivo o carpeta real (assets/, admin/, imagen.php, etc.): que lo sirva tal cual
-if ($uri !== '/' && (is_file($docRoot . $uri) || is_dir($docRoot . $uri))) {
-    return false;
+if ($uri !== '/' && is_file(__DIR__ . '/public' . $uri)) {
+    return false; // assets, favicon: los sirve el servidor embebido
 }
 
-$ruta = trim($uri, '/');
-
-if ($ruta === '') {
-    return false; // "/" -> index.php normal
-}
-
-// /slug  ->  index.php?copa=slug
-if (preg_match('#^([a-z0-9-]+)$#', $ruta, $m)) {
-    $_GET['copa'] = $m[1];
-    require $docRoot . '/index.php';
-    return true;
-}
-
-// /slug/archivo.php  ->  archivo.php?copa=slug
-if (preg_match('#^([a-z0-9-]+)/(.+)$#', $ruta, $m)) {
-    $archivo = $docRoot . '/' . $m[2];
-    if (is_file($archivo)) {
-        $_GET['copa'] = $m[1];
-        require $archivo;
-        return true;
-    }
-}
-
-return false;
+require __DIR__ . '/public/index.php';

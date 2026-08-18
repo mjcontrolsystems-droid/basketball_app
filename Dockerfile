@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libcu
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && a2enmod rewrite
 
-# Cada copa tiene su propia URL (/slug/...); esta config reescribe esas rutas
-# hacia los archivos .php reales con ?copa=slug, sin afectar archivos reales.
+# Sirve public/ como raíz web y manda todo al front controller, que resuelve el slug
+# de la copa (/slug/...) y elige el controlador.
 COPY apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 
 # Por defecto PHP solo acepta subidas de 2MB, pero una foto tomada con la cámara
@@ -20,6 +20,9 @@ RUN { \
 
 COPY . /var/www/html/
 WORKDIR /var/www/html
+
+# El DocumentRoot es /var/www/html/public (ver apache-vhost.conf): el código de la
+# aplicación vive un nivel arriba y no es accesible por web.
 
 # Apache (en vez del servidor embebido de PHP) maneja varias peticiones en paralelo,
 # necesario para no colapsar con tráfico concurrente.
