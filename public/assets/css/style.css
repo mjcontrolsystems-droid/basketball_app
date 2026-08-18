@@ -1,0 +1,1520 @@
+/* =========================================================
+   Copa Estrellas — Liga Femenina de Basketball
+   Tema visual sobre Bootstrap 5
+   ========================================================= */
+
+:root {
+    /* Respaldo para el primer instante de carga (antes de que torneo_variables_css()
+       los sobreescriba): la paleta VIBRANTE de la marca (morado -> naranja del logo),
+       en sintonía con lo que inyecta el PHP para el contexto genérico. Cada copa
+       activa sigue sobreescribiendo esto con sus propios colores. */
+    --color-primario: #7b2ff7;
+    --color-primario-oscuro: #501fa0;
+    --color-secundario: #ff6b35;
+    --color-acento: #ffc93c;
+    --color-rosa: #ffc93c;
+    --color-primario-rgb: 123, 47, 247;
+    --color-primario-oscuro-rgb: 80, 31, 160;
+    --color-secundario-rgb: 255, 107, 53;
+    --color-acento-rgb: 255, 201, 60;
+    --color-rosa-rgb: 255, 201, 60;
+    --color-noche: #120a24;
+    --color-noche-2: #1c0f38;
+    --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --sombra-suave: 0 10px 30px -12px rgba(var(--color-primario-oscuro-rgb), .35);
+    --degradado-principal: linear-gradient(135deg, var(--color-primario) 0%, var(--color-rosa) 55%, var(--color-secundario) 100%);
+    --degradado-noche: radial-gradient(circle at 15% 20%, rgba(var(--color-secundario-rgb), .35), transparent 45%),
+        radial-gradient(circle at 85% 0%, rgba(var(--color-rosa-rgb), .35), transparent 40%),
+        radial-gradient(circle at 50% 100%, rgba(var(--color-primario-rgb), .5), transparent 55%),
+        linear-gradient(160deg, var(--color-noche) 0%, var(--color-noche-2) 100%);
+}
+
+* {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: #f7f5fb;
+    color: #241a3a;
+}
+
+h1, h2, h3, h4, h5, h6, .fw-heading {
+    font-family: 'Poppins', 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+.text-degradado {
+    background: var(--degradado-principal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.bg-noche {
+    background: var(--degradado-noche);
+}
+
+.btn-degradado {
+    background: var(--degradado-principal);
+    background-size: 200% 200%;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    transition: background-position .5s ease, transform .2s ease, box-shadow .2s ease;
+    box-shadow: var(--sombra-suave);
+}
+
+.btn-degradado:hover {
+    background-position: 100% 100%;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px -10px rgba(var(--color-rosa-rgb), .5);
+}
+
+.btn-outline-luz {
+    border: 1.5px solid rgba(255, 255, 255, .6);
+    color: #fff;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+
+.btn-outline-luz:hover {
+    background: rgba(255, 255, 255, .15);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* ---------- Navbar ---------- */
+.navbar-copa {
+    background: rgba(18, 10, 36, .55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    transition: background .3s ease, box-shadow .3s ease;
+}
+
+.navbar-copa.scrolled {
+    background: rgba(18, 10, 36, .92);
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, .5);
+}
+
+.navbar-copa .navbar-brand {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.02em;
+}
+
+.navbar-copa .nav-link {
+    color: rgba(255, 255, 255, .78);
+    font-weight: 600;
+    font-size: .93rem;
+    padding-left: .9rem !important;
+    padding-right: .9rem !important;
+    position: relative;
+}
+
+.navbar-copa .nav-link.active,
+.navbar-copa .nav-link:hover {
+    color: #fff;
+}
+
+.navbar-copa .nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: .9rem;
+    right: .9rem;
+    bottom: 2px;
+    height: 2px;
+    background: var(--degradado-principal);
+    border-radius: 2px;
+}
+
+/* Menú móvil (navbar colapsado): los links y botones quedaban pegados unos a otros.
+   Se separan con espacio vertical y los botones pasan a ocupar todo el ancho, más
+   fáciles de tocar y visualmente ordenados. */
+@media (max-width: 991.98px) {
+    .navbar-copa .navbar-collapse {
+        margin-top: .75rem;
+        padding-top: .75rem;
+        border-top: 1px solid rgba(255, 255, 255, .12);
+    }
+    .navbar-copa .navbar-nav .nav-item {
+        margin-bottom: .5rem;
+    }
+    .navbar-copa .navbar-nav .nav-item:last-child {
+        margin-bottom: 0;
+    }
+    .navbar-copa .navbar-nav .nav-item .btn {
+        width: 100%;
+    }
+}
+
+.badge-pill-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--degradado-principal);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 14px -4px rgba(var(--color-rosa-rgb), .6);
+}
+
+/* ---------- Hero ---------- */
+.hero-copa {
+    background: var(--degradado-noche);
+    color: #fff;
+    padding-top: 7.5rem;
+    padding-bottom: 5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-copa::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, .12) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: .25;
+    pointer-events: none;
+}
+
+.hero-copa .kicker {
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--color-acento);
+}
+
+.hero-copa h1 {
+    font-size: clamp(2.3rem, 5vw, 4rem);
+    line-height: 1.05;
+}
+
+.hero-stat {
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 16px;
+    padding: 1.1rem 1rem;
+    backdrop-filter: blur(6px);
+}
+
+.hero-stat .valor {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: #fff;
+}
+
+.hero-stat .etiqueta {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(255, 255, 255, .65);
+}
+
+@keyframes flotar {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-18px) rotate(4deg); }
+}
+
+/* Balones 3D reales (recortados del logo), usados tanto en la portada general
+   (dos balones superpuestos) como en el hero de cada copa/liga (uno solo, del
+   deporte de esa copa). */
+.balones-3d {
+    position: relative;
+    height: 300px;
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+.balones-3d .balon-real {
+    position: absolute;
+    border-radius: 50%;
+    filter: drop-shadow(0 22px 26px rgba(0, 0, 0, .35));
+}
+
+.balones-3d .balon-flotante-1 {
+    animation: flotar 5s ease-in-out infinite;
+}
+
+.balones-3d .balon-flotante-2 {
+    animation: flotar 5s ease-in-out infinite;
+    animation-delay: 1.2s;
+}
+
+@media (max-width: 991.98px) {
+    .balones-3d { height: 260px; }
+}
+
+/* Un solo balón centrado (hero de cada copa/liga individual), a diferencia de los
+   dos balones superpuestos y fijos en tamaño de la portada general. Centrado con
+   márgenes negativos (no con transform: translate) a propósito: la animación
+   "flotar" también anima la propiedad transform, y como un elemento solo puede
+   tener un valor de transform a la vez, translate(-50%,-50%) quedaba pisado por
+   la animación y el balón terminaba centrado por su esquina, no por su centro
+   -viéndose desplazado hacia abajo, pegado a la sección blanca siguiente-. */
+.balon-hero-solo {
+    top: 50%;
+    left: 50%;
+    width: clamp(170px, 32vw, 280px);
+    height: clamp(170px, 32vw, 280px);
+    margin: calc(clamp(170px, 32vw, 280px) / -2) 0 0 calc(clamp(170px, 32vw, 280px) / -2);
+}
+
+/* Logo de la copa/liga presidiendo el hero, en el lugar donde iría el balón. A
+   diferencia del balón (una foto redonda que llena el círculo), un logo puede tener
+   cualquier proporción y fondo transparente: va con `contain` sobre un disco claro
+   para que se lea igual sobre el fondo oscuro del hero, sin recortarse. */
+.balones-3d .logo-hero-solo {
+    position: absolute;
+    object-fit: contain;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .94);
+    padding: clamp(14px, 3vw, 26px);
+    box-shadow: 0 22px 46px -18px rgba(0, 0, 0, .55), 0 0 0 6px rgba(255, 255, 255, .12);
+}
+
+/* Logo de la copa en el navbar/footer/sidebar (ver logo_torneo() en helpers.php). */
+.logo-torneo {
+    box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .45);
+    flex-shrink: 0;
+}
+
+/* ---------- Secciones ---------- */
+.seccion {
+    padding: 4.5rem 0;
+}
+
+.seccion-titulo .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--color-primario);
+}
+
+.card-suave {
+    background: #fff;
+    border: 1px solid rgba(var(--color-primario-rgb), .08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px -18px rgba(var(--color-primario-oscuro-rgb), .25);
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.card-suave:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -18px rgba(var(--color-primario-oscuro-rgb), .35);
+}
+
+/* ---------- Tabla de posiciones ---------- */
+.tabla-posiciones {
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.tabla-posiciones thead th {
+    border: none;
+    text-transform: uppercase;
+    font-size: .72rem;
+    letter-spacing: .07em;
+    color: #8b7fa8;
+    font-weight: 700;
+    padding-bottom: .5rem;
+}
+
+.tabla-posiciones tbody tr {
+    background: #fff;
+    box-shadow: 0 6px 18px -12px rgba(var(--color-primario-oscuro-rgb), .25);
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+
+.tabla-posiciones tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px -14px rgba(var(--color-primario-oscuro-rgb), .45);
+    background: #fbfaff;
+}
+
+.tabla-posiciones tbody tr td {
+    border: none;
+    vertical-align: middle;
+    padding-top: .85rem;
+    padding-bottom: .85rem;
+}
+
+.tabla-posiciones tbody tr td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.tabla-posiciones tbody tr td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.tabla-posiciones tr.zona-playoff td:first-child {
+    box-shadow: inset 4px 0 0 var(--color-acento);
+}
+
+.pos-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: .85rem;
+    background: #f1ecfb;
+    color: var(--color-primario-oscuro);
+}
+
+.pos-num.oro { background: linear-gradient(135deg, #ffdf80, #ffb63c); color: #6b4400; animation: brilloLider 2.4s ease-in-out infinite; }
+.pos-num.plata { background: linear-gradient(135deg, #eaeaf2, #c7c7d9); color: #4a4a5c; }
+.pos-num.bronce { background: linear-gradient(135deg, #e3ab7a, #c17a3f); color: #3e2306; }
+
+@keyframes brilloLider {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 182, 60, .55); }
+    50% { box-shadow: 0 0 0 6px rgba(255, 182, 60, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-num.oro { animation: none; }
+}
+
+.racha-punto {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 2px;
+}
+.racha-punto.g { background: #22c55e; }
+.racha-punto.p { background: #e5484d; }
+.racha-punto.e { background: #f0b429; }
+
+/* Tabla de posiciones en móvil: cada fila se convierte en una tarjeta apilada
+   en vez de forzar scroll horizontal, y sigue siendo clicable hacia el equipo. */
+@media (max-width: 767.98px) {
+    .tabla-posiciones thead { display: none; }
+    .tabla-posiciones, .tabla-posiciones tbody, .tabla-posiciones tr, .tabla-posiciones td {
+        display: block;
+        width: 100%;
+    }
+    .tabla-posiciones tbody tr {
+        border-radius: 14px;
+        padding: .5rem .75rem;
+        margin-bottom: 10px;
+    }
+    .tabla-posiciones tbody tr td {
+        border: none;
+        padding: .3rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: right;
+    }
+    .tabla-posiciones tbody tr td::before {
+        content: attr(data-label);
+        font-size: .7rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #8b7fa8;
+        font-weight: 700;
+    }
+    .tabla-posiciones tbody tr td.td-equipo {
+        justify-content: flex-start;
+        padding-bottom: .6rem;
+        margin-bottom: .3rem;
+        border-bottom: 1px solid rgba(var(--color-primario-oscuro-rgb), .08);
+    }
+    .tabla-posiciones tbody tr td.td-equipo a { width: 100%; }
+    .tabla-posiciones tbody tr td:first-child {
+        justify-content: flex-end;
+        order: -1;
+        padding-bottom: 0;
+        /* En escritorio este acento y las esquinas redondeadas son del extremo
+           izquierdo de una fila ancha; en la tarjeta apilada de móvil esta celda
+           ya no es "el borde de la fila", así que se ve como una forma rara si se
+           dejan tal cual — se apagan aquí y el acento de zona de playoffs se mueve
+           al borde de toda la tarjeta más abajo. */
+        border-radius: 0;
+    }
+    /* Mismo selector que la regla original de escritorio (.zona-playoff td:first-child)
+       para igualar su especificidad y realmente ganar el box-shadow, en vez de perder
+       el empate por estar definida antes en el archivo. */
+    .tabla-posiciones tr.zona-playoff td:first-child {
+        box-shadow: none;
+    }
+    .tabla-posiciones tr.zona-playoff {
+        box-shadow: inset 4px 0 0 var(--color-acento);
+    }
+}
+
+/* ---------- Partidos ---------- */
+.partido-card {
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(var(--color-primario-rgb), .08);
+    box-shadow: 0 10px 26px -18px rgba(var(--color-primario-oscuro-rgb), .3);
+    padding: 1.1rem 1.2rem;
+}
+
+/* Columna de equipo (logo + nombre) de una tarjeta de encuentro. Se define suelta y no
+   solo bajo .partido-card porque el panel admin reutiliza la misma estructura dentro de
+   .card-suave (ver admin_tarjeta_partido() en includes/helpers.php): sin esta regla,
+   en el teléfono el logo y el nombre no se centraban ni se encogían, y la fila
+   equipo-marcador-equipo se salía de la tarjeta en la pantalla de Encuentros.
+   min-width:0 es lo que permite que un nombre largo encoja en vez de empujar la fila. */
+.equipo-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .4rem;
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+}
+
+.equipo-col .nombre {
+    font-weight: 700;
+    font-size: .88rem;
+    line-height: 1.15;
+    /* Nombres de equipo largos o sin espacios no deben romper el ancho de la tarjeta */
+    overflow-wrap: anywhere;
+}
+
+/* El sitio público ya tenía su proporción propia (40% por equipo); se conserva tal cual
+   para no alterar un diseño que ya se veía bien. */
+.partido-card .equipo-col {
+    flex: 0 1 auto;
+    width: 40%;
+}
+
+.partido-card .marcador {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 1.6rem;
+}
+
+.badge-jornada {
+    background: #f1ecfb;
+    color: var(--color-primario-oscuro);
+    font-weight: 700;
+    border-radius: 999px;
+    padding: .3rem .8rem;
+    font-size: .78rem;
+}
+
+.badge-estado-jugado { background: rgba(34, 197, 94, .12); color: #16803e; }
+.badge-estado-programado { background: rgba(255, 107, 53, .12); color: #c04a1c; }
+
+/* ---------- Equipos grid ---------- */
+.equipo-tile {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    padding: 1.4rem 1rem;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(var(--color-primario-rgb), .08);
+    box-shadow: 0 10px 26px -18px rgba(var(--color-primario-oscuro-rgb), .28);
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.equipo-tile:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 22px 38px -18px rgba(var(--color-primario-oscuro-rgb), .4);
+    color: inherit;
+}
+
+.equipo-tile .nombre {
+    font-weight: 700;
+    margin-top: .8rem;
+    font-size: .95rem;
+}
+
+.equipo-tile .ciudad {
+    font-size: .78rem;
+    color: #8b7fa8;
+}
+
+/* ---------- Carrusel de patrocinadores (marquee infinito) ---------- */
+.sponsors-section {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f0fb 100%);
+}
+
+.marquee-track-wrap {
+    overflow: hidden;
+    position: relative;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+}
+
+.marquee-track {
+    display: flex;
+    width: max-content;
+    gap: 2.2rem;
+    animation: marquee-izq 34s linear infinite;
+}
+
+.marquee-track.reversa {
+    animation-name: marquee-der;
+    animation-duration: 30s;
+}
+
+.marquee-track-wrap:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+@keyframes marquee-izq {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@keyframes marquee-der {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+}
+
+.sponsor-card {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid rgba(var(--color-primario-rgb), .1);
+    border-radius: 16px;
+    padding: 1.1rem 1.8rem;
+    min-width: 190px;
+    height: 92px;
+    box-shadow: 0 10px 24px -16px rgba(var(--color-primario-oscuro-rgb), .25);
+    filter: grayscale(1) opacity(.72);
+    transition: filter .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+
+.sponsor-card:hover {
+    filter: grayscale(0) opacity(1);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 16px 30px -14px rgba(var(--color-primario-oscuro-rgb), .35);
+}
+
+.sponsor-card.nivel-oficial {
+    min-width: 230px;
+    height: 108px;
+    border: 1.5px solid rgba(255, 201, 60, .5);
+    background: linear-gradient(180deg, #fffdf6, #fff);
+}
+
+.sponsor-wordmark {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #382a55;
+    text-align: center;
+    letter-spacing: -.01em;
+}
+
+.sponsor-card.nivel-oficial .sponsor-wordmark {
+    font-size: 1.15rem;
+    background: var(--degradado-principal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.sponsor-logo-img {
+    max-width: 100%;
+    max-height: 56px;
+    object-fit: contain;
+}
+
+.tier-pill {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: .25rem .65rem;
+    border-radius: 999px;
+}
+.tier-pill.oficial { background: rgba(255, 201, 60, .18); color: #916500; }
+.tier-pill.oro { background: rgba(255, 176, 32, .15); color: #a35c00; }
+.tier-pill.plata { background: rgba(150, 150, 170, .15); color: #55556b; }
+
+/* ---------- Perfil de equipo ---------- */
+.equipo-hero {
+    border-radius: 24px;
+    padding: 3rem 2rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---------- Login / Admin ---------- */
+.auth-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--degradado-noche);
+    padding: 2rem 1rem;
+}
+
+.auth-card {
+    background: rgba(255, 255, 255, .97);
+    border-radius: 22px;
+    padding: 2.6rem 2.2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .5);
+}
+
+.sidebar-admin {
+    background: linear-gradient(180deg, var(--color-noche) 0%, var(--color-noche-2) 100%);
+    min-height: 100vh;
+    color: #fff;
+}
+
+.sidebar-admin .nav-link {
+    color: rgba(255, 255, 255, .75);
+    font-weight: 600;
+    border-radius: 10px;
+    padding: .65rem .9rem;
+    margin-bottom: .2rem;
+}
+
+.sidebar-admin .nav-link.active {
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+}
+
+.sidebar-admin .nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .06);
+}
+
+.stat-tile {
+    border-radius: 16px;
+    padding: 1.3rem;
+    background: #fff;
+    border: 1px solid rgba(var(--color-primario-rgb), .08);
+    box-shadow: 0 10px 26px -18px rgba(var(--color-primario-oscuro-rgb), .28);
+}
+
+.avatar-organizador {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--degradado-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.8rem;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 10px 24px -10px rgba(var(--color-rosa-rgb), .55);
+}
+
+/* ---------- Footer ---------- */
+.footer-copa {
+    background: var(--color-noche);
+    color: rgba(255, 255, 255, .7);
+    padding: 3.5rem 0 1.5rem;
+}
+
+.footer-copa a {
+    color: rgba(255, 255, 255, .7);
+    text-decoration: none;
+}
+
+.footer-copa a:hover {
+    color: #fff;
+}
+
+@media (max-width: 767.98px) {
+    .equipo-col .nombre { font-size: .78rem; }
+    .hero-copa { padding-top: 6rem; }
+
+    /* Panel admin en teléfono ------------------------------------------------
+       El panel se usa desde la cancha (cargar goles, cambios y marcador en vivo),
+       así que en pantallas angostas hay que evitar cualquier desborde horizontal. */
+
+    /* Red de seguridad global: aunque algún elemento puntual se pase de ancho,
+       la página nunca desarrolla scroll lateral (el desborde se recorta y el
+       contenido problemático se trunca dentro de su tarjeta). */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+
+    /* En pantalla de teléfono, TODA fila flexible se envuelve en vez de desbordar:
+       encabezados con varios botones, grupos de acciones, filas de badges, etc.
+       Es la regla sistémica que hace que cada vista "quepa" en el ancho del
+       teléfono sin ir cazando contenedor por contenedor. Quien de verdad
+       necesite una sola línea puede declararlo con .flex-nowrap. */
+    .d-flex:not(.flex-nowrap):not(.flex-column) { flex-wrap: wrap; }
+
+    /* Los <code> con URLs o códigos nunca fuerzan el ancho de su contenedor */
+    code { overflow-wrap: anywhere; }
+
+    /* Ninguna tarjeta ni imagen debe empujar el ancho de la página */
+    .card-suave { overflow-wrap: anywhere; }
+    .card-suave img { max-width: 100%; }
+
+    /* Las pestañas de fases (Grupos, Cuartos, Semifinal...) y cualquier fila de
+       pills se acomodan en varias líneas en vez de salirse a la derecha. */
+    .nav-pills { flex-wrap: wrap; gap: .35rem; }
+
+    /* Marcador en vivo de la ficha de eventos: los escudos se encogen y el
+       resultado deja de ser display-6 para que quepan los 3 bloques en una línea. */
+    .marcador-ficha .display-6 { font-size: 1.9rem; }
+
+    /* Los grupos de botones de cada encuentro (Eventos, En vivo, PDF, editar,
+       borrar) se envuelven en vez de desbordar la tarjeta. */
+    .card-suave .d-flex.gap-1,
+    .card-suave .d-flex.gap-2 { flex-wrap: wrap; }
+}
+
+/* Las tablas del panel admin conservan scroll horizontal propio dentro de su tarjeta
+   (Bootstrap ya lo hace con .table-responsive) en vez de estirar toda la página. */
+@media (max-width: 575.98px) {
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+}
+
+/* Ficha de partido descargable en PDF (partido.php): usa window.print() del
+   navegador -no genera un PDF en el servidor-. La página web normal
+   (.solo-pantalla) se oculta al imprimir y en su lugar se muestra un
+   documento aparte (.solo-impresion) con formato de formulario oficial lleno. */
+.solo-impresion { display: none; }
+
+@media print {
+    .navbar-copa, .footer-copa, .btn-imprimir-pdf,
+    #modalCompartir, #modalCodigo, .offcanvas,
+    .solo-pantalla {
+        display: none !important;
+    }
+    body { background: #fff !important; }
+    .solo-impresion {
+        display: block !important;
+        color: #000;
+        font-size: 12px;
+    }
+    .ficha-imprimir { padding: 0; }
+    .ficha-titulo { text-align: center; margin-bottom: 1rem; }
+    .ficha-titulo h2 { margin: 0; font-size: 18px; }
+    .ficha-titulo p { margin: 0; font-size: 12px; color: #444; }
+    .ficha-datos, .ficha-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+    .ficha-datos td {
+        border: 1px solid #999;
+        padding: 4px 6px;
+    }
+    .ficha-tabla th, .ficha-tabla td {
+        border: 1px solid #999;
+        padding: 4px 6px;
+        text-align: left;
+        font-size: 11px;
+    }
+    .ficha-tabla th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .ficha-imprimir h3 { font-size: 13px; margin: 1rem 0 .4rem; break-after: avoid; }
+    .ficha-observaciones { border: 1px solid #999; padding: 6px; min-height: 40px; }
+    .ficha-linea-blanco { display: inline-block; width: 100%; min-width: 140px; border-bottom: 1px solid #666; }
+    .ficha-firma { margin-top: 2.5rem; }
+    .ficha-firma-linea {
+        width: 260px;
+        border-top: 1px solid #000;
+        padding-top: 4px;
+        text-align: center;
+        font-size: 11px;
+    }
+    .ficha-pie {
+        margin-top: 2rem;
+        padding-top: .5rem;
+        border-top: 1px solid #ccc;
+        text-align: center;
+        color: #666;
+    }
+    .ficha-pie p { margin: 0; font-size: 10px; }
+}
+
+/* Transmisión en vivo (partido_vivo.php): pantalla pensada para proyectar en un TV/monitor
+   durante el partido, con marcador grande, balones 3D del deporte y feed de eventos que
+   se refresca solo. */
+.pagina-vivo {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(var(--color-primario-rgb), .5), transparent 55%),
+        radial-gradient(circle at 85% 85%, rgba(var(--color-secundario-rgb), .4), transparent 55%),
+        #120a24;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Balón 3D decorativo, flotando de fondo (mismo asset que el hero de la portada), muy
+   tenue para no competir con el marcador ni el feed. */
+.balon-fondo-vivo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: clamp(420px, 60vw, 780px);
+    height: clamp(420px, 60vw, 780px);
+    transform: translate(-50%, -50%);
+    opacity: .1;
+    filter: blur(1px);
+    pointer-events: none;
+    z-index: 0;
+    animation: girarBalonFondo 60s linear infinite;
+}
+
+@keyframes girarBalonFondo {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.pagina-vivo-contenido {
+    width: 100%;
+    max-width: 980px;
+    position: relative;
+    z-index: 1;
+}
+
+.pagina-vivo-cabecera {
+    margin-bottom: 1.75rem;
+}
+
+.badge-en-vivo {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 999px;
+    padding: .4rem .9rem;
+}
+
+.cronometro-vivo {
+    font-weight: 700;
+    font-size: .95rem;
+    letter-spacing: .03em;
+}
+
+.punto-en-vivo {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff4d4d;
+    display: inline-block;
+    box-shadow: 0 0 0 rgba(255, 77, 77, .6);
+    animation: pulsoEnVivo 1.6s infinite;
+}
+
+@keyframes pulsoEnVivo {
+    0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, .6); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+}
+
+.marcador-vivo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 3rem);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03));
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .6);
+}
+
+.marcador-vivo-equipo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .85rem;
+    width: 30%;
+    text-align: center;
+}
+
+.marcador-vivo-logo {
+    position: relative;
+    padding: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-equipo) 55%, transparent) 0%, transparent 72%);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-equipo) 65%, transparent);
+}
+
+.marcador-vivo-nombre {
+    font-weight: 700;
+    font-size: clamp(.85rem, 2vw, 1.25rem);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+
+.marcador-vivo-numeros {
+    display: flex;
+    align-items: center;
+    gap: clamp(.5rem, 2vw, 1.25rem);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 9vw, 6rem);
+    line-height: 1;
+}
+
+.marcador-vivo-guion {
+    opacity: .5;
+    font-size: clamp(1.5rem, 4vw, 3rem);
+}
+
+.marcador-pulso {
+    animation: pulsoMarcador .9s ease;
+}
+
+@keyframes pulsoMarcador {
+    0% { transform: scale(1); color: #fff; }
+    30% { transform: scale(1.35); color: #facc15; }
+    100% { transform: scale(1); color: #fff; }
+}
+
+.pagina-vivo-feed {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.feed-eventos li.feed-evento {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .75rem;
+    margin-bottom: .4rem;
+    border-radius: 12px;
+    border-left: 3px solid rgba(255, 255, 255, .25);
+    background: rgba(255, 255, 255, .04);
+    font-size: clamp(.85rem, 1.6vw, 1.05rem);
+    opacity: 1;
+    transition: opacity .4s ease, transform .4s ease;
+}
+
+.feed-eventos li.feed-evento-gol {
+    border-left-color: #4ade80;
+    background: rgba(74, 222, 128, .08);
+}
+
+.feed-eventos li.feed-evento-amarilla {
+    border-left-color: #facc15;
+}
+
+.feed-eventos li.feed-evento-roja {
+    border-left-color: #f87171;
+}
+
+.feed-eventos li.feed-evento-cambio {
+    border-left-color: #38bdf8;
+}
+
+.feed-eventos li.feed-evento-nuevo {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+.feed-icono {
+    font-size: 1.15em;
+    width: 1.6em;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.feed-balon {
+    width: 1.5em;
+    height: 1.5em;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .5));
+}
+
+.feed-equipo {
+    opacity: .65;
+}
+
+.confeti-lienzo {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+/* Banner de reacción a pantalla completa, uno por tipo de evento (gol, tarjeta amarilla,
+   tarjeta roja, cambio); JS solo cambia el texto/ícono y agrega .banner-evento-activo.
+   Oculto por defecto (scale 0 + opacity 0). */
+.banner-evento {
+    position: fixed;
+    inset: 0;
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: radial-gradient(circle, rgba(0, 0, 0, .55) 0%, transparent 70%);
+    opacity: 0;
+    transform: scale(.6);
+    pointer-events: none;
+    transition: opacity .35s ease, transform .35s ease;
+}
+
+.banner-evento.banner-evento-activo {
+    opacity: 1;
+    transform: scale(1);
+    animation: sacudirBannerEvento .5s ease;
+}
+
+@keyframes sacudirBannerEvento {
+    0% { transform: scale(.4); }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+.banner-evento-icono {
+    display: flex;
+    line-height: 0;
+}
+
+.banner-evento-balon {
+    width: clamp(90px, 16vw, 160px);
+    height: clamp(90px, 16vw, 160px);
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .5));
+    animation: girarBalonGol 1.4s linear infinite;
+}
+
+@keyframes girarBalonGol {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.banner-evento-icono i {
+    font-size: clamp(70px, 14vw, 130px);
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .5));
+}
+
+.banner-evento-texto {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    letter-spacing: .05em;
+    text-shadow: 0 0 40px rgba(255, 255, 255, .25);
+}
+
+/* Gol/canasta: degradado de marca de la copa, como una celebración. */
+.banner-evento-gol .banner-evento-texto {
+    background: var(--degradado-principal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Tarjeta amarilla / falta personal: tono amarillo, sin degradado de marca (identidad
+   propia del evento, no de la copa). */
+.banner-evento-amarilla {
+    background: radial-gradient(circle, rgba(250, 204, 21, .25) 0%, transparent 70%);
+}
+.banner-evento-amarilla .banner-evento-icono i { color: #facc15; }
+.banner-evento-amarilla .banner-evento-texto { color: #facc15; text-shadow: 0 0 40px rgba(250, 204, 21, .55); }
+
+/* Tarjeta roja / falta descalificante: tono rojo. */
+.banner-evento-roja {
+    background: radial-gradient(circle, rgba(248, 113, 113, .3) 0%, transparent 70%);
+}
+.banner-evento-roja .banner-evento-icono i { color: #f87171; }
+.banner-evento-roja .banner-evento-texto { color: #f87171; text-shadow: 0 0 40px rgba(248, 113, 113, .55); }
+
+/* Cambio: tono azul, más discreto que un gol o una tarjeta. */
+.banner-evento-cambio {
+    background: radial-gradient(circle, rgba(56, 189, 248, .22) 0%, transparent 70%);
+}
+.banner-evento-cambio .banner-evento-icono i { color: #38bdf8; }
+.banner-evento-cambio .banner-evento-texto { color: #38bdf8; text-shadow: 0 0 40px rgba(56, 189, 248, .5); }
+
+@media (max-width: 576px) {
+    .marcador-vivo { flex-direction: column; gap: 1rem; }
+    .marcador-vivo-equipo { width: auto; }
+}
+
+/* Icono de las tarjetas de estadística (hero de la copa y perfil del equipo):
+   una pastilla circular suave con el acento de la copa, el mismo motivo visual
+   en todo el sitio. En el hero (fondo oscuro) hereda un tono claro. */
+.stat-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    margin-bottom: .45rem;
+    background: rgba(var(--color-primario-rgb), .1);
+    color: var(--color-primario);
+    font-size: .95rem;
+}
+
+.hero-stat .stat-icono {
+    background: rgba(255, 255, 255, .14);
+    color: var(--color-acento);
+}
+
+/* El <main> del panel admin es un flex item (hermano del sidebar). Un flex item
+   tiene min-width:auto por defecto: basta UN texto sin cortes (p. ej. la URL de
+   una copa) para que TODO el contenido principal se ensanche más allá de la
+   pantalla del teléfono — se veía el título y los botones cortados a la derecha.
+   min-width:0 rompe esa cadena: el main nunca supera el viewport y los
+   truncados (text-truncate) vuelven a funcionar dentro de él. */
+main.flex-grow-1 {
+    min-width: 0;
+}
+
+/* ==========================================================================
+   Capa de refinamiento visual
+   Va al final del archivo a propósito: gana la cascada sobre las reglas base
+   sin tener que reescribirlas. Objetivo: bordes y sombras más finos y
+   consistentes en toda la app (tarjetas, botones, formularios, tablas).
+   ========================================================================== */
+
+/* Sombra en dos capas para las tarjetas: un halo ambiental muy suave + una
+   sombra de apoyo corta. Se ve "asentada" en vez de flotando con una mancha. */
+.card-suave {
+    border: 1px solid rgba(var(--color-primario-oscuro-rgb), .07);
+    box-shadow:
+        0 1px 2px rgba(var(--color-primario-oscuro-rgb), .05),
+        0 10px 28px -20px rgba(var(--color-primario-oscuro-rgb), .22);
+}
+
+.card-suave:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--color-primario-rgb), .16);
+    box-shadow:
+        0 2px 4px rgba(var(--color-primario-oscuro-rgb), .06),
+        0 18px 38px -20px rgba(var(--color-primario-oscuro-rgb), .3);
+}
+
+.stat-tile {
+    border: 1px solid rgba(var(--color-primario-oscuro-rgb), .07);
+    box-shadow:
+        0 1px 2px rgba(var(--color-primario-oscuro-rgb), .05),
+        0 8px 22px -18px rgba(var(--color-primario-oscuro-rgb), .2);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.stat-tile:hover {
+    border-color: rgba(var(--color-primario-rgb), .18);
+}
+
+/* Filas de la tabla de posiciones: borde fino además de la sombra, para que
+   la separación se lea igual de bien en pantallas de bajo contraste. */
+.tabla-posiciones tbody tr td {
+    border-top: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+    border-bottom: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+.tabla-posiciones tbody tr td:first-child {
+    border-left: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+.tabla-posiciones tbody tr td:last-child {
+    border-right: 1px solid rgba(var(--color-primario-oscuro-rgb), .06);
+}
+
+/* Formularios: borde neutro en reposo y anillo del color de la copa al enfocar
+   (en vez del azul Bootstrap genérico, que desentona con cada copa). */
+.form-control, .form-select {
+    border-color: rgba(var(--color-primario-oscuro-rgb), .16);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: rgba(var(--color-primario-rgb), .55);
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .12);
+}
+
+.form-check-input:checked {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+
+.form-check-input:focus {
+    border-color: rgba(var(--color-primario-rgb), .55);
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .12);
+}
+
+/* Botones outline: borde más fino y hover que rellena suave con el color de
+   la copa en vez del gris plano de Bootstrap. */
+.btn-outline-secondary {
+    --bs-btn-color: #5d5478;
+    --bs-btn-border-color: rgba(var(--color-primario-oscuro-rgb), .22);
+    --bs-btn-hover-bg: rgba(var(--color-primario-rgb), .07);
+    --bs-btn-hover-border-color: rgba(var(--color-primario-rgb), .45);
+    --bs-btn-hover-color: var(--color-primario-oscuro);
+    --bs-btn-active-bg: rgba(var(--color-primario-rgb), .12);
+    --bs-btn-active-border-color: rgba(var(--color-primario-rgb), .5);
+    --bs-btn-active-color: var(--color-primario-oscuro);
+}
+
+/* Botón principal degradado: brillo interior sutil en el borde superior, como
+   luz cayendo sobre la superficie (detalle pequeño, acabado mucho más fino). */
+.btn-degradado {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .25),
+        0 8px 20px -10px rgba(var(--color-primario-rgb), .55);
+}
+
+.btn-degradado:hover {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .3),
+        0 14px 30px -10px rgba(var(--color-primario-rgb), .6);
+}
+
+/* Accesibilidad + acabado: anillo de foco visible SOLO al navegar con teclado
+   (focus-visible), del color de la copa. */
+.btn:focus-visible, a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 .22rem rgba(var(--color-primario-rgb), .3);
+}
+
+/* Sidebar del admin: la sección activa lleva una barrita de acento a la
+   izquierda además del fondo, para ubicarse de un vistazo. */
+.sidebar-admin .nav-link {
+    position: relative;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.sidebar-admin .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--color-acento);
+}
+
+/* Badges de estado con borde fino del mismo tono (se ven impresos, no pegados) */
+.badge-estado-jugado { box-shadow: inset 0 0 0 1px rgba(25, 135, 84, .25); }
+.badge-estado-programado { box-shadow: inset 0 0 0 1px rgba(var(--color-primario-oscuro-rgb), .15); }
+
+/* Alertas flash: barra de acento a la izquierda según el tipo */
+.alert-success { border-left: 4px solid #198754 !important; }
+.alert-danger { border-left: 4px solid #dc3545 !important; }
+.alert-warning { border-left: 4px solid #f0b429 !important; }
+
+/* Scrollbars discretos en las áreas con scroll propio (WebKit/Chromium) */
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-primario-oscuro-rgb), .18);
+    border-radius: 999px;
+}
+.table-responsive::-webkit-scrollbar-track { background: transparent; }
+
+/* Selección de texto con la identidad de la copa */
+::selection {
+    background: rgba(var(--color-primario-rgb), .2);
+}
+
+/* ---------- Vista previa de imágenes al subirlas ----------
+   Contenedor que acompaña a cada <input type="file" data-vista-previa="...">: muestra la
+   imagen que ya está guardada y, en cuanto el organizador elige un archivo, la imagen
+   nueva al lado (lectura local con FileReader, sin subir nada todavía). Ver
+   assets/js/app.js. */
+.vista-previa-subida {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+/* Texto de ayuda cuando todavía no hay ninguna imagen que mostrar (solo en los
+   contenedores que declaran uno con data-vacio). */
+.vista-previa-subida[data-vacio]:empty::before {
+    content: attr(data-vacio);
+    font-size: .8rem;
+    color: #6c757d;
+}
+
+.vista-previa-item {
+    text-align: center;
+    margin: 0;
+}
+
+.vista-previa-item img,
+.vista-previa-item svg {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .08);
+    padding: 4px;
+    display: block;
+}
+
+.vista-previa-item figcaption {
+    font-size: .72rem;
+    color: #6c757d;
+    margin-top: .3rem;
+}
+
+.vista-previa-item-nueva img {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(var(--color-primario-rgb), .18);
+}
+
+.vista-previa-item-nueva figcaption {
+    color: var(--color-primario);
+    font-weight: 600;
+}
+
+/* ---------- Transmisión en vivo: cierre del partido y alineaciones ---------- */
+
+/* Cuando el encuentro termina, la píldora deja de tener el punto rojo latiendo (que es lo
+   que comunica "esto está pasando ahora") y pasa a verde apagado de "ya cerró". */
+.badge-en-vivo.badge-finalizado {
+    background: rgba(74, 222, 128, .14);
+    border-color: rgba(74, 222, 128, .4);
+}
+
+.badge-en-vivo.badge-finalizado .punto-en-vivo {
+    background: #4ade80;
+    animation: none;
+    box-shadow: none;
+}
+
+/* El reloj se acabó (00:00) y el periodo sigue abierto: aviso de que toca cerrar el
+   tiempo o agregar minutos extra desde el panel. */
+.cronometro-agotado {
+    color: #facc15;
+    animation: parpadeoCronometro 1.4s ease-in-out infinite;
+}
+
+@keyframes parpadeoCronometro {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .35; }
+}
+
+/* Cartel de cierre bajo el marcador. Oculto mientras el partido está en juego. */
+.aviso-final {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    text-align: center;
+    margin: -1rem 0 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(74, 222, 128, .18), rgba(74, 222, 128, .06));
+    border: 1px solid rgba(74, 222, 128, .35);
+}
+
+.aviso-final.aviso-final-visible {
+    display: flex;
+    animation: aparecerFinal .6s ease;
+}
+
+@keyframes aparecerFinal {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: none; }
+}
+
+.aviso-final-titulo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-size: clamp(1rem, 2.6vw, 1.5rem);
+    color: #4ade80;
+}
+
+.aviso-final-detalle {
+    font-size: clamp(.9rem, 2vw, 1.15rem);
+    opacity: .85;
+}
+
+.pagina-vivo-alineaciones {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.alineacion-equipo {
+    background: rgba(255, 255, 255, .04);
+    border-radius: 14px;
+    padding: 1rem;
+    height: 100%;
+}
+
+/* Círculo de estado de cada jugador en la alineación: VERDE lleno = titular, hueco
+   apagado = suplente en la banca. Mismo lenguaje visual en el panel y en la transmisión. */
+.punto-titular {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(148, 163, 184, .7);
+    background: transparent;
+}
+
+.punto-titular.es-titular {
+    background: #22c55e;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .22);
+}
+
+/* ---------- Alineación del encuentro (panel del organizador) ----------
+   El interruptor de titular/banca es un CÍRCULO, no una casilla: verde lleno = arranca en
+   cancha, hueco = espera en la banca. Es el mismo lenguaje visual que usa la transmisión
+   en vivo (.punto-titular), para que se lea igual en las dos pantallas. */
+.check-titular.form-check-input {
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 50%;
+    border: 2px solid #adb5bd;
+    background-color: #fff;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.check-titular.form-check-input:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .2);
+}
+
+.check-titular.form-check-input:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+.fila-alineacion {
+    border-bottom: 1px solid rgba(0, 0, 0, .05);
+}
+
+.fila-alineacion:last-child {
+    border-bottom: 0;
+}
+
+/* El círculo de la leyenda ("verde = titular") en el panel va sobre fondo claro, al revés
+   que en la transmisión en vivo: se le sube el contraste del borde. */
+.card-suave .punto-titular {
+    border-color: #adb5bd;
+}
