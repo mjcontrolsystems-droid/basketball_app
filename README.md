@@ -124,11 +124,31 @@ El servicio se "duerme" tras ~15 minutos sin visitas y tarda unos segundos en de
 
 ## Pruebas
 
+### Lógica (rápidas, sin base de datos)
+
 ```
 php scripts/tests.php
 ```
 
-Cubren la lógica donde un error pasa desapercibido más tiempo y hace más daño: cálculo de
-la tabla de posiciones, marcador derivado de los eventos, reglas de cada deporte,
-cronómetro con tiempo extra, formato liga vs campeonato, alineaciones y el generador de
-calendario. No necesitan base de datos ni servidor.
+Cubren donde un error pasa desapercibido más tiempo y hace más daño: cálculo de la tabla
+de posiciones, marcador derivado de los eventos, reglas de cada deporte, cronómetro con
+tiempo extra, formato liga vs campeonato, alineaciones y el generador de calendario.
+
+### Extremo a extremo (con base y servidor levantados)
+
+```
+scripts/pruebas_e2e.sh 8000
+```
+
+Recorren todas las pantallas públicas y del panel, y ejercitan los flujos que ESCRIBEN:
+guardar equipo y jugador, alineación, eventos, tiempo extra, generar calendario y subir
+una imagen (comprobando que se guarda, que se sirve como PNG y que un archivo que no es
+imagen se rechaza). También verifican que el código de la aplicación no sea alcanzable
+por web. Conviene correrlas contra la imagen Docker antes de desplegar, que es lo que
+corre en producción:
+
+```
+docker build -t copa . && docker run -d --name copa-app -p 8200:10000 -e PORT=10000 \
+  -e "DATABASE_URL=postgresql://copa:copa@host.docker.internal:55432/copa_test?sslmode=disable" copa
+scripts/pruebas_e2e.sh 8200
+```
