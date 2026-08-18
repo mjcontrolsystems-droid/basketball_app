@@ -47,10 +47,19 @@
         </div>
         <hr class="border-secondary opacity-25 my-4">
         <p class="small text-center mb-1 opacity-75">© <?= date('Y') ?> <?= e($torneo['nombre'] ?? 'Plataforma de Copas y Ligas') ?><?= $torneo ? ' · ' . e($torneo['subtitulo']) : '' ?></p>
-        <div class="d-flex align-items-center justify-content-center gap-2 opacity-50">
-            <img src="<?= url('assets/img/logo-empresa.png') ?>" alt="MJ Control Systems" height="28" width="28" style="object-fit:contain;">
-            <p class="small mb-0">MJ Control Systems · Plataformas web inteligentes, control total de tu negocio.</p>
+        <?php // Contacto de MJ Control Systems, no del organizador de esta copa: el de la
+              // copa vive en su propia página (ver publico/organizador.php). El correo va
+              // como enlace mailto y con opacidad completa, porque si está para que la
+              // gente escriba, tiene que poder leerse y tocarse desde el teléfono. ?>
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+            <img src="<?= url('assets/img/logo-empresa.png') ?>" alt="MJ Control Systems" height="28" width="28" style="object-fit:contain;" class="opacity-75">
+            <p class="small mb-0 opacity-75">MJ Control Systems · <?= e(LEMA_PLATAFORMA) ?></p>
         </div>
+        <p class="small text-center mb-0">
+            <a href="mailto:<?= e(CONTACTO_PLATAFORMA) ?>" class="link-contacto-plataforma">
+                <i class="bi bi-envelope me-1"></i><?= e(CONTACTO_PLATAFORMA) ?>
+            </a>
+        </p>
     </div>
 </footer>
 

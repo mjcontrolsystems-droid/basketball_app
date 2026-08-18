@@ -1518,3 +1518,19 @@ main.flex-grow-1 {
 .card-suave .punto-titular {
     border-color: #adb5bd;
 }
+
+/* Contacto de MJ Control Systems en el pie: sobre el fondo oscuro del footer, un enlace
+   apagado no se lee. Se mantiene discreto (no compite con los datos de la copa) pero
+   legible y con área de toque cómoda en el teléfono. */
+.link-contacto-plataforma {
+    color: rgba(255, 255, 255, .72);
+    text-decoration: none;
+    display: inline-block;
+    padding: .35rem .25rem;
+}
+
+.link-contacto-plataforma:hover,
+.link-contacto-plataforma:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+}
