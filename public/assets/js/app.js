@@ -329,6 +329,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Casillas que desbloquean otro campo (ej. "Ajustar la jornada manualmente"). El campo
+    // llega readonly desde el servidor para que el valor automático se vea pero no se toque;
+    // al marcar la casilla se libera. Aquí y no inline: el CSP bloquea el JavaScript en HTML.
+    document.querySelectorAll('input[type="checkbox"][data-activa]').forEach(function (casilla) {
+        var destino = document.querySelector(casilla.getAttribute('data-activa'));
+        if (!destino) {
+            return;
+        }
+        var aplicar = function () {
+            destino.readOnly = !casilla.checked;
+            if (casilla.checked) {
+                destino.focus();
+                destino.select();
+            }
+        };
+        casilla.addEventListener('change', aplicar);
+    });
+
     // Ficha del partido con ?imprimir=1: abre el diálogo de impresión apenas carga
     // (mismo motivo CSP: el <script> inline que hacía esto nunca llegaba a ejecutarse).
     if (document.querySelector('[data-imprimir-al-cargar]')) {

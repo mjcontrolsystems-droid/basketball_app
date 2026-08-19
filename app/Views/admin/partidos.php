@@ -131,9 +131,26 @@
                 <div class="form-text">Las fases de eliminación directa no cuentan para la tabla de posiciones.</div>
             </div>
             <?php endif; ?>
+            <?php // La jornada ya no se escribe a mano: se deduce de la fecha del encuentro
+                  // (los del mismo fin de semana quedan juntos, una fecha nueva abre la
+                  // siguiente). El campo queda bloqueado salvo que se pida corregirlo. ?>
             <div class="col-md-6" id="grupoJornada">
                 <label class="form-label small fw-semibold">Jornada</label>
-                <input type="number" min="1" name="jornada" class="form-control" value="<?= e((string) ($partidoEditar['jornada'] ?? $siguienteJornada)) ?>">
+                <input type="number" min="1" max="<?= (int) $jornadaTope ?>" name="jornada"
+                       id="campoJornada" class="form-control"
+                       value="<?= e((string) ($partidoEditar['jornada'] ?? $jornadaSugerida)) ?>"
+                       <?= $jornadaManualMarcada ? '' : 'readonly' ?>>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" value="1" name="jornada_manual"
+                           id="jornadaManual" data-activa="#campoJornada"
+                           <?= $jornadaManualMarcada ? 'checked' : '' ?>>
+                    <label class="form-check-label small" for="jornadaManual">Ajustar la jornada manualmente</label>
+                </div>
+                <div class="form-text">
+                    Se asigna sola según la fecha: los encuentros del mismo fin de semana van
+                    a la misma jornada y una fecha nueva abre la siguiente. Marca la casilla
+                    solo para una reprogramación (máximo, la jornada <?= (int) $jornadaTope ?>).
+                </div>
             </div>
 
             <div class="col-md-4">

@@ -222,9 +222,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // --- Jornada ---
+        // Se deduce de la fecha en lugar de escribirse a mano: los encuentros del mismo
+        // fin de semana caen en la misma jornada y una fecha nueva abre la siguiente. Solo
+        // si el organizador marca "ajustar manualmente" se toma lo que él escribió, y aun
+        // así con tope, para que no salga una jornada 30 en un torneo de cinco.
+        $fechaPartido = (string) ($_POST['fecha'] ?? '');
+        $jornadaAutomatica = jornada_por_fecha($partidos, $fechaPartido, $id);
+        $jornadaManual = !empty($_POST['jornada_manual']);
+        $jornada = $jornadaAutomatica;
+
+        if ($jornadaManual) {
+            $jornada = (int) ($_POST['jornada'] ?? 0);
+            $tope = jornada_maxima_permitida($partidos, $id);
+            if ($jornada < 1) {
+                $errores[] = 'La jornada debe ser 1 o mayor.';
+            } elseif ($jornada > $tope) {
+                $errores[] = "La jornada más alta que puedes usar ahora es la {$tope}. Para llegar a la {$jornada} tendrías que programar antes las jornadas intermedias.";
+            }
+        }
+
         if (empty($errores)) {
             $datos = [
-                'jornada' => (int) ($_POST['jornada'] ?: 1),
+                'jornada' => $jornada,
                 'equipo_local' => $local,
                 'equipo_visitante' => $visitante,
                 'fecha' => (string) $_POST['fecha'],
@@ -275,7 +295,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $jornadas = partidos_por_jornada($partidos);
 $playoffsPorFase = partidos_playoffs_por_fase($partidos, $fasesTorneo);
-$siguienteJornada = empty($jornadas) ? 1 : max(array_keys($jornadas));
+// Para el formulario: qué jornada saldría y hasta cuál se puede corregir a mano. La
+// automática real se recalcula al guardar con la fecha que se haya elegido; esta es solo
+// la que corresponde hoy, para mostrarla como referencia.
+$idFormulario = (int) ($partidoEditar['id'] ?? 0);
+$jornadaSugerida = $idFormulario > 0 && isset($partidoEditar['jornada'])
+    ? (int) $partidoEditar['jornada']
+    : jornada_por_fecha($partidos, (string) ($partidoEditar['fecha'] ?? date('Y-m-d')), $idFormulario);
+$jornadaTope = jornada_maxima_permitida($partidos, $idFormulario);
+$jornadaManualMarcada = !empty($partidoEditar['jornada_manual']);
 $faseSeleccionada = $partidoEditar['fase'] ?? ($_GET['fase'] ?? 'grupos');
 if (!in_array($faseSeleccionada, $fasesValidas, true)) {
     $faseSeleccionada = 'grupos';
@@ -293,12 +321,14 @@ vista_admin('admin/partidos', compact(
     'faseSeleccionada',
     'fasesTorneo',
     'fasesValidas',
+    'jornadaManualMarcada',
     'jornadas',
+    'jornadaSugerida',
+    'jornadaTope',
     'partidoEditar',
     'partidos',
     'playoffsPorFase',
     'seccion_activa',
-    'siguienteJornada',
     'titulo_pagina',
     'torneo'
 ));

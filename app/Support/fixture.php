@@ -117,3 +117,102 @@ function torneo_vueltas_label(array $torneo): string
 {
     return torneo_vueltas($torneo) === 2 ? 'Ida y vuelta' : 'Una vuelta';
 }
+
+/**
+ * Días de holgura para considerar que dos encuentros son de la misma jornada. Una jornada
+ * de fin de semana se juega sábado y domingo y a veces arrastra un pendiente al lunes, así
+ * que 2 días cubre el fin de semana completo.
+ *
+ * No más: con 3 días, una liga que juega miércoles y sábado metería ambas fechas en la
+ * misma jornada. La distancia se mide siempre contra la fecha que ABRE cada jornada, no
+ * contra el último encuentro, para que la ventana no se vaya corriendo día a día.
+ */
+const JORNADA_VENTANA_DIAS = 2;
+
+/**
+ * Qué jornada le toca a un encuentro según su fecha.
+ *
+ * El organizador ya no la escribe a mano (podía poner "jornada 30" en un torneo de 5) —
+ * se deduce: si la fecha cae dentro de la ventana de una jornada que ya existe, es esa
+ * jornada; si es una fecha nueva, se abre la siguiente. La fecha manda y no el orden de
+ * captura, así que cargar los encuentros salteados o corregir una fecha vieja sigue
+ * dando el número correcto.
+ *
+ * Se respeta la jornada por fecha aunque quede "apretada": si el organizador programó dos
+ * partidos del mismo equipo el mismo día sabrá por qué lo hizo, y forzar otra jornada solo
+ * escondería el problema. Lo que sí se evita es inventar números fuera de secuencia.
+ *
+ * @param array $partidos   Encuentros existentes del torneo.
+ * @param string $fecha     Fecha del encuentro que se está guardando (YYYY-MM-DD).
+ * @param int $idIgnorar    Al editar, el id del propio encuentro (no debe compararse consigo mismo).
+ */
+function jornada_por_fecha(array $partidos, string $fecha, int $idIgnorar = 0): int
+{
+    $marca = strtotime($fecha);
+    if ($marca === false) {
+        // Sin fecha usable no hay nada que deducir: va a la jornada que sigue.
+        return jornada_siguiente($partidos, $idIgnorar);
+    }
+
+    // Fecha de referencia de cada jornada ya existente. Se toma la más temprana porque es
+    // la que abre la jornada; las demás caen dentro de su ventana.
+    $inicioDeJornada = [];
+    foreach ($partidos as $p) {
+        if ((int) ($p['id'] ?? 0) === $idIgnorar) {
+            continue;
+        }
+        // Los partidos de eliminación directa no llevan jornada de temporada regular.
+        if (($p['fase'] ?? 'grupos') !== 'grupos') {
+            continue;
+        }
+        $numero = (int) ($p['jornada'] ?? 0);
+        $suMarca = strtotime((string) ($p['fecha'] ?? ''));
+        if ($numero < 1 || $suMarca === false) {
+            continue;
+        }
+        if (!isset($inicioDeJornada[$numero]) || $suMarca < $inicioDeJornada[$numero]) {
+            $inicioDeJornada[$numero] = $suMarca;
+        }
+    }
+
+    if (empty($inicioDeJornada)) {
+        return 1;
+    }
+
+    $ventana = JORNADA_VENTANA_DIAS * 86400;
+    foreach ($inicioDeJornada as $numero => $inicio) {
+        if (abs($marca - $inicio) <= $ventana) {
+            return $numero;
+        }
+    }
+
+    // Fecha que no encaja en ninguna jornada existente. Si es posterior a todas, abre la
+    // siguiente; si es anterior a todas, también va al final: renumerar las jornadas ya
+    // publicadas rompería calendarios impresos y enlaces compartidos.
+    return max(array_keys($inicioDeJornada)) + 1;
+}
+
+/**
+ * La jornada siguiente a la última registrada (1 si todavía no hay ninguna).
+ */
+function jornada_siguiente(array $partidos, int $idIgnorar = 0): int
+{
+    $maxima = 0;
+    foreach ($partidos as $p) {
+        if ((int) ($p['id'] ?? 0) === $idIgnorar || ($p['fase'] ?? 'grupos') !== 'grupos') {
+            continue;
+        }
+        $maxima = max($maxima, (int) ($p['jornada'] ?? 0));
+    }
+
+    return $maxima + 1;
+}
+
+/**
+ * Tope aceptable al corregir la jornada a mano: una más que la última existente. Impide
+ * saltos absurdos (jornada 30 con 4 jornadas jugadas) sin estorbar una reprogramación real.
+ */
+function jornada_maxima_permitida(array $partidos, int $idIgnorar = 0): int
+{
+    return jornada_siguiente($partidos, $idIgnorar);
+}
