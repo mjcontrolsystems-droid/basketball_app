@@ -97,24 +97,55 @@
             <div class="col-12">
                 <label class="form-label small fw-semibold d-block">¿Cómo se define el campeón?</label>
                 <div class="row g-2" id="grupoFormatoTorneo">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <input type="radio" class="btn-check" name="modo" value="<?= e(FORMATO_LIGA) ?>" id="modoLiga" <?= $modoPorDefecto === FORMATO_LIGA ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-secondary w-100 text-start p-3 rounded-4" for="modoLiga">
+                        <label class="btn btn-outline-secondary w-100 h-100 text-start p-3 rounded-4" for="modoLiga">
                             <span class="d-block fw-semibold"><i class="bi bi-list-ol me-1"></i>Liga</span>
                             <span class="d-block small text-muted">Todos contra todos y campeón el que termine primero en la tabla. Sin fase final.</span>
                         </label>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <input type="radio" class="btn-check" name="modo" value="<?= e(FORMATO_CAMPEONATO) ?>" id="modoCampeonato" <?= $modoPorDefecto === FORMATO_CAMPEONATO ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-secondary w-100 text-start p-3 rounded-4" for="modoCampeonato">
+                        <label class="btn btn-outline-secondary w-100 h-100 text-start p-3 rounded-4" for="modoCampeonato">
                             <span class="d-block fw-semibold"><i class="bi bi-trophy me-1"></i>Liga con fase final</span>
                             <span class="d-block small text-muted">Todos contra todos igual que la liga, y al terminar la tabla los mejores juegan cuartos, semifinal, tercer lugar y final.</span>
                         </label>
                     </div>
+                    <div class="col-md-4">
+                        <input type="radio" class="btn-check" name="modo" value="<?= e(FORMATO_GRUPOS) ?>" id="modoGrupos" <?= $modoPorDefecto === FORMATO_GRUPOS ? 'checked' : '' ?>>
+                        <label class="btn btn-outline-secondary w-100 h-100 text-start p-3 rounded-4" for="modoGrupos">
+                            <span class="d-block fw-semibold"><i class="bi bi-diagram-3 me-1"></i>Grupos + eliminación</span>
+                            <span class="d-block small text-muted">Estilo mundial: 16 equipos en 4 grupos de 4, juegan entre ellos y los mejores cruzan a cuartos, semis y final.</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="form-text mt-2">
-                    <i class="bi bi-info-circle me-1"></i>Los dos formatos juegan la misma temporada regular: todos contra todos con su tabla de puntos.
-                    Lo único que cambia es si al final hay eliminación directa o no.
+                    <i class="bi bi-info-circle me-1"></i>Los dos primeros juegan todos contra todos: con 16 equipos son 120 partidos.
+                    Con grupos son 24, porque cada equipo solo juega contra los de su grupo. Elegí grupos si tenés pocas fechas.
+                </div>
+            </div>
+
+            <?php // --- Configuración de los grupos ---
+                  // Solo se usa en el formato de grupos; el JS de app.js muestra u oculta
+                  // este bloque junto con el de las fases. ?>
+            <div class="col-12" id="grupoConfigGrupos">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">¿Cuántos grupos?</label>
+                        <input type="number" min="2" max="26" name="num_grupos" class="form-control" value="<?= e((string) ($torneoEditar['num_grupos'] ?? 4)) ?>">
+                        <div class="form-text">Con 16 equipos, 4 grupos dan grupos de 4.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">¿Cuántos pasan por grupo?</label>
+                        <input type="number" min="1" max="8" name="clasifican_por_grupo" class="form-control" value="<?= e((string) ($torneoEditar['clasifican_por_grupo'] ?? 2)) ?>">
+                        <div class="form-text">Lo habitual son 2: con 4 grupos dan 8 y salen cuartos.</div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="small text-muted pb-2">
+                            <i class="bi bi-shuffle me-1"></i>El sorteo de los grupos se hace desde la pantalla de Equipos,
+                            marcando antes quiénes son cabeza de serie.
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-md-4">

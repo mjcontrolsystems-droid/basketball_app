@@ -15,8 +15,55 @@ $minimoPlantilla = torneo_jugadores_en_cancha($torneo);
 // Al fallar la validación se vuelve al formulario de alta, no a la lista.
 $urlFormularioNuevo = url('admin/equipos.php?accion=nuevo');
 
+// Fase de grupos: cuántos hay y quién está en cada uno.
+$numGrupos = torneo_num_grupos($torneo);
+$tieneGrupos = torneo_tiene_grupos($torneo);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
+
+    // Sorteo de los grupos. Se rehace entero cada vez: es un sorteo, no un ajuste.
+    if (($_POST['accion'] ?? '') === 'sortear_grupos') {
+        if (!$tieneGrupos) {
+            redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'Esta competencia no usa fase de grupos. Cámbiale el formato en la configuración de la copa.');
+        }
+        if (count($equipos) < $numGrupos) {
+            redirigir_con_mensaje(url('admin/equipos.php'), 'error', "Necesitas al menos {$numGrupos} equipos para llenar {$numGrupos} grupos.");
+        }
+
+        // Un sorteo después de que ya se jugó algo dejaría partidos entre equipos de
+        // grupos distintos: sería un desastre silencioso, así que se bloquea.
+        $partidosGrupos = array_values(array_filter(partidos_listar($torneo['id']), fn($p) => ($p['fase'] ?? 'grupos') === 'grupos'));
+        if (!empty($partidosGrupos)) {
+            redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'Ya hay ' . count($partidosGrupos) . ' encuentros de fase de grupos programados. Bórralos antes de volver a sortear, o los cruces dejarían de coincidir con los grupos.');
+        }
+
+        $asignacion = grupos_sortear($equipos, $numGrupos);
+        foreach ($equipos as &$eq) {
+            $eq['grupo'] = $asignacion[(int) $eq['id']] ?? '';
+        }
+        unset($eq);
+        equipos_guardar_todos($equipos, $torneo['id']);
+
+        bitacora_registrar('grupos_sorteados', 'Sorteo de ' . $numGrupos . ' grupos con ' . count($equipos) . ' equipos', $torneo['id']);
+        redirigir_con_mensaje(url('admin/equipos.php'), 'success', 'Grupos sorteados. Revisa el reparto y vuelve a sortear si no te convence.');
+    }
+
+    // Corrección a mano del grupo y de las cabezas de serie, todo de un envío.
+    if (($_POST['accion'] ?? '') === 'guardar_grupos') {
+        $gruposEnviados = (array) ($_POST['grupo'] ?? []);
+        $cabezas = array_map('intval', (array) ($_POST['cabeza_serie'] ?? []));
+        $letrasValidas = grupos_letras($numGrupos);
+
+        foreach ($equipos as &$eq) {
+            $letra = strtoupper(trim((string) ($gruposEnviados[$eq['id']] ?? '')));
+            $eq['grupo'] = in_array($letra, $letrasValidas, true) ? $letra : '';
+            $eq['cabeza_serie'] = in_array((int) $eq['id'], $cabezas, true);
+        }
+        unset($eq);
+        equipos_guardar_todos($equipos, $torneo['id']);
+        redirigir_con_mensaje(url('admin/equipos.php'), 'success', 'Grupos y cabezas de serie guardados.');
+    }
 
     if (($_POST['accion'] ?? '') === 'eliminar') {
         $id = (int) $_POST['id'];
@@ -162,11 +209,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $seccion_activa = 'equipos';
 $titulo_pagina = 'Equipos';
 
+// Reparto actual, para la pantalla de grupos.
+$porGrupo = $tieneGrupos ? equipos_por_grupo($equipos, $numGrupos) : [];
+$avisoCuadro = $tieneGrupos ? grupos_aviso_cuadro($numGrupos, torneo_clasifican_por_grupo($torneo)) : '';
+
 vista_admin('admin/equipos', compact(
     'accion',
+    'avisoCuadro',
     'equipoEditar',
     'equipos',
     'minimoPlantilla',
+    'numGrupos',
+    'porGrupo',
+    'tieneGrupos',
     'seccion_activa',
     'titulo_pagina',
     'torneo'

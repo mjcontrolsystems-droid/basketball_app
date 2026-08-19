@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../config/config.php';
 const TABLAS_SINGLETON = ['organizador'];
 
 const COLUMNAS_POR_TABLA = [
-    'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion'],
+    'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion', 'grupo', 'cabeza_serie'],
     'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo', 'cronometro_extra_min'],
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
@@ -29,6 +29,7 @@ const COLUMNAS_ENTERAS_POR_TABLA = [
 // 'true'/'false', igual que ya hace torneos_guardar() con sus columnas booleanas.
 const COLUMNAS_BOOLEANAS_POR_TABLA = [
     'jugadores' => ['activo'],
+    'equipos' => ['cabeza_serie'],
 ];
 
 /**
@@ -364,6 +365,16 @@ function db_migrar_automatico(): void
 
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento TEXT NOT NULL DEFAULT ''");
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento_nombre TEXT NOT NULL DEFAULT ''");
+
+        // Fase de grupos estilo mundial: 16 equipos en 4 grupos de 4, todos contra todos
+        // dentro del grupo y los mejores cruzan a eliminación directa. 0 grupos significa
+        // que la competencia no usa este formato, que es como venían todas las anteriores.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS num_grupos INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS clasifican_por_grupo INTEGER NOT NULL DEFAULT 2');
+        // El grupo se guarda como letra ('A', 'B'...) y no como número, porque es como lo
+        // dice todo el mundo en la cancha y así se imprime en el calendario.
+        $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
+        $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
 
         $_SESSION['migraciones_v3_ok'] = true;
     } catch (Throwable $e) {

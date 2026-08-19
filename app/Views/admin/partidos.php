@@ -390,6 +390,69 @@
     </ul>
     <?php endif; ?>
 
+    <?php // ---------- Tablas de la fase de grupos ----------
+          // Se muestran arriba de los encuentros porque son lo que el organizador consulta
+          // todo el tiempo durante la fase de grupos: quién va clasificando. ?>
+    <?php if (!empty($tieneGrupos) && !empty($tablasGrupo)): ?>
+    <div class="card-suave p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-diagram-3 me-1"></i>Grupos</h5>
+                <p class="small text-muted mb-0">Las filas resaltadas son las que clasifican a la eliminación.</p>
+            </div>
+            <form method="post" data-confirm="Se van a crear los cruces con los clasificados de cada grupo, según cómo están las tablas ahora. ¿Continuamos?">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="accion" value="armar_cruces">
+                <?php if ((int) $gruposPendientes > 0): ?>
+                <input type="hidden" name="aun_faltan" value="1">
+                <?php endif; ?>
+                <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-diagram-2 me-1"></i>Armar cruces</button>
+            </form>
+        </div>
+
+        <?php if ((int) $gruposPendientes > 0): ?>
+        <div class="alert alert-warning rounded-4 border-0 small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Faltan <?= (int) $gruposPendientes ?> encuentros de la fase de grupos por jugar. Si armas los cruces ahora,
+            se harán con las posiciones actuales y pueden cambiar.
+        </div>
+        <?php endif; ?>
+
+        <div class="row g-3">
+            <?php foreach ($tablasGrupo as $letra => $datosGrupo): ?>
+            <div class="col-md-6 col-xl-3">
+                <div class="border rounded-4 p-3 h-100">
+                    <div class="fw-semibold small text-uppercase text-muted mb-2">Grupo <?= e($letra) ?></div>
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th style="width:24px;"></th>
+                                <th>Equipo</th>
+                                <th class="text-center">PJ</th>
+                                <th class="text-center">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($datosGrupo['tabla'] as $i => $fila): ?>
+                            <tr class="<?= $i < (int) $datosGrupo['clasifican'] ? 'table-success' : '' ?>">
+                                <td class="small text-muted"><?= $i + 1 ?></td>
+                                <td class="small text-truncate" style="max-width:120px;"><?= e($fila['equipo']['nombre']) ?></td>
+                                <td class="text-center small"><?= (int) $fila['pj'] ?></td>
+                                <td class="text-center small fw-semibold"><?= (int) $fila['pts'] ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($datosGrupo['tabla'])): ?>
+                            <tr><td colspan="4" class="small text-muted">Sin equipos en este grupo.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="tab-content">
         <div class="tab-pane fade show active" id="panelGrupos">
             <?php foreach ($jornadas as $numJornada => $lista): ?>

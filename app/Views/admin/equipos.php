@@ -115,6 +115,84 @@
         <a href="<?= url('admin/equipos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nuevo equipo</a>
     </div>
 
+    <?php // ---------- Fase de grupos ----------
+          // Solo aparece si la competencia usa el formato de grupos. Junta en una sola
+          // pantalla el sorteo, las cabezas de serie y la corrección a mano, porque son
+          // tres pasos del mismo momento: armar los grupos antes de que empiece nada. ?>
+    <?php if (!empty($tieneGrupos) && !empty($equipos)): ?>
+    <div class="card-suave p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-diagram-3 me-1"></i>Grupos</h5>
+                <p class="small text-muted mb-0">
+                    Marca las cabezas de serie y sortea: la app reparte una por grupo para que no caigan juntas.
+                    Después puedes corregir a mano el grupo de cualquier equipo.
+                </p>
+            </div>
+            <form method="post" data-confirm="Se van a repartir los <?= count($equipos) ?> equipos en <?= (int) $numGrupos ?> grupos. Si ya habías sorteado, el reparto anterior se pierde. ¿Sorteamos?">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="accion" value="sortear_grupos">
+                <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-shuffle me-1"></i>Sortear grupos</button>
+            </form>
+        </div>
+
+        <?php if (!empty($avisoCuadro)): ?>
+        <div class="alert alert-warning rounded-4 border-0 small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i><?= e($avisoCuadro) ?>
+        </div>
+        <?php endif; ?>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="guardar_grupos">
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th>Equipo</th>
+                            <th style="width:120px;">Grupo</th>
+                            <th style="width:150px;">Cabeza de serie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($equipos as $eq): ?>
+                        <tr>
+                            <td class="text-truncate" style="max-width:220px;"><?= e($eq['nombre']) ?></td>
+                            <td>
+                                <select name="grupo[<?= (int) $eq['id'] ?>]" class="form-select form-select-sm">
+                                    <option value="">Sin grupo</option>
+                                    <?php foreach (grupos_letras($numGrupos) as $letra): ?>
+                                    <option value="<?= e($letra) ?>" <?= strtoupper((string) ($eq['grupo'] ?? '')) === $letra ? 'selected' : '' ?>><?= e($letra) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" name="cabeza_serie[]" value="<?= (int) $eq['id'] ?>" id="cab<?= (int) $eq['id'] ?>" <?= !empty($eq['cabeza_serie']) ? 'checked' : '' ?>>
+                                    <label class="form-check-label small" for="cab<?= (int) $eq['id'] ?>">Cabeza de serie</label>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <div class="small text-muted">
+                    <?php foreach ($porGrupo as $letra => $lista): ?>
+                    <span class="badge rounded-pill text-bg-light border me-1">
+                        <?= $letra === '' ? 'Sin grupo' : 'Grupo ' . e($letra) ?>: <?= count($lista) ?>
+                    </span>
+                    <?php endforeach; ?>
+                </div>
+                <button type="submit" class="btn btn-outline-secondary rounded-pill px-4"><i class="bi bi-check2 me-1"></i>Guardar grupos</button>
+            </div>
+        </form>
+    </div>
+    <?php endif; ?>
+
     <?php if (empty($equipos)): ?>
     <div class="card-suave p-4 text-center text-muted">
         <i class="bi bi-shield display-6 d-block mb-2"></i>

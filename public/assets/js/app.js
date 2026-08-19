@@ -485,12 +485,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Formulario de copas: las fases de eliminación directa solo tienen sentido en un
     // campeonato. En formato liga el título se decide en la tabla de puntos, así que el
     // bloque se oculta (y al guardar, el servidor tampoco acepta fases — ver admin/torneos.php).
+    // Y la configuración de grupos solo aparece en el formato de grupos.
     var grupoFormato = document.getElementById('grupoFormatoTorneo');
     var grupoFases = document.getElementById('grupoFasesPlayoff');
-    if (grupoFormato && grupoFases) {
+    var grupoGrupos = document.getElementById('grupoConfigGrupos');
+    if (grupoFormato && (grupoFases || grupoGrupos)) {
         var actualizarFases = function () {
             var elegido = grupoFormato.querySelector('input[name="modo"]:checked');
-            grupoFases.style.display = (elegido && elegido.value === 'liga') ? 'none' : '';
+            var modo = elegido ? elegido.value : '';
+            if (grupoFases) {
+                grupoFases.style.display = modo === 'liga' ? 'none' : '';
+            }
+            if (grupoGrupos) {
+                grupoGrupos.style.display = modo === 'grupos' ? '' : 'none';
+            }
         };
         grupoFormato.querySelectorAll('input[name="modo"]').forEach(function (radio) {
             radio.addEventListener('change', actualizarFases);

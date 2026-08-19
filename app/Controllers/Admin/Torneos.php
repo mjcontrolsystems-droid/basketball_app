@@ -77,10 +77,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
     // Formato de la competencia: una LIGA solo lleva el control de puntos (tabla de
     // posiciones), así que se guarda sin ninguna fase de eliminación directa aunque el
     // formulario venga con casillas marcadas de cuando era campeonato.
-    $modo = ($_POST['modo'] ?? FORMATO_CAMPEONATO) === FORMATO_LIGA ? FORMATO_LIGA : FORMATO_CAMPEONATO;
+    $modoEnviado = (string) ($_POST['modo'] ?? FORMATO_CAMPEONATO);
+    $modo = array_key_exists($modoEnviado, FORMATOS_TORNEO_LABEL) ? $modoEnviado : FORMATO_CAMPEONATO;
     $fasesElegidas = $modo === FORMATO_LIGA
         ? []
         : array_values(array_intersect((array) ($_POST['fases_playoff'] ?? []), FASES_PLAYOFF_CATALOGO));
+
+    // Los grupos solo tienen sentido en el formato de grupos: si la competencia es liga o
+    // liga con fase final se guardan en 0 aunque el formulario traiga valores de antes.
+    $numGrupos = $modo === FORMATO_GRUPOS ? max(2, min(26, (int) ($_POST['num_grupos'] ?? 4))) : 0;
+    $clasificanPorGrupo = $modo === FORMATO_GRUPOS ? max(1, min(8, (int) ($_POST['clasifican_por_grupo'] ?? 2))) : 2;
+
+    // No se bloquea el guardado: el organizador puede estar armando la copa por partes y
+    // todavía no tener claro cuántos pasan. Se avisa y ya.
+    $avisoCuadro = $modo === FORMATO_GRUPOS ? grupos_aviso_cuadro($numGrupos, $clasificanPorGrupo) : '';
 
     if ($nombre === '') {
         $errores[] = 'El nombre de la copa o liga es obligatorio.';
@@ -148,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'duracion_periodo_min' => $duracionPeriodo,
             'num_equipos' => max(2, (int) $_POST['num_equipos']),
             'fases_playoff' => $fasesElegidas,
+            'num_grupos' => $numGrupos,
+            'clasifican_por_grupo' => $clasificanPorGrupo,
             'permite_empates' => isset($_POST['permite_empates']),
             'puntos_victoria' => (int) $_POST['puntos_victoria'],
             'puntos_empate' => (int) $_POST['puntos_empate'],
@@ -172,7 +184,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             $_SESSION['torneo_activo_id'] = $idGuardado;
         }
 
-        redirigir_con_mensaje(url('admin/torneos.php'), 'success', $id ? 'Copa o liga actualizada correctamente.' : '¡Copa o liga creada! Ya puedes cargar sus equipos y encuentros.');
+        $mensaje = $id ? 'Copa o liga actualizada correctamente.' : '¡Copa o liga creada! Ya puedes cargar sus equipos y encuentros.';
+        if (!empty($avisoCuadro)) {
+            redirigir_con_mensaje(url('admin/torneos.php'), 'error', $mensaje . ' Ojo: ' . $avisoCuadro);
+        }
+        redirigir_con_mensaje(url('admin/torneos.php'), 'success', $mensaje);
     } else {
         $torneoEditar = array_merge($_POST, ['id' => $id, 'fases_playoff' => $fasesElegidas, 'modo' => $modo, 'vueltas' => $vueltas]);
         $accion = $id ? 'editar' : 'nuevo';

@@ -51,9 +51,12 @@ const CALENDARIO_MAX_SALTOS = 52;
  * @param int|null $semilla Para el sorteo de los adelantados. null = aleatorio de verdad.
  * @return array<int, array{principal: array, adelantados: array}>
  */
-function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null): array
+function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null): array
 {
-    $rondas = generar_fixture_round_robin($equipoIds, $vueltas);
+    // La fase de grupos manda sus propias rondas ya armadas (el todos contra todos de cada
+    // grupo, mezclados para que una jornada tenga partidos de todos los grupos). El resto
+    // del reparto — cupos por día, adelantados, fechas — funciona igual.
+    $rondas = $rondasPrearmadas !== null ? array_values(array_filter($rondasPrearmadas)) : generar_fixture_round_robin($equipoIds, $vueltas);
     if (empty($rondas)) {
         return [];
     }
@@ -331,7 +334,8 @@ function calendario_generar(array $equipoIds, array $opciones): array
         $equipoIds,
         (int) ($opciones['vueltas'] ?? 1),
         $cupoTotal,
-        isset($opciones['semilla']) ? (int) $opciones['semilla'] : null
+        isset($opciones['semilla']) ? (int) $opciones['semilla'] : null,
+        isset($opciones['rondas']) ? (array) $opciones['rondas'] : null
     );
     if (empty($plan)) {
         return [];

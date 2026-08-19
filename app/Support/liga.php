@@ -393,6 +393,9 @@ const DURACION_CUARTO_BASKETBALL_MIN = 10;
 
 const FORMATO_LIGA = 'liga';
 const FORMATO_CAMPEONATO = 'copa';
+// Vive aquí y no en grupos.php porque FORMATOS_TORNEO_LABEL lo usa al cargarse, y este
+// archivo se carga antes.
+const FORMATO_GRUPOS = 'grupos';
 
 // El valor guardado sigue siendo 'copa' por compatibilidad con las copas ya creadas, pero
 // el nombre visible dice lo que REALMENTE hace: no divide en grupos, juega todos contra
@@ -401,11 +404,14 @@ const FORMATO_CAMPEONATO = 'copa';
 const FORMATOS_TORNEO_LABEL = [
     FORMATO_LIGA => 'Liga (el campeón sale de la tabla)',
     FORMATO_CAMPEONATO => 'Liga con fase final (tabla + eliminación directa)',
+    FORMATO_GRUPOS => 'Fase de grupos + eliminación (estilo mundial)',
 ];
 
 function torneo_formato(array $torneo): string
 {
-    return ($torneo['modo'] ?? FORMATO_CAMPEONATO) === FORMATO_LIGA ? FORMATO_LIGA : FORMATO_CAMPEONATO;
+    $modo = (string) ($torneo['modo'] ?? FORMATO_CAMPEONATO);
+
+    return array_key_exists($modo, FORMATOS_TORNEO_LABEL) ? $modo : FORMATO_CAMPEONATO;
 }
 
 function torneo_es_liga(array $torneo): bool
@@ -415,7 +421,7 @@ function torneo_es_liga(array $torneo): bool
 
 /**
  * Fases de eliminación directa realmente vigentes para esta competencia: las que el
- * organizador habilitó en un campeonato, o ninguna en una liga.
+ * organizador habilitó, o ninguna en una liga, donde el título sale de la tabla.
  */
 function torneo_fases_playoff(array $torneo): array
 {
