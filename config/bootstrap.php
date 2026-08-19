@@ -30,7 +30,8 @@ foreach ([
     'tabla',    // tabla de posiciones y fases
     'fixture',  // generación automática de calendario
     'calendario', // reparto en días, fechas, horas y canchas (usa fixture)
-    'grupos',   // fase de grupos estilo mundial y cruces de eliminación
+    'grupos',   // fase de grupos estilo mundial y cruces desde las tablas de grupo
+    'eliminacion', // cuadro final: siembra desde la tabla y avance de ganadores
     'disciplina', // suspensiones por roja y acumulación de amarillas
 ] as $modulo) {
     require_once RAIZ_APP . '/app/Support/' . $modulo . '.php';

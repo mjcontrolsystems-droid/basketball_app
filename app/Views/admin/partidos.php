@@ -393,6 +393,58 @@
     </ul>
     <?php endif; ?>
 
+    <?php // ---------- El cuadro final ----------
+          // Un solo panel para los dos formatos con fase final. Siempre ofrece armar la
+          // SIGUIENTE ronda que falte: la primera sale de la tabla (o de las tablas de
+          // grupo) y las demás de los ganadores de la anterior. Nada se crea al cargar un
+          // resultado — hay que darle al botón, para que se puedan revisar los cruces y
+          // para que corregir un marcador no dispare partidos fantasma. ?>
+    <?php if (!empty($pasoEliminacion['fase'])): ?>
+    <div class="card-suave p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div style="min-width:0;">
+                <h5 class="mb-1"><i class="bi bi-diagram-2 me-1"></i>Sigue: <?= e($pasoEliminacion['label']) ?></h5>
+                <p class="small text-muted mb-0">
+                    <?php if ($pasoEliminacion['origen'] === null): ?>
+                        <?= !empty($tieneGrupos)
+                            ? 'Se cruzan los clasificados de cada grupo: 1° de un grupo contra 2° de otro.'
+                            : 'Se toman los mejores de la tabla y se siembran: 1° contra el último clasificado, 2° contra el penúltimo.' ?>
+                    <?php elseif ($pasoEliminacion['fase'] === 'tercer_lugar'): ?>
+                        Lo juegan los dos que perdieron la semifinal.
+                    <?php else: ?>
+                        Lo arman los ganadores de <?= e(mb_strtolower(FASES_LABEL[$pasoEliminacion['origen']] ?? '')) ?>.
+                    <?php endif; ?>
+                </p>
+            </div>
+            <form method="post" class="d-flex align-items-center gap-2 flex-wrap" data-confirm="Se van a crear los encuentros de <?= e($pasoEliminacion['label']) ?> con las posiciones de ahora mismo. ¿Continuamos?">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="accion" value="armar_cruces">
+                <?php if (!$pasoEliminacion['listo']): ?>
+                <input type="hidden" name="aun_faltan" value="1">
+                <?php endif; ?>
+                <?php // Cuántos entran al cuadro. Solo se pregunta en la primera ronda de
+                      // una liga con fase final: en grupos ya está en la configuración. ?>
+                <?php if ($pasoEliminacion['origen'] === null && empty($tieneGrupos)): ?>
+                <label class="small text-muted mb-0" for="cuantosClasifican">Clasifican</label>
+                <select name="clasifican" id="cuantosClasifican" class="form-select form-select-sm" style="width:auto;">
+                    <option value="2">Los 2 primeros</option>
+                    <option value="4" selected>Los 4 primeros</option>
+                    <option value="8">Los 8 primeros</option>
+                    <option value="16">Los 16 primeros</option>
+                </select>
+                <?php endif; ?>
+                <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-diagram-2 me-1"></i>Armar <?= e(mb_strtolower($pasoEliminacion['label'])) ?></button>
+            </form>
+        </div>
+
+        <?php if (!empty($pasoEliminacion['motivo'])): ?>
+        <div class="alert alert-warning rounded-4 border-0 small mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i><?= e($pasoEliminacion['motivo']) ?>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <?php // ---------- Tablas de la fase de grupos ----------
           // Se muestran arriba de los encuentros porque son lo que el organizador consulta
           // todo el tiempo durante la fase de grupos: quién va clasificando. ?>
@@ -403,23 +455,7 @@
                 <h5 class="mb-1"><i class="bi bi-diagram-3 me-1"></i>Grupos</h5>
                 <p class="small text-muted mb-0">Las filas resaltadas son las que clasifican a la eliminación.</p>
             </div>
-            <form method="post" data-confirm="Se van a crear los cruces con los clasificados de cada grupo, según cómo están las tablas ahora. ¿Continuamos?">
-                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="accion" value="armar_cruces">
-                <?php if ((int) $gruposPendientes > 0): ?>
-                <input type="hidden" name="aun_faltan" value="1">
-                <?php endif; ?>
-                <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-diagram-2 me-1"></i>Armar cruces</button>
-            </form>
         </div>
-
-        <?php if ((int) $gruposPendientes > 0): ?>
-        <div class="alert alert-warning rounded-4 border-0 small">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            Faltan <?= (int) $gruposPendientes ?> encuentros de la fase de grupos por jugar. Si armas los cruces ahora,
-            se harán con las posiciones actuales y pueden cambiar.
-        </div>
-        <?php endif; ?>
 
         <div class="row g-3">
             <?php foreach ($tablasGrupo as $letra => $datosGrupo): ?>

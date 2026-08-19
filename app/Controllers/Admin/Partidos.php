@@ -79,73 +79,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // primero de un grupo con el segundo de otro, y los dos clasificados de un mismo grupo
     // caen en mitades opuestas del cuadro: así no se reencuentran hasta la final.
     if (($_POST['accion'] ?? '') === 'armar_cruces') {
-        if (!torneo_tiene_grupos($torneo)) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Esta competencia no usa fase de grupos.');
+        $paso = eliminacion_siguiente_paso($torneo, $partidos, $equiposPorId);
+
+        if ($paso['fase'] === null) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', $paso['motivo'] ?: 'No hay ninguna ronda por armar.');
+        }
+        // "Faltan partidos por jugar" se puede saltar a conciencia (el organizador ya sabe
+        // que las posiciones pueden cambiar). Un EMPATE en eliminación no: sin ganador no
+        // hay a quién poner en la ronda siguiente, así que ahí no hay bypass que valga.
+        $hayEmpateSinDefinir = str_contains($paso['motivo'], 'empatados');
+        if (!$paso['listo'] && (empty($_POST['aun_faltan']) || $hayEmpateSinDefinir)) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', $paso['motivo']);
         }
 
-        $pendientes = array_values(array_filter(
-            $partidos,
-            fn($p) => ($p['fase'] ?? 'grupos') === 'grupos' && ($p['estado'] ?? '') !== 'jugado'
-        ));
-        if (!empty($pendientes) && empty($_POST['aun_faltan'])) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Todavía faltan ' . count($pendientes) . ' encuentros de la fase de grupos por jugar. Las tablas pueden cambiar, así que los cruces aún no son definitivos.');
+        $avisos = [];
+        if ($paso['origen'] === null) {
+            // Primera ronda del cuadro: los clasificados salen de la tabla. En el formato
+            // de grupos hay una tabla por grupo y el cruce es 1° de uno contra 2° de otro;
+            // en liga con fase final hay una sola tabla y se usa la siembra clásica.
+            $eventosTorneo = eventos_de_torneo($torneo['id']);
+            if (torneo_tiene_grupos($torneo)) {
+                $resultado = grupos_cruces_eliminacion(
+                    grupos_tablas($equipos, $partidos, $torneo, $eventosTorneo),
+                    torneo_clasifican_por_grupo($torneo)
+                );
+            } else {
+                $resultado = eliminacion_cruces_desde_tabla(
+                    calcular_tabla($equipos, $partidos, $torneo, $eventosTorneo),
+                    (int) ($_POST['clasifican'] ?? 4)
+                );
+            }
+            $faseDestino = $resultado['fase'];
+            $cruces = $resultado['cruces'];
+            $avisos = $resultado['avisos'];
+        } else {
+            // Rondas siguientes: salen de la ronda anterior. El tercer lugar es el único
+            // que se arma con los PERDEDORES.
+            $resultadoRonda = eliminacion_resultado_ronda($partidos, $paso['origen'], $equiposPorId);
+            $faseDestino = $paso['fase'];
+            $labelOrigen = mb_strtolower(FASES_LABEL[$paso['origen']] ?? $paso['origen']);
+
+            if ($faseDestino === 'tercer_lugar') {
+                $cruces = eliminacion_emparejar($resultadoRonda['perdedores'], 'Perdedores de ' . $labelOrigen);
+            } else {
+                $cruces = eliminacion_emparejar($resultadoRonda['ganadores'], 'Ganadores de ' . $labelOrigen);
+            }
         }
 
-        $tablasGrupo = grupos_tablas($equipos, $partidos, $torneo);
-        $resultado = grupos_cruces_eliminacion($tablasGrupo, torneo_clasifican_por_grupo($torneo));
-
-        if (empty($resultado['cruces'])) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No se pudieron armar los cruces: ' . (implode(' ', $resultado['avisos']) ?: 'revisa que los grupos tengan equipos y partidos jugados.'));
+        if (empty($cruces)) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No se pudieron armar los cruces. ' . (implode(' ', $avisos) ?: 'Revisa que haya suficientes equipos con partidos jugados.'));
         }
 
         // Si ya existen encuentros de esa fase se detiene: rearmarlos borraría fichas.
-        $yaExisten = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? '') === $resultado['fase']));
+        $yaExisten = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? '') === $faseDestino));
         if (!empty($yaExisten)) {
-            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Ya hay ' . count($yaExisten) . ' encuentros de ' . mb_strtolower(FASES_LABEL[$resultado['fase']] ?? $resultado['fase']) . '. Bórralos primero si quieres rearmar el cuadro.');
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Ya hay ' . count($yaExisten) . ' encuentros de ' . mb_strtolower(FASES_LABEL[$faseDestino] ?? $faseDestino) . '. Bórralos primero si quieres rearmar esa ronda.');
         }
 
-        // Se programan el fin de semana siguiente al último encuentro de grupos, para que
-        // no nazcan sin fecha. El organizador después les ajusta hora y cancha.
+        // Se programan una semana después del último encuentro que ya existe, para que no
+        // nazcan sin fecha. El organizador después les ajusta día, hora y cancha.
         $ultima = '';
         foreach ($partidos as $p) {
-            if (($p['fase'] ?? 'grupos') === 'grupos') {
-                $ultima = max($ultima, (string) ($p['fecha'] ?? ''));
-            }
+            $ultima = max($ultima, (string) ($p['fecha'] ?? ''));
         }
         $tsCruces = strtotime('+7 days', (int) (strtotime($ultima ?: date('Y-m-d')) ?: time()));
         $fechaCruces = date('Y-m-d', $tsCruces !== false ? $tsCruces : time());
 
         $siguienteId = partido_nuevo_id();
-        foreach ($resultado['cruces'] as $cruce) {
-            $partidos[] = [
-                'id' => $siguienteId++,
-                'jornada' => 1,
-                'equipo_local' => (int) $cruce['local']['id'],
-                'equipo_visitante' => (int) $cruce['visitante']['id'],
-                'fecha' => $fechaCruces,
-                'hora' => '',
-                'cancha' => '',
-                'estado' => 'programado',
-                'marcador_local' => null,
-                'marcador_visitante' => null,
-                'fase' => $resultado['fase'],
-                'arbitro' => '',
-                'observaciones' => $cruce['etiqueta'],
-                'cronometro_estado' => 'detenido',
-                'cronometro_inicio' => null,
-                'cronometro_segundos' => 0,
-                'cronometro_periodo' => 1,
-                'cronometro_extra_min' => 0,
-            ];
+        foreach ($cruces as $cruce) {
+            $partidos[] = eliminacion_fila_partido(
+                $siguienteId++,
+                $cruce['local'],
+                $cruce['visitante'],
+                $faseDestino,
+                $fechaCruces,
+                $cruce['etiqueta']
+            );
         }
 
         partidos_guardar_todos($partidos, $torneo['id']);
-        $nombreFase = FASES_LABEL[$resultado['fase']] ?? $resultado['fase'];
-        bitacora_registrar('cruces_armados', count($resultado['cruces']) . ' cruces de ' . $nombreFase . ' armados desde las tablas de grupo', $torneo['id']);
+        $nombreFase = FASES_LABEL[$faseDestino] ?? $faseDestino;
+        bitacora_registrar('cruces_armados', count($cruces) . ' encuentros de ' . $nombreFase . ' armados' . ($paso['origen'] ? ' desde ' . $paso['origen'] : ' desde la tabla'), $torneo['id']);
 
-        $aviso = count($resultado['cruces']) . ' cruces de ' . mb_strtolower($nombreFase) . ' creados para el ' . formatear_fecha_corta($fechaCruces) . '. Ajústales hora y cancha.';
-        if (!empty($resultado['avisos'])) {
-            $aviso .= ' ' . implode(' ', $resultado['avisos']);
+        $aviso = count($cruces) . ' encuentros de ' . mb_strtolower($nombreFase) . ' creados para el ' . formatear_fecha_corta($fechaCruces) . '. Ajústales día, hora y cancha.';
+        if (!empty($avisos)) {
+            $aviso .= ' ' . implode(' ', $avisos);
         }
         redirigir_con_mensaje(url('admin/partidos.php'), 'success', $aviso);
     }
@@ -540,6 +558,11 @@ $tablasGrupo = $tieneGrupos ? grupos_tablas($equipos, $partidos, $torneo) : [];
 $gruposPendientes = $tieneGrupos
     ? count(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') === 'grupos' && ($p['estado'] ?? '') !== 'jugado'))
     : 0;
+
+// Qué ronda del cuadro se puede armar ahora. Vale para los dos formatos con fase final.
+$pasoEliminacion = !empty($fasesTorneo)
+    ? eliminacion_siguiente_paso($torneo, $partidos, $equiposPorId)
+    : ['fase' => null, 'label' => '', 'origen' => null, 'listo' => false, 'motivo' => ''];
 // Para el formulario: qué jornada saldría y hasta cuál se puede corregir a mano. La
 // automática real se recalcula al guardar con la fecha que se haya elegido; esta es solo
 // la que corresponde hoy, para mostrarla como referencia.
@@ -564,6 +587,7 @@ vista_admin('admin/partidos', compact(
     'equiposPorId',
     'errores',
     'gruposPendientes',
+    'pasoEliminacion',
     'previa',
     'tablasGrupo',
     'tieneGrupos',
