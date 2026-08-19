@@ -383,7 +383,7 @@
 
     <?php if (!$esLiga): ?>
     <ul class="nav nav-pills mb-4" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#panelGrupos" type="button">Fase de Grupos</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#panelGrupos" type="button">Temporada regular</button></li>
         <?php foreach ($fasesTorneo as $f): ?>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#panel-<?= $f ?>" type="button"><?= e(FASES_LABEL[$f]) ?> <?= count($playoffsPorFase[$f]) > 0 ? '<span class="badge rounded-pill text-bg-secondary ms-1">' . count($playoffsPorFase[$f]) . '</span>' : '' ?></button></li>
         <?php endforeach; ?>
@@ -418,7 +418,7 @@
             <?php endforeach; ?>
 
             <?php if (empty($jornadas)): ?>
-                <p class="text-muted">Aún no hay encuentros <?= $esLiga ? 'programados' : 'de fase de grupos programados' ?>.</p>
+                <p class="text-muted">Aún no hay encuentros <?= $esLiga ? 'programados' : 'de temporada regular programados' ?>.</p>
             <?php endif; ?>
         </div>
 

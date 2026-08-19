@@ -95,22 +95,26 @@
                   // (liga) o si además tiene cuadro de eliminación directa (campeonato).
                   // El JS de app.js muestra/oculta las fases según lo elegido. ?>
             <div class="col-12">
-                <label class="form-label small fw-semibold d-block">¿Liga o campeonato?</label>
+                <label class="form-label small fw-semibold d-block">¿Cómo se define el campeón?</label>
                 <div class="row g-2" id="grupoFormatoTorneo">
                     <div class="col-md-6">
                         <input type="radio" class="btn-check" name="modo" value="<?= e(FORMATO_LIGA) ?>" id="modoLiga" <?= $modoPorDefecto === FORMATO_LIGA ? 'checked' : '' ?>>
                         <label class="btn btn-outline-secondary w-100 text-start p-3 rounded-4" for="modoLiga">
                             <span class="d-block fw-semibold"><i class="bi bi-list-ol me-1"></i>Liga</span>
-                            <span class="d-block small text-muted">Solo control de puntos: todos contra todos y gana quien termine arriba en la tabla. Sin cuartos, semifinal ni final.</span>
+                            <span class="d-block small text-muted">Todos contra todos y campeón el que termine primero en la tabla. Sin fase final.</span>
                         </label>
                     </div>
                     <div class="col-md-6">
                         <input type="radio" class="btn-check" name="modo" value="<?= e(FORMATO_CAMPEONATO) ?>" id="modoCampeonato" <?= $modoPorDefecto === FORMATO_CAMPEONATO ? 'checked' : '' ?>>
                         <label class="btn btn-outline-secondary w-100 text-start p-3 rounded-4" for="modoCampeonato">
-                            <span class="d-block fw-semibold"><i class="bi bi-trophy me-1"></i>Campeonato</span>
-                            <span class="d-block small text-muted">Fase de grupos con tabla de puntos + eliminación directa (cuartos, semifinal, final) para definir al campeón.</span>
+                            <span class="d-block fw-semibold"><i class="bi bi-trophy me-1"></i>Liga con fase final</span>
+                            <span class="d-block small text-muted">Todos contra todos igual que la liga, y al terminar la tabla los mejores juegan cuartos, semifinal, tercer lugar y final.</span>
                         </label>
                     </div>
+                </div>
+                <div class="form-text mt-2">
+                    <i class="bi bi-info-circle me-1"></i>Los dos formatos juegan la misma temporada regular: todos contra todos con su tabla de puntos.
+                    Lo único que cambia es si al final hay eliminación directa o no.
                 </div>
             </div>
             <div class="col-md-4">
@@ -213,15 +217,16 @@
 
             <div class="col-12" id="grupoFasesPlayoff">
                 <hr class="my-2">
-                <label class="form-label small fw-semibold d-block">Fases de eliminación directa</label>
-                <?php $fasesGuardadas = $torneoEditar['fases_playoff'] ?? ['cuartos', 'semifinal', 'final']; ?>
+                <label class="form-label small fw-semibold d-block">Fase final</label>
+                <p class="form-text mt-0 mb-2">Qué rondas se juegan después de la temporada regular, con los mejores de la tabla.</p>
+                <?php $fasesGuardadas = $torneoEditar['fases_playoff'] ?? ['semifinal', 'tercer_lugar', 'final']; ?>
                 <?php foreach (FASES_PLAYOFF_CATALOGO as $f): ?>
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" name="fases_playoff[]" value="<?= e($f) ?>" id="fase-<?= e($f) ?>" <?= in_array($f, $fasesGuardadas, true) ? 'checked' : '' ?>>
                     <label class="form-check-label small" for="fase-<?= e($f) ?>"><?= e(FASES_LABEL[$f]) ?></label>
                 </div>
                 <?php endforeach; ?>
-                <div class="form-text">Solo aplica al formato campeonato. En una liga el título se define en la tabla de puntos.</div>
+                <div class="form-text">Marca solo las que de verdad se juegan. Con 4 clasificados: semifinal, tercer lugar y final.</div>
             </div>
         </div>
 
@@ -340,7 +345,7 @@
             <div class="card-suave p-3 h-100 d-flex flex-column <?= ($_SESSION['torneo_activo_id'] ?? null) === $t['id'] ? 'border border-2' : '' ?>" style="<?= ($_SESSION['torneo_activo_id'] ?? null) === $t['id'] ? 'border-color:var(--color-primario) !important;' : '' ?>">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="badge rounded-pill text-bg-light border small"><?= $t['deporte'] === 'futbol' ? '⚽ Fútbol' : '🏀 Basketball' ?></span>
-                    <span class="badge rounded-pill text-bg-light border small"><?= torneo_es_liga($t) ? '<i class="bi bi-list-ol me-1"></i>Liga' : '<i class="bi bi-trophy me-1"></i>Campeonato' ?></span>
+                    <span class="badge rounded-pill text-bg-light border small"><?= torneo_es_liga($t) ? '<i class="bi bi-list-ol me-1"></i>Liga' : '<i class="bi bi-trophy me-1"></i>Liga con fase final' ?></span>
                     <?php if (torneo_vueltas($t) === 2): ?><span class="badge rounded-pill text-bg-light border small"><i class="bi bi-arrow-left-right me-1"></i>Ida y vuelta</span><?php endif; ?>
                     <?php if (($t['genero'] ?? 'mixto') !== 'mixto'): ?><span class="badge rounded-pill text-bg-light border small"><?= $t['genero'] === 'femenino' ? 'Femenino' : 'Masculino' ?></span><?php endif; ?>
                     <?php if (!$t['activo']): ?><span class="badge rounded-pill text-bg-secondary small">Inactiva</span><?php endif; ?>

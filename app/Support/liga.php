@@ -394,9 +394,13 @@ const DURACION_CUARTO_BASKETBALL_MIN = 10;
 const FORMATO_LIGA = 'liga';
 const FORMATO_CAMPEONATO = 'copa';
 
+// El valor guardado sigue siendo 'copa' por compatibilidad con las copas ya creadas, pero
+// el nombre visible dice lo que REALMENTE hace: no divide en grupos, juega todos contra
+// todos igual que la liga y encima le agrega la fase final. La etiqueta anterior hablaba
+// de "fase de grupos" y hacía creer que no servía para una liga con semifinales.
 const FORMATOS_TORNEO_LABEL = [
-    FORMATO_LIGA => 'Liga (solo tabla de puntos)',
-    FORMATO_CAMPEONATO => 'Campeonato (grupos + eliminación directa)',
+    FORMATO_LIGA => 'Liga (el campeón sale de la tabla)',
+    FORMATO_CAMPEONATO => 'Liga con fase final (tabla + eliminación directa)',
 ];
 
 function torneo_formato(array $torneo): string

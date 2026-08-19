@@ -28,7 +28,7 @@
         <?php if ($faseSeleccionada === 'grupos'): ?>
 
             <?php if (empty($jornadas)): ?>
-                <p class="text-muted text-center">Aún no hay encuentros <?= $esLiga ? 'programados' : 'de fase de grupos programados' ?>.</p>
+                <p class="text-muted text-center">Aún no hay encuentros <?= $esLiga ? 'programados' : 'de temporada regular programados' ?>.</p>
             <?php else: ?>
                 <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
                     <?php foreach (array_keys($jornadas) as $num): ?>

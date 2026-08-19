@@ -8,7 +8,10 @@ declare(strict_types=1);
 const FASES_PLAYOFF_CATALOGO = ['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'tercer_lugar', 'final'];
 
 const FASES_LABEL = [
-    'grupos' => 'Fase de Grupos',
+    // La clave sigue siendo 'grupos' porque así está guardada en la base, pero el nombre
+    // visible es "temporada regular": nunca hubo división en grupos, siempre fue todos
+    // contra todos con una sola tabla.
+    'grupos' => 'Temporada regular',
     'dieciseisavos' => 'Dieciseisavos de Final',
     'octavos' => 'Octavos de Final',
     'cuartos' => 'Cuartos de Final',
