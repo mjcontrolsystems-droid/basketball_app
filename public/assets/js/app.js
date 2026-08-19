@@ -23,6 +23,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // Confirmación para acciones destructivas en el panel del organizador. Si el usuario
     // cancela, el formulario se resetea: importante para el switch de "Jugado", que si no
     // quedaría visualmente cambiado aunque la acción nunca se envió.
+    // Muestra u oculta un bloque del formulario, deshabilitando sus campos al ocultarlo.
+    //
+    // Lo de deshabilitar no es cosmético, arregla un bug feo: un campo escondido que no
+    // pasa la validación del navegador (min, max, required) hace que el envío se cancele
+    // y que el navegador intente enfocarlo para señalar el error. Como no se ve, no
+    // aparece ningún mensaje y el botón de guardar parece estar roto. Pasó de verdad con
+    // "número de grupos" (min 2) valiendo 0 en las copas que no usan grupos.
+    //
+    // Un campo deshabilitado queda fuera de la validación y tampoco se envía, que es
+    // justo lo que se quiere: si el bloque no aplica, sus datos no deberían viajar.
+    var mostrarBloque = function (bloque, visible) {
+        if (!bloque) {
+            return;
+        }
+        bloque.style.display = visible ? '' : 'none';
+        bloque.querySelectorAll('input, select, textarea').forEach(function (campo) {
+            campo.disabled = !visible;
+        });
+    };
+
     // Colores de la marca, para que SweetAlert2 no desentone con el resto del sitio.
     var COLOR_ACCION = '#7b2ff7';
     var COLOR_PELIGRO = '#e24b4a';
@@ -304,7 +324,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var grupoJornada = document.getElementById('grupoJornada');
     if (selectFase && grupoJornada) {
         var actualizarVisibilidadJornada = function () {
-            grupoJornada.style.display = selectFase.value === 'grupos' ? '' : 'none';
+            // Mismo motivo que en el formulario de copas: el campo de jornada tiene un
+            // tope (max), y oculto con un valor fuera de rango bloquearía el guardado.
+            mostrarBloque(grupoJornada, selectFase.value === 'grupos');
         };
         actualizarVisibilidadJornada();
         selectFase.addEventListener('change', actualizarVisibilidadJornada);
@@ -504,12 +526,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var grupoJornadaImp = document.getElementById('grupoJornadaImprimir');
         var grupoFaseImp = document.getElementById('grupoFaseImprimir');
         var actualizarAlcance = function () {
-            if (grupoJornadaImp) {
-                grupoJornadaImp.style.display = selectAlcance.value === 'jornada' ? '' : 'none';
-            }
-            if (grupoFaseImp) {
-                grupoFaseImp.style.display = selectAlcance.value === 'fase' ? '' : 'none';
-            }
+            mostrarBloque(grupoJornadaImp, selectAlcance.value === 'jornada');
+            mostrarBloque(grupoFaseImp, selectAlcance.value === 'fase');
         };
         selectAlcance.addEventListener('change', actualizarAlcance);
         actualizarAlcance();
@@ -635,12 +653,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var actualizarFases = function () {
             var elegido = grupoFormato.querySelector('input[name="modo"]:checked');
             var modo = elegido ? elegido.value : '';
-            if (grupoFases) {
-                grupoFases.style.display = modo === 'liga' ? 'none' : '';
-            }
-            if (grupoGrupos) {
-                grupoGrupos.style.display = modo === 'grupos' ? '' : 'none';
-            }
+            mostrarBloque(grupoFases, modo !== 'liga');
+            mostrarBloque(grupoGrupos, modo === 'grupos');
         };
         grupoFormato.querySelectorAll('input[name="modo"]').forEach(function (radio) {
             radio.addEventListener('change', actualizarFases);

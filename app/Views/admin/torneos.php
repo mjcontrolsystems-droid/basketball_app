@@ -132,12 +132,15 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">¿Cuántos grupos?</label>
-                        <input type="number" min="2" max="26" name="num_grupos" class="form-control" value="<?= e((string) ($torneoEditar['num_grupos'] ?? 4)) ?>">
+                        <?php // Se fuerza dentro del rango: las copas que no usan grupos
+                              // tienen num_grupos = 0, y un 0 con min="2" haría que el
+                              // navegador cancele el guardado sin decir por qué. ?>
+                        <input type="number" min="2" max="26" name="num_grupos" class="form-control" value="<?= (int) max(2, min(26, (int) ($torneoEditar['num_grupos'] ?? 4) ?: 4)) ?>">
                         <div class="form-text">Con 16 equipos, 4 grupos dan grupos de 4.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">¿Cuántos pasan por grupo?</label>
-                        <input type="number" min="1" max="8" name="clasifican_por_grupo" class="form-control" value="<?= e((string) ($torneoEditar['clasifican_por_grupo'] ?? 2)) ?>">
+                        <input type="number" min="1" max="8" name="clasifican_por_grupo" class="form-control" value="<?= (int) max(1, min(8, (int) ($torneoEditar['clasifican_por_grupo'] ?? 2) ?: 2)) ?>">
                         <div class="form-text">Lo habitual son 2: con 4 grupos dan 8 y salen cuartos.</div>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
