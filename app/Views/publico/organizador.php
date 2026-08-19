@@ -1,7 +1,9 @@
 <header class="hero-copa" style="padding-bottom:3.5rem;">
     <div class="container">
         <p class="kicker mb-2"><i class="bi bi-person-badge me-1"></i>Conoce a</p>
-        <h1 class="text-white mb-2">La <span class="text-degradado">Organizadora</span></h1>
+        <?php // Antes decía "La Organizadora" fijo: ahora respeta el género que la
+              // persona indicó en su perfil (sin indicar = masculino genérico). ?>
+        <h1 class="text-white mb-2"><?= titulo_organizador($organizador) ?></h1>
         <p style="color:rgba(255,255,255,.75);" class="mb-0">La persona detrás de <?= e($torneo['nombre']) ?>.</p>
     </div>
 </header>
