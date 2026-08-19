@@ -242,7 +242,33 @@
                 <label class="form-label small fw-semibold">Color acento</label>
                 <input type="color" name="color_acento" class="form-control form-control-color w-100" value="<?= e($torneoEditar['color_acento'] ?? '#ffc93c') ?>">
             </div>
+            <?php // --- Reglamento del campeonato en PDF ---
+                  // Se muestra en el sitio público para que jugadores y equipos lo
+                  // consulten desde el celular, y se puede quitar sin borrar la copa. ?>
             <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold"><i class="bi bi-file-earmark-pdf me-1"></i>Reglamento del campeonato (PDF, opcional)</label>
+                <input type="file" name="reglamento" class="form-control" accept="application/pdf,.pdf">
+                <div class="form-text">Máximo 15MB. Aparecerá como una sección propia en el sitio público, para que los equipos puedan leerlo o descargarlo.</div>
+
+                <?php if (!empty($torneoEditar['reglamento'])): ?>
+                <div class="d-flex align-items-center gap-2 flex-wrap mt-2 p-2 rounded-3" style="background:rgba(var(--color-primario-rgb),.06);">
+                    <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                    <span class="small flex-grow-1 text-truncate" style="min-width:0;">
+                        <?= e(trim((string) ($torneoEditar['reglamento_nombre'] ?? '')) !== '' ? $torneoEditar['reglamento_nombre'] : 'Reglamento cargado') ?>
+                    </span>
+                    <a href="<?= e(url_reglamento($torneoEditar)) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye me-1"></i>Ver</a>
+                    <div class="form-check ms-1">
+                        <input class="form-check-input" type="checkbox" name="quitar_reglamento" value="1" id="chkQuitarReglamento">
+                        <label class="form-check-label small text-danger" for="chkQuitarReglamento">Quitar</label>
+                    </div>
+                </div>
+                <div class="form-text">Si subes otro PDF, reemplaza al actual.</div>
+                <?php endif; ?>
+            </div>
+
+            <div class="col-12">
+                <hr class="my-2">
                 <label class="form-label small fw-semibold">Logo de la copa o liga (opcional)</label>
                 <input type="file" name="logo" class="form-control" accept=".png,.jpg,.jpeg,.webp" data-vista-previa="previewLogoTorneo">
                 <div class="form-text">Se usará en el navbar, la portada y al compartir el enlace, en lugar del balón del deporte. PNG con fondo transparente se ve mejor.</div>

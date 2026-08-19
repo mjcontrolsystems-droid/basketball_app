@@ -354,6 +354,12 @@ function db_migrar_automatico(): void
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_sanciones_torneo_estado ON sanciones (torneo_id, estado)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_sanciones_jugador ON sanciones (jugador_id, estado)');
 
+        // Reglamento del campeonato en PDF: guarda el id del archivo en la tabla binaria
+        // `imagenes` (que almacena cualquier tipo, no solo imágenes) y el nombre original
+        // para mostrarlo y para el archivo descargado.
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento TEXT NOT NULL DEFAULT ''");
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento_nombre TEXT NOT NULL DEFAULT ''");
+
         $_SESSION['migraciones_v3_ok'] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya

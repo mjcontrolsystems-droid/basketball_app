@@ -68,7 +68,10 @@ if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;");
+    // object-src y frame-src se declaran explícitamente (aunque heredarían de default-src)
+    // porque el visor del reglamento incrusta un PDF propio con <object>: dejarlo implícito
+    // hace que algunos navegadores lo bloqueen. Ambos siguen limitados al propio sitio.
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; object-src 'self'; frame-src 'self';");
     if ($esHttps) {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }

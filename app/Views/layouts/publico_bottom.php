@@ -32,6 +32,9 @@
                     <?php if ($torneo): ?>
                     <li><a href="<?= url_copa('patrocinadores.php') ?>">Patrocinadores</a></li>
                     <li><a href="<?= url_copa('organizador.php') ?>">Organizador</a></li>
+                    <?php if (torneo_tiene_reglamento($torneo)): ?>
+                    <li><a href="<?= url_copa('reglamento.php') ?>">Reglamento</a></li>
+                    <?php endif; ?>
                     <?php endif; ?>
                     <li><a href="#" data-bs-toggle="modal" data-bs-target="#modalCompartir">Compartir sitio</a></li>
                     <li><a href="<?= url('login.php') ?>">Panel Organizador</a></li>

@@ -3,6 +3,56 @@ declare(strict_types=1);
 
 const SUBIDA_MAX_BYTES = 10 * 1024 * 1024;
 
+// Los reglamentos suelen ser PDF escaneados y pesan más que un logo, así que llevan su
+// propio límite (la tabla `imagenes` guarda cualquier binario, no solo imágenes).
+const SUBIDA_PDF_MAX_BYTES = 15 * 1024 * 1024;
+
+/**
+ * Procesa la subida opcional de un PDF (por ahora, el reglamento del campeonato) y lo
+ * guarda en la misma tabla binaria que las imágenes. Devuelve el id guardado o null si
+ * no se subió nada.
+ *
+ * Solo se acepta application/pdf verificado por su contenido real, no por la extensión
+ * del nombre: un .pdf renombrado con otra cosa adentro se rechaza.
+ *
+ * @throws RuntimeException con un mensaje entendible si el archivo es inválido.
+ */
+function manejar_subida_pdf(string $campo): ?string
+{
+    if (empty($_FILES[$campo]) || $_FILES[$campo]['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ($_FILES[$campo]['error'] === UPLOAD_ERR_INI_SIZE || $_FILES[$campo]['error'] === UPLOAD_ERR_FORM_SIZE) {
+        throw new RuntimeException('El PDF es demasiado grande. El máximo permitido es 15MB.');
+    }
+    if ($_FILES[$campo]['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('No se pudo subir el PDF. Intenta de nuevo.');
+    }
+    if ($_FILES[$campo]['size'] > SUBIDA_PDF_MAX_BYTES) {
+        throw new RuntimeException('El PDF es demasiado grande. El máximo permitido es 15MB.');
+    }
+
+    $tipoDetectado = mime_content_type($_FILES[$campo]['tmp_name']);
+    if ($tipoDetectado !== 'application/pdf') {
+        throw new RuntimeException('El archivo debe ser un PDF.');
+    }
+
+    $datos = file_get_contents($_FILES[$campo]['tmp_name']);
+    if ($datos === false) {
+        throw new RuntimeException('No se pudo leer el PDF subido. Intenta de nuevo.');
+    }
+
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare('INSERT INTO imagenes (mime, datos) VALUES (:mime, :datos) RETURNING id');
+    $stmt->bindValue(':mime', 'application/pdf', PDO::PARAM_STR);
+    $stmt->bindValue(':datos', $datos, PDO::PARAM_LOB);
+    $stmt->execute();
+
+    $id = $stmt->fetchColumn();
+    return $id !== false ? (string) $id : null;
+}
+
 /**
  * Procesa la subida opcional de una imagen (logo/escudo/foto) y la guarda en la base de datos
  * (no en disco: el hosting gratuito no garantiza almacenamiento persistente en el sistema de archivos).

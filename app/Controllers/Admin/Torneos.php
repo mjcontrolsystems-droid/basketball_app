@@ -97,8 +97,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
     if (empty($errores)) {
         try {
             $logoSubido = manejar_subida_imagen('logo');
+            $reglamentoSubido = manejar_subida_pdf('reglamento');
         } catch (RuntimeException $e) {
             redirigir_con_mensaje(url('admin/torneos.php' . ($id ? "?accion=editar&id={$id}" : '?accion=nuevo')), 'error', $e->getMessage());
+        }
+
+        // Reglamento: se sube uno nuevo, se conserva el actual, o se quita con la casilla.
+        // Al reemplazarlo o quitarlo se borra el PDF viejo para no dejar basura en la base.
+        $reglamentoActual = (string) ($torneoEditar['reglamento'] ?? '');
+        $reglamentoNombreActual = (string) ($torneoEditar['reglamento_nombre'] ?? '');
+        $quitarReglamento = !empty($_POST['quitar_reglamento']);
+
+        if ($reglamentoSubido !== null) {
+            eliminar_imagen($reglamentoActual !== '' ? $reglamentoActual : null);
+            $reglamentoFinal = $reglamentoSubido;
+            $reglamentoNombreFinal = mb_substr(basename((string) ($_FILES['reglamento']['name'] ?? 'reglamento.pdf')), 0, 120);
+        } elseif ($quitarReglamento) {
+            eliminar_imagen($reglamentoActual !== '' ? $reglamentoActual : null);
+            $reglamentoFinal = '';
+            $reglamentoNombreFinal = '';
+        } else {
+            $reglamentoFinal = $reglamentoActual;
+            $reglamentoNombreFinal = $reglamentoNombreActual;
         }
 
         $datos = [
@@ -110,6 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'descripcion' => trim((string) $_POST['descripcion']),
             'sede_principal' => trim((string) $_POST['sede_principal']),
             'logo' => $logoSubido ?: ($torneoEditar['logo'] ?? ''),
+            'reglamento' => $reglamentoFinal,
+            'reglamento_nombre' => $reglamentoNombreFinal,
             'color_primario' => (string) $_POST['color_primario'],
             'color_secundario' => (string) $_POST['color_secundario'],
             'color_acento' => (string) $_POST['color_acento'],

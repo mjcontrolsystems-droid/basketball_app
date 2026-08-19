@@ -791,6 +791,20 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
    documento aparte (.solo-impresion) con formato de formulario oficial lleno. */
 .solo-impresion { display: none; }
 
+/* Visor del reglamento en PDF: alto cómodo en escritorio y algo menor en teléfono,
+   donde además muchos navegadores caen al contenido alternativo con los botones. */
+.visor-reglamento {
+    height: 78vh;
+    min-height: 420px;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+}
+
+@media (max-width: 767.98px) {
+    .visor-reglamento { height: 62vh; min-height: 320px; }
+}
+
 /* Vista previa EN PANTALLA de la hoja del calendario imprimible: las clases .ficha-*
    solo tienen estilo dentro de @media print, así que aquí se les da un aspecto de
    documento para que lo que se ve antes de imprimir se parezca al papel. */

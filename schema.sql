@@ -275,6 +275,12 @@ CREATE TABLE IF NOT EXISTS sanciones (
 CREATE INDEX IF NOT EXISTS idx_sanciones_torneo_estado ON sanciones (torneo_id, estado);
 CREATE INDEX IF NOT EXISTS idx_sanciones_jugador ON sanciones (jugador_id, estado);
 
+-- Reglamento del campeonato en PDF. `reglamento` guarda el id del archivo en la tabla
+-- binaria `imagenes` (que almacena cualquier tipo, no solo imágenes) y `reglamento_nombre`
+-- el nombre original, para mostrarlo en el panel y nombrar bien la descarga.
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento TEXT NOT NULL DEFAULT '';
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento_nombre TEXT NOT NULL DEFAULT '';
+
 -- Lista blanca de correos autorizados a crear una cuenta nueva con "Continuar con Google".
 -- El registro público (usuario/contraseña) está cerrado; solo el/los super-admin (definidos
 -- en la variable de entorno SUPERADMIN_EMAILS) pueden agregar/quitar correos de esta lista.

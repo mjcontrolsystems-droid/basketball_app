@@ -20,7 +20,36 @@ const COLUMNAS_TORNEO = [
     'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'es_predeterminado', 'activo',
     'genero', 'modalidad', 'duracion_periodo_min', 'modo', 'vueltas',
     'multa_amarilla', 'multa_roja', 'sancion_bloquea', 'partidos_suspension_roja', 'moneda',
+    'reglamento', 'reglamento_nombre',
 ];
+
+/**
+ * true si la copa tiene un reglamento en PDF cargado. Gobierna si aparecen el enlace del
+ * menú público y el apartado del sitio: una copa sin reglamento no muestra nada.
+ */
+function torneo_tiene_reglamento(?array $torneo): bool
+{
+    return !empty($torneo['reglamento']);
+}
+
+/**
+ * URL del PDF del reglamento. $descargar fuerza la descarga en vez de abrirlo en el visor.
+ */
+function url_reglamento(array $torneo, bool $descargar = false): string
+{
+    if (empty($torneo['reglamento'])) {
+        return '#';
+    }
+    // El nombre viaja en la URL solo para que el archivo descargado se llame bonito;
+    // el contenido se resuelve por el id.
+    $nombre = trim((string) ($torneo['reglamento_nombre'] ?? '')) !== ''
+        ? pathinfo((string) $torneo['reglamento_nombre'], PATHINFO_FILENAME)
+        : 'reglamento-' . ($torneo['slug'] ?? 'copa');
+
+    return url('documento.php?id=' . rawurlencode((string) $torneo['reglamento'])
+        . '&nombre=' . rawurlencode($nombre)
+        . ($descargar ? '&descargar=1' : ''));
+}
 
 function db_parsear_array_pg(?string $valor): array
 {

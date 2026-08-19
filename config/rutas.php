@@ -22,6 +22,7 @@ return [
     'calendario.php' => ['controlador' => 'Publico/Calendario', 'copa' => true],
     'calendario_imprimir.php' => ['controlador' => 'Publico/CalendarioImprimir', 'copa' => true],
     'solvencia.php' => ['controlador' => 'Publico/Solvencia', 'copa' => true],
+    'reglamento.php' => ['controlador' => 'Publico/Reglamento', 'copa' => true],
     'equipos.php' => ['controlador' => 'Publico/Equipos', 'copa' => true],
     'equipo.php' => ['controlador' => 'Publico/Equipo', 'copa' => true],
     'partido.php' => ['controlador' => 'Publico/Partido', 'copa' => true],
@@ -35,6 +36,7 @@ return [
     'portada.php' => ['controlador' => 'Publico/Portada', 'copa' => false],
     'codigo.php' => ['controlador' => 'Publico/Codigo', 'copa' => false],
     'imagen.php' => ['controlador' => 'Publico/Imagen', 'copa' => false],
+    'documento.php' => ['controlador' => 'Publico/Documento', 'copa' => false],
     'torneos.php' => ['controlador' => 'Publico/Torneos', 'copa' => false],
     '404.php' => ['controlador' => 'Publico/NoEncontrado', 'copa' => false],
 
