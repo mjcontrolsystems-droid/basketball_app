@@ -407,7 +407,10 @@
                     <span class="small text-muted">Código:</span>
                     <code class="small fw-bold"><?= e($t['codigo']) ?></code>
                     <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-copiar-url" data-url="<?= e($t['codigo']) ?>" title="Copiar código"><i class="bi bi-clipboard"></i></button>
-                    <form method="post" data-confirm="¿Generar un código nuevo para \"<?= e($t['nombre']) ?>\"? El código anterior dejará de funcionar." class="d-inline">
+                    <?php // Las comillas van como &quot; y NO como \" — la barra invertida
+                          // es un escape de PHP, no de HTML: el navegador cerraba el
+                          // atributo en la primera comilla y el mensaje se cortaba. ?>
+                    <form method="post" data-confirm="¿Generar un código nuevo para &quot;<?= e($t['nombre']) ?>&quot;? El código anterior dejará de funcionar." class="d-inline">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="accion" value="regenerar_codigo">
                         <input type="hidden" name="id" value="<?= $t['id'] ?>">
@@ -419,7 +422,7 @@
                     <a href="<?= e(url_copa_de($t)) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver"><i class="bi bi-box-arrow-up-right"></i></a>
                     <a href="<?= url('admin/torneos.php?accion=editar&id=' . $t['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                     <?php if (!$t['es_predeterminado']): ?>
-                    <form method="post" data-confirm="¿Eliminar \"<?= e($t['nombre']) ?>\"? Se borrarán todos sus equipos, partidos y patrocinadores.">
+                    <form method="post" data-confirm="¿Eliminar &quot;<?= e($t['nombre']) ?>&quot;? Se borrarán todos sus equipos, partidos y patrocinadores, y no se puede deshacer.">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="id" value="<?= $t['id'] ?>">
