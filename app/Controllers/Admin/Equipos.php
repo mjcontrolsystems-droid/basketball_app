@@ -9,6 +9,12 @@ $accion = $_GET['accion'] ?? 'lista';
 $idEditar = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $equipoEditar = $idEditar ? db_buscar_por_id($equipos, $idEditar) : null;
 
+// Jugadores mínimos que debe traer un equipo nuevo: los que juegan en cancha según la
+// modalidad de la copa (11 en fútbol 11, 7 en fútbol 7, 5 en sala y basketball).
+$minimoPlantilla = torneo_jugadores_en_cancha($torneo);
+// Al fallar la validación se vuelve al formulario de alta, no a la lista.
+$urlFormularioNuevo = url('admin/equipos.php?accion=nuevo');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
 
@@ -57,6 +63,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'El nombre del equipo es obligatorio.');
         }
 
+        // --- Plantilla inicial (solo al CREAR) ---
+        // Un equipo sin jugadores no puede alinearse ni generar estadísticas, así que se
+        // exige la plantilla mínima desde el alta. Al editar no se piden aquí: la plantilla
+        // ya se administra en su propia pantalla.
+        $minimoJugadores = torneo_jugadores_en_cancha($torneo);
+        $plantillaInicial = [];
+
+        if ($id === 0) {
+            $dorsales = (array) ($_POST['jug_dorsal'] ?? []);
+            $nombres = (array) ($_POST['jug_nombre'] ?? []);
+            $posiciones = (array) ($_POST['jug_posicion'] ?? []);
+            $dorsalesUsados = [];
+
+            foreach ($nombres as $i => $nombreJugador) {
+                $nombreJugador = trim((string) $nombreJugador);
+                $dorsal = trim((string) ($dorsales[$i] ?? ''));
+                // Una fila vacía simplemente se ignora: el organizador puede llenar
+                // solo las que necesite de las que se muestran.
+                if ($nombreJugador === '' && $dorsal === '') {
+                    continue;
+                }
+                if ($nombreJugador === '' || $dorsal === '') {
+                    redirigir_con_mensaje($urlFormularioNuevo, 'error', 'Cada jugador necesita dorsal y nombre. Revisa la fila ' . ($i + 1) . '.');
+                }
+                if (isset($dorsalesUsados[$dorsal])) {
+                    redirigir_con_mensaje($urlFormularioNuevo, 'error', "El dorsal {$dorsal} está repetido en la plantilla.");
+                }
+                $dorsalesUsados[$dorsal] = true;
+
+                $plantillaInicial[] = [
+                    'dorsal' => $dorsal,
+                    'nombre' => $nombreJugador,
+                    'posicion' => (string) ($posiciones[$i] ?? ''),
+                ];
+            }
+
+            if (count($plantillaInicial) < $minimoJugadores) {
+                $faltan = $minimoJugadores - count($plantillaInicial);
+                redirigir_con_mensaje(
+                    $urlFormularioNuevo,
+                    'error',
+                    "Esta modalidad juega con {$minimoJugadores} en cancha, así que el equipo necesita al menos {$minimoJugadores} jugadores. Te faltan {$faltan}."
+                );
+            }
+        }
+
         try {
             $logoSubido = manejar_subida_imagen('logo', 'equipos');
         } catch (RuntimeException $e) {
@@ -81,10 +133,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos['id'] = equipo_nuevo_id();
             $datos['logo'] = $logoSubido ?? '';
             $equipos[] = $datos;
-            $mensaje = 'Equipo creado correctamente.';
+            $mensaje = 'Equipo creado con ' . count($plantillaInicial) . ' jugadores.';
         }
 
         equipos_guardar_todos($equipos, $torneo['id']);
+
+        // La plantilla se guarda DESPUÉS del equipo porque cada jugador necesita el id
+        // del equipo, que solo existe una vez creado.
+        if ($id === 0 && !empty($plantillaInicial)) {
+            $jugadores = jugadores_listar($torneo['id']);
+            foreach ($plantillaInicial as $nuevo) {
+                $jugadores[] = [
+                    'id' => jugador_nuevo_id(),
+                    'equipo_id' => $datos['id'],
+                    'dorsal' => $nuevo['dorsal'],
+                    'nombre' => $nuevo['nombre'],
+                    'posicion' => $nuevo['posicion'],
+                    'activo' => true,
+                ];
+            }
+            jugadores_guardar_todos($jugadores, $torneo['id']);
+        }
+
         redirigir_con_mensaje(url('admin/equipos.php'), 'success', $mensaje);
     }
 }
@@ -96,6 +166,7 @@ vista_admin('admin/equipos', compact(
     'accion',
     'equipoEditar',
     'equipos',
+    'minimoPlantilla',
     'seccion_activa',
     'titulo_pagina',
     'torneo'

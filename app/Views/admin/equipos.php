@@ -55,6 +55,51 @@
                     <?php endif; ?>
                 </div>
             </div>
+
+            <?php // --- Plantilla inicial: solo al CREAR ---
+                  // Un equipo sin jugadores no puede alinearse ni generar estadísticas,
+                  // así que se piden aquí mismo. Al editar no aparece: la plantilla ya se
+                  // administra en su propia pantalla. ?>
+            <?php if ($accion === 'nuevo'): ?>
+            <?php $filasPlantilla = $minimoPlantilla + 3; ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-people me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras')) ?> del equipo</label>
+                <p class="form-text mt-0 mb-2">
+                    Esta modalidad juega con <strong><?= (int) $minimoPlantilla ?></strong> en cancha, así que necesitas registrar
+                    al menos <strong><?= (int) $minimoPlantilla ?></strong>. Puedes agregar más después desde la pantalla de
+                    <?= e(mb_strtolower(forma_genero($torneo['genero'] ?? null, 'jugadores', 'jugadoras'))) ?>. Las filas que dejes vacías se ignoran.
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th style="width:90px;">Dorsal</th>
+                                <th>Nombre completo</th>
+                                <th style="width:190px;">Posición</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php for ($i = 0; $i < $filasPlantilla; $i++): ?>
+                            <tr>
+                                <td><input type="text" name="jug_dorsal[]" class="form-control form-control-sm" maxlength="3" inputmode="numeric" placeholder="<?= $i + 1 ?>"></td>
+                                <td><input type="text" name="jug_nombre[]" class="form-control form-control-sm" placeholder="<?= $i < $minimoPlantilla ? 'Obligatorio' : 'Opcional' ?>"></td>
+                                <td>
+                                    <select name="jug_posicion[]" class="form-select form-select-sm">
+                                        <option value="">Sin definir</option>
+                                        <?php foreach (posiciones_catalogo($torneo['deporte'] ?? null) as $clave => $pos): ?>
+                                        <option value="<?= e($clave) ?>"><?= e($pos['label']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                            </tr>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="d-flex gap-2 mt-4">
