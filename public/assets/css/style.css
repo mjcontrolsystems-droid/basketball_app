@@ -1467,6 +1467,75 @@ main.flex-grow-1 {
     font-size: .8rem;
 }
 
+/* ---------------------------------------------------------------------------
+   Calendario para marcar las fechas que no se juegan (generador de calendario).
+   --------------------------------------------------------------------------- */
+
+.calendario-excluir {
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 14px;
+    padding: .65rem;
+    background: #fff;
+}
+
+.calendario-excluir__barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.calendario-excluir__grilla {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendario-excluir__cabecera {
+    text-align: center;
+    font-size: .7rem;
+    font-weight: 600;
+    color: #6c757d;
+    padding-bottom: .25rem;
+}
+
+.calendario-excluir__dia {
+    aspect-ratio: 1;
+    min-height: 30px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: rgba(var(--color-primario-rgb), .08);
+    color: var(--bs-body-color, #212529);
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .12s ease, transform .12s ease;
+}
+
+.calendario-excluir__dia:hover:not(:disabled) {
+    background: rgba(var(--color-primario-rgb), .22);
+    transform: scale(1.06);
+}
+
+/* Los días en que no se juega quedan apagados y sin clic: excluirlos no haría nada. */
+.calendario-excluir__dia.no-juega {
+    background: transparent;
+    color: #c9c9c9;
+    cursor: default;
+}
+
+.calendario-excluir__dia.excluida {
+    background: #e24b4a;
+    border-color: #b93130;
+    color: #fff;
+    text-decoration: line-through;
+}
+
+.calendario-excluir__dia.excluida:hover {
+    background: #b93130;
+}
+
 .vista-previa-item img,
 .vista-previa-item svg {
     width: 72px;

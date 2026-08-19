@@ -493,6 +493,191 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Calendario para marcar las fechas que no se juegan (feriados, fines de semana sin
+    // confirmar). Antes había que escribirlas a mano en formato 2026-10-31, que es fácil
+    // de equivocar y difícil de revisar.
+    //
+    // Solo se pueden marcar los días que la copa realmente juega: excluir un martes en una
+    // liga de sábado y domingo no haría nada, y ofrecerlo solo confunde. Por eso el
+    // calendario se redibuja cuando cambian los días de juego o la fecha de arranque.
+    (function () {
+        var contenedor = document.getElementById('calendarioExcluidas');
+        if (!contenedor) {
+            return;
+        }
+        var campo = document.getElementById(contenedor.getAttribute('data-campo'));
+        var lista = document.getElementById('listaExcluidas');
+        if (!campo) {
+            return;
+        }
+
+        var NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+            'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        // El calendario se dibuja de lunes a domingo, como se lee en Guatemala.
+        var CABECERAS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+        var aTexto = function (fecha) {
+            var m = String(fecha.getMonth() + 1).padStart(2, '0');
+            var d = String(fecha.getDate()).padStart(2, '0');
+            return fecha.getFullYear() + '-' + m + '-' + d;
+        };
+
+        // Las fechas se manejan en horario local y no con new Date('2026-10-31'), que
+        // ISO interpreta como UTC y en Guatemala devolvería el día anterior.
+        var deTexto = function (texto) {
+            var p = String(texto).trim().split('-');
+            if (p.length !== 3) { return null; }
+            var f = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+            return isNaN(f.getTime()) ? null : f;
+        };
+
+        var excluidas = new Set(
+            campo.value.split(/[\s,;]+/).map(function (t) { return t.trim(); }).filter(Boolean)
+        );
+
+        var diasDeJuego = function () {
+            var dias = [];
+            document.querySelectorAll('input[name="' + contenedor.getAttribute('data-dias') + '"]:checked')
+                .forEach(function (c) { dias.push(Number(c.value)); });
+            return dias;
+        };
+
+        var mesVisible = null;
+
+        var sincronizar = function () {
+            var ordenadas = Array.from(excluidas).sort();
+            campo.value = ordenadas.join(', ');
+            if (!lista) { return; }
+            lista.innerHTML = '';
+            ordenadas.forEach(function (texto) {
+                var f = deTexto(texto);
+                var chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'badge rounded-pill text-bg-danger border-0';
+                chip.title = 'Quitar de la lista';
+                chip.textContent = (f ? f.getDate() + ' ' + NOMBRES_MES[f.getMonth()] : texto) + ' ✕';
+                chip.addEventListener('click', function () {
+                    excluidas.delete(texto);
+                    sincronizar();
+                    dibujar();
+                });
+                lista.appendChild(chip);
+            });
+        };
+
+        var dibujar = function () {
+            var dias = diasDeJuego();
+            contenedor.innerHTML = '';
+
+            if (dias.length === 0) {
+                var aviso = document.createElement('p');
+                aviso.className = 'form-text mb-0';
+                aviso.textContent = 'Marca primero los días de juego y aquí podrás elegir las fechas que no se jugarán.';
+                contenedor.appendChild(aviso);
+                return;
+            }
+
+            if (mesVisible === null) {
+                var inicio = deTexto((document.getElementsByName(contenedor.getAttribute('data-inicio'))[0] || {}).value || '');
+                var base = inicio || new Date();
+                mesVisible = new Date(base.getFullYear(), base.getMonth(), 1);
+            }
+
+            var cabecera = document.createElement('div');
+            cabecera.className = 'calendario-excluir__barra';
+            var anterior = document.createElement('button');
+            anterior.type = 'button';
+            anterior.className = 'btn btn-sm btn-outline-secondary';
+            anterior.innerHTML = '<i class="bi bi-chevron-left"></i>';
+            anterior.setAttribute('aria-label', 'Mes anterior');
+            anterior.addEventListener('click', function () {
+                mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1);
+                dibujar();
+            });
+            var titulo = document.createElement('span');
+            titulo.className = 'fw-semibold small';
+            titulo.textContent = NOMBRES_MES[mesVisible.getMonth()] + ' ' + mesVisible.getFullYear();
+            var siguiente = document.createElement('button');
+            siguiente.type = 'button';
+            siguiente.className = 'btn btn-sm btn-outline-secondary';
+            siguiente.innerHTML = '<i class="bi bi-chevron-right"></i>';
+            siguiente.setAttribute('aria-label', 'Mes siguiente');
+            siguiente.addEventListener('click', function () {
+                mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1);
+                dibujar();
+            });
+            cabecera.appendChild(anterior);
+            cabecera.appendChild(titulo);
+            cabecera.appendChild(siguiente);
+            contenedor.appendChild(cabecera);
+
+            var grilla = document.createElement('div');
+            grilla.className = 'calendario-excluir__grilla';
+            CABECERAS.forEach(function (n) {
+                var c = document.createElement('span');
+                c.className = 'calendario-excluir__cabecera';
+                c.textContent = n;
+                grilla.appendChild(c);
+            });
+
+            var primero = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), 1);
+            // getDay() da 0 para domingo; se convierte a lunes = 0.
+            var hueco = (primero.getDay() + 6) % 7;
+            for (var i = 0; i < hueco; i++) {
+                grilla.appendChild(document.createElement('span'));
+            }
+
+            var ultimo = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
+            for (var d = 1; d <= ultimo; d++) {
+                var fecha = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
+                var texto = aTexto(fecha);
+                var seJuega = dias.indexOf(fecha.getDay()) !== -1;
+
+                var celda = document.createElement('button');
+                celda.type = 'button';
+                celda.className = 'calendario-excluir__dia';
+                celda.textContent = String(d);
+                celda.dataset.fecha = texto;
+
+                if (!seJuega) {
+                    celda.classList.add('no-juega');
+                    celda.disabled = true;
+                    celda.title = 'Ese día no se juega';
+                } else {
+                    var marcada = excluidas.has(texto);
+                    celda.classList.toggle('excluida', marcada);
+                    celda.setAttribute('aria-pressed', marcada ? 'true' : 'false');
+                    celda.title = marcada ? 'Volver a jugar este día' : 'Marcar como día sin juego';
+                    celda.addEventListener('click', function () {
+                        var f = this.dataset.fecha;
+                        if (excluidas.has(f)) { excluidas.delete(f); } else { excluidas.add(f); }
+                        sincronizar();
+                        dibujar();
+                    });
+                }
+                grilla.appendChild(celda);
+            }
+
+            contenedor.appendChild(grilla);
+        };
+
+        // Al cambiar los días de juego cambia qué se puede excluir; al cambiar la fecha de
+        // arranque cambia el mes que conviene mostrar primero.
+        document.querySelectorAll('input[name="' + contenedor.getAttribute('data-dias') + '"]').forEach(function (c) {
+            c.addEventListener('change', dibujar);
+        });
+        var campoInicio = document.getElementsByName(contenedor.getAttribute('data-inicio'))[0];
+        if (campoInicio) {
+            campoInicio.addEventListener('change', function () {
+                mesVisible = null;
+                dibujar();
+            });
+        }
+
+        sincronizar();
+        dibujar();
+    })();
+
     // Casillas que desbloquean otro campo (ej. "Ajustar la jornada manualmente"). El campo
     // llega readonly desde el servidor para que el valor automático se vea pero no se toque;
     // al marcar la casilla se libera. Aquí y no inline: el CSP bloquea el JavaScript en HTML.

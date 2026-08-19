@@ -109,8 +109,18 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label small fw-semibold">Fechas que no se juegan</label>
-                <textarea name="fechas_excluidas" class="form-control" rows="2" placeholder="2026-10-31, 2026-11-01"><?= e((string) ($datosPrevios['fechas_excluidas'] ?? '')) ?></textarea>
-                <div class="form-text">Feriados o fines de semana sin confirmar. La jornada completa se corre a la semana siguiente.</div>
+                <?php // Calendario en vez de escribir fechas a mano: se hace clic sobre el
+                      // día y listo. Solo deja marcar los días que realmente se juegan,
+                      // porque excluir un martes en una liga de fin de semana no hace nada.
+                      // El valor viaja en el campo oculto con el mismo formato de antes. ?>
+                <div id="calendarioExcluidas"
+                     class="calendario-excluir"
+                     data-campo="campoFechasExcluidas"
+                     data-dias="dia_activo[]"
+                     data-inicio="fecha_inicio"></div>
+                <input type="hidden" name="fechas_excluidas" id="campoFechasExcluidas" value="<?= e((string) ($datosPrevios['fechas_excluidas'] ?? '')) ?>">
+                <div id="listaExcluidas" class="mt-2 d-flex flex-wrap gap-1"></div>
+                <div class="form-text">Feriados o fines de semana sin confirmar. La jornada completa se corre a la semana siguiente, y las de atrás se corren con ella.</div>
             </div>
         </div>
 
