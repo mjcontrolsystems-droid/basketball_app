@@ -278,6 +278,12 @@ CREATE INDEX IF NOT EXISTS idx_sanciones_jugador ON sanciones (jugador_id, estad
 -- Reglamento del campeonato en PDF. `reglamento` guarda el id del archivo en la tabla
 -- binaria `imagenes` (que almacena cualquier tipo, no solo imágenes) y `reglamento_nombre`
 -- el nombre original, para mostrarlo en el panel y nombrar bien la descarga.
+-- Suspensiones por partidos: cada cuántas amarillas acumuladas se suspende al jugador y
+-- cuántos partidos cubre ese castigo (partidos_suspension_roja hace lo propio con la roja).
+-- En 0 la liga no aplica esa regla. Ver app/Support/disciplina.php.
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS amarillas_para_suspension INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS partidos_suspension_amarillas INTEGER NOT NULL DEFAULT 1;
+
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento TEXT NOT NULL DEFAULT '';
 ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento_nombre TEXT NOT NULL DEFAULT '';
 

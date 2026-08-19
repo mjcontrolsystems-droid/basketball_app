@@ -227,15 +227,23 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                             // se puede marcar; si no, solo se advierte y el organizador decide.
                             $deudaJugador = $deudaPorJugador[$jid] ?? null;
                             $bloqueadoPorDeuda = $deudaJugador !== null && torneo_bloquea_morosos($torneo);
+                            // Una suspensión por partidos siempre bloquea: no se puede
+                            // "pagar" para jugar, hay que cumplirla.
+                            $suspension = $suspendidosPartido[$jid] ?? null;
                         ?>
                         <li class="fila-alineacion d-flex align-items-center gap-2 py-1">
                             <?php // Con el resultado en firme la alineación queda de solo lectura,
                                   // igual que los eventos y el cronómetro. ?>
-                            <input class="form-check-input check-titular m-0" type="checkbox" name="titular[]" value="<?= $jid ?>" id="titular-<?= $jid ?>" <?= $esTitular ? 'checked' : '' ?> <?= (empty($j['activo']) || $resultadoBloqueado || $bloqueadoPorDeuda) ? 'disabled' : '' ?>>
+                            <input class="form-check-input check-titular m-0" type="checkbox" name="titular[]" value="<?= $jid ?>" id="titular-<?= $jid ?>" <?= $esTitular ? 'checked' : '' ?> <?= (empty($j['activo']) || $resultadoBloqueado || $bloqueadoPorDeuda || $suspension !== null) ? 'disabled' : '' ?>>
                             <label class="flex-grow-1 mb-0 d-flex align-items-center gap-2" for="titular-<?= $jid ?>" style="cursor:pointer;min-width:0;">
                                 <span class="fw-bold">#<?= e($j['dorsal']) ?></span>
                                 <span class="text-truncate"><?= e($j['nombre']) ?></span>
                                 <?php if (empty($j['activo'])): ?><span class="badge rounded-pill text-bg-secondary small"><?= e(forma_genero($torneo['genero'] ?? null, 'Inactivo', 'Inactiva')) ?></span><?php endif; ?>
+                                <?php if ($suspension !== null): ?>
+                                <span class="badge rounded-pill text-bg-danger small" title="<?= e(disciplina_texto_suspension($suspension)) ?>">
+                                    <i class="bi bi-person-x me-1"></i><?= $suspension['motivo'] === 'roja' ? 'Suspendido por roja' : 'Suspendido por amarillas' ?>
+                                </span>
+                                <?php endif; ?>
                                 <?php if ($deudaJugador !== null): ?>
                                 <a href="<?= url('admin/sanciones.php') ?>" class="badge rounded-pill text-bg-danger small text-decoration-none" title="<?= $bloqueadoPorDeuda ? 'No puede jugar hasta pagar' : 'Tiene multa pendiente' ?>">
                                     <i class="bi bi-cash-coin me-1"></i>Debe <?= e(sancion_monto_texto($torneo, $deudaJugador['total'])) ?>

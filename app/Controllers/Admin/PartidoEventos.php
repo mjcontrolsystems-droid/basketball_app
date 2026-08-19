@@ -164,6 +164,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Los suspendidos por partidos no se pueden alinear de ninguna forma (no es algo
+        // que se pague: hay que cumplir la sanción). Se valida también en el servidor.
+        $suspendidosAlGuardar = disciplina_suspendidos_para_partido($torneo['id'], $partido, $torneo, $partidos, $jugadoresPorId);
+        foreach ($filas as $fila) {
+            $jid = (int) $fila['jugador_id'];
+            if (isset($suspendidosAlGuardar[$jid])) {
+                $nombreJugador = jugador_nombre($jugadoresPorId[$jid] ?? null);
+                redirigir_con_mensaje($urlLista, 'error', "{$nombreJugador} está suspendido para este encuentro ({$suspendidosAlGuardar[$jid]['detalle']}) y no puede ser alineado.");
+            }
+        }
+
         // Segunda barrera del bloqueo por multa: la casilla ya viene deshabilitada en la
         // pantalla, pero un envío directo del formulario podría colar a un moroso.
         if (torneo_bloquea_morosos($torneo)) {
@@ -355,8 +366,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Aviso inmediato si esta tarjeta detonó una suspensión: es el momento en que el
+        // organizador puede avisarle al equipo que se queda sin ese jugador.
+        $avisoSuspension = '';
+        if ($accion === 'agregar_tarjeta') {
+            $avisoSuspension = disciplina_aviso_por_tarjeta($torneo['id'], $torneo, $evento, $jugadoresPorId);
+        }
+
         bitacora_registrar('evento_agregado', 'Encuentro #' . $partidoId . ': ' . evento_descripcion($evento, $jugadoresPorId, $deporte), $torneo['id']);
-        redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.' . $avisoMulta);
+        redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.' . $avisoMulta . $avisoSuspension);
     }
 }
 
@@ -395,6 +413,10 @@ $fechaEsFutura = ($partido['fecha'] ?? '') > $hoy && ($partido['estado'] ?? '') 
 // que deben. Se consulta una sola vez y se reutiliza en toda la pantalla.
 $deudaPorJugador = torneo_cobra_multas($torneo) ? sanciones_deuda_por_jugador($torneo['id']) : [];
 
+// Suspendidos para ESTE partido por roja o por acumulación de amarillas. A diferencia de
+// la multa, una suspensión no se puede "pagar": el jugador simplemente no puede alinearse.
+$suspendidosPartido = disciplina_suspendidos_para_partido($torneo['id'], $partido, $torneo, $partidos, $jugadoresPorId);
+
 $seccion_activa = 'partidos';
 $titulo_pagina = 'Ficha del partido';
 
@@ -402,6 +424,7 @@ vista_admin('admin/partido_eventos', compact(
     'alineacionPorJugador',
     'basketball',
     'deudaPorJugador',
+    'suspendidosPartido',
     'deporte',
     'equipoLocal',
     'equipoVisitante',

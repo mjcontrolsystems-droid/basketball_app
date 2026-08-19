@@ -64,25 +64,56 @@ $encuentros = [];
 foreach ($jornadas[$jornadaElegida] ?? [] as $p) {
     $local = (int) $p['equipo_local'];
     $visitante = (int) $p['equipo_visitante'];
+
+    // Suspendidos POR ESE partido: se calcula partido por partido porque la ventana de
+    // castigo depende del calendario de cada equipo.
+    $suspendidos = disciplina_suspendidos_para_partido($torneo['id'], $p, $torneo, $partidos, $jugadoresPorId);
+    $suspLocal = [];
+    $suspVisitante = [];
+    foreach ($suspendidos as $jugadorId => $info) {
+        $jug = $jugadoresPorId[$jugadorId] ?? null;
+        if ($jug === null) {
+            continue;
+        }
+        $fila = ['jugador' => $jug, 'info' => $info];
+        if ((int) $jug['equipo_id'] === $local) {
+            $suspLocal[] = $fila;
+        } elseif ((int) $jug['equipo_id'] === $visitante) {
+            $suspVisitante[] = $fila;
+        }
+    }
+
     $encuentros[] = [
         'partido' => $p,
         'local' => $equiposPorId[$local] ?? null,
         'visitante' => $equiposPorId[$visitante] ?? null,
         'morosos_local' => $morososPorEquipo[$local] ?? [],
         'morosos_visitante' => $morososPorEquipo[$visitante] ?? [],
+        'susp_local' => $suspLocal,
+        'susp_visitante' => $suspVisitante,
     ];
 }
 
 $totalMorosos = count($deudaPorJugador);
 $cobraMultas = torneo_cobra_multas($torneo);
 $bloquea = torneo_bloquea_morosos($torneo);
+$aplicaSuspensiones = torneo_aplica_suspensiones($torneo);
+// La hoja tiene sentido si la copa controla multas O suspensiones (o ambas).
+$hayControlDisciplinario = $cobraMultas || $aplicaSuspensiones;
+$totalSuspendidos = 0;
+foreach ($encuentros as $en) {
+    $totalSuspendidos += count($en['susp_local']) + count($en['susp_visitante']);
+}
 
 $titulo_pagina = 'Solvencia de jugadores — ' . $torneo['nombre'];
 $pagina_activa = 'calendario';
 
 vista_publica('publico/solvencia', compact(
+    'aplicaSuspensiones',
     'bloquea',
     'cobraMultas',
+    'hayControlDisciplinario',
+    'totalSuspendidos',
     'encuentros',
     'equiposPorId',
     'jornadaElegida',

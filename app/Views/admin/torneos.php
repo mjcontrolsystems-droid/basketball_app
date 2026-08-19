@@ -179,10 +179,27 @@
                 <label class="form-label small fw-semibold">Multa por roja</label>
                 <input type="number" min="0" step="0.01" name="multa_roja" class="form-control" value="<?= e((string) ($torneoEditar['multa_roja'] ?? 0)) ?>">
             </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small fw-semibold">Partidos de suspensión por roja</label>
+
+            <?php // --- Suspensiones por partidos (independiente de las multas) --- ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-person-x me-1"></i>Suspensiones por partidos (opcional)</label>
+                <p class="form-text mt-0 mb-2">Quién se pierde el próximo partido. La app lleva la cuenta sola y no deja alinear al suspendido. Deja en 0 lo que tu liga no aplique.</p>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label small fw-semibold">Partidos que pierde por roja</label>
                 <input type="number" min="0" max="10" name="partidos_suspension_roja" class="form-control" value="<?= e((string) ($torneoEditar['partidos_suspension_roja'] ?? 0)) ?>">
-                <div class="form-text">0 = no suspende por fechas.</div>
+                <div class="form-text">Lo habitual es 1.</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label small fw-semibold">Amarillas para suspender</label>
+                <input type="number" min="0" max="20" name="amarillas_para_suspension" class="form-control" value="<?= e((string) ($torneoEditar['amarillas_para_suspension'] ?? 0)) ?>">
+                <div class="form-text">Lo habitual es 4. Se acumulan durante todo el torneo.</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label small fw-semibold">Partidos que pierde por acumulación</label>
+                <input type="number" min="0" max="10" name="partidos_suspension_amarillas" class="form-control" value="<?= e((string) ($torneoEditar['partidos_suspension_amarillas'] ?? 1)) ?>">
+                <div class="form-text">Se aplica al llegar a 4, 8, 12…</div>
             </div>
             <div class="col-12">
                 <div class="form-check">

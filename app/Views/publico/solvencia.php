@@ -4,10 +4,15 @@
         <p class="kicker mb-2"><i class="bi bi-shield-check me-1"></i>Antes del partido</p>
         <h1 class="text-white mb-2">Solvencia de <span class="text-degradado">jugadores</span></h1>
         <p style="color:rgba(255,255,255,.75);" class="mb-0">
-            <?php if ($bloquea): ?>
-            Los jugadores con multa pendiente no pueden jugar hasta ponerse al día.
+            Quién NO puede jugar esta jornada
+            <?php if ($cobraMultas && $aplicaSuspensiones): ?>
+            por multa pendiente o por suspensión.
+            <?php elseif ($aplicaSuspensiones): ?>
+            por suspensión (roja o acumulación de amarillas).
+            <?php elseif ($bloquea): ?>
+            por tener multa pendiente.
             <?php else: ?>
-            Jugadores con multa pendiente. La organización decide si pueden jugar.
+            — la organización decide si los deja jugar.
             <?php endif; ?>
         </p>
     </div>
@@ -16,10 +21,10 @@
 <section class="seccion pt-4">
     <div class="container" style="max-width:900px;">
 
-        <?php if (!$cobraMultas): ?>
+        <?php if (!$hayControlDisciplinario): ?>
         <div class="card-suave p-4 text-center text-muted">
             <i class="bi bi-info-circle fs-3 d-block mb-2 opacity-50"></i>
-            Esta liga no cobra multas por tarjeta.
+            Esta liga no aplica multas ni suspensiones por tarjeta.
         </div>
 
         <?php else: ?>
@@ -34,10 +39,13 @@
 
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <span class="small text-muted">
-                <?php if ($totalMorosos === 0): ?>
-                <i class="bi bi-check2-circle text-success me-1"></i>Todos los jugadores están solventes
+                <?php if ($totalMorosos === 0 && $totalSuspendidos === 0): ?>
+                <i class="bi bi-check2-circle text-success me-1"></i>Todos los jugadores habilitados
                 <?php else: ?>
-                <i class="bi bi-exclamation-triangle text-danger me-1"></i><?= (int) $totalMorosos ?> jugador<?= $totalMorosos === 1 ? '' : 'es' ?> con multa pendiente
+                <i class="bi bi-exclamation-triangle text-danger me-1"></i>
+                <?php if ($totalSuspendidos > 0): ?><?= (int) $totalSuspendidos ?> suspendido<?= $totalSuspendidos === 1 ? '' : 's' ?><?php endif; ?>
+                <?php if ($totalSuspendidos > 0 && $totalMorosos > 0): ?> · <?php endif; ?>
+                <?php if ($totalMorosos > 0): ?><?= (int) $totalMorosos ?> con multa pendiente<?php endif; ?>
                 <?php endif; ?>
             </span>
             <button type="button" class="btn btn-degradado rounded-pill px-4 btn-imprimir-pdf"><i class="bi bi-printer me-1"></i>Imprimir para la cancha</button>
@@ -52,16 +60,23 @@
             </div>
 
             <div class="row g-3">
-                <?php foreach ([['local', 'morosos_local'], ['visitante', 'morosos_visitante']] as [$claveEquipo, $claveMorosos]): ?>
+                <?php foreach ([['local', 'morosos_local', 'susp_local'], ['visitante', 'morosos_visitante', 'susp_visitante']] as [$claveEquipo, $claveMorosos, $claveSusp]): ?>
                 <div class="col-md-6">
                     <div class="small fw-semibold mb-1"><?= e($en[$claveEquipo]['nombre'] ?? '?') ?></div>
-                    <?php if (empty($en[$claveMorosos])): ?>
+                    <?php if (empty($en[$claveMorosos]) && empty($en[$claveSusp])): ?>
                     <div class="small text-success"><i class="bi bi-check2-circle me-1"></i>Plantel completo habilitado</div>
                     <?php else: ?>
                     <ul class="list-unstyled mb-0 small">
+                        <?php // Primero las suspensiones: no se pueden resolver pagando ?>
+                        <?php foreach ($en[$claveSusp] as $s): ?>
+                        <li class="text-danger">
+                            <i class="bi bi-person-x me-1"></i><?= e(jugador_nombre($s['jugador'])) ?>
+                            — <?= e($s['info']['detalle']) ?> (suspendido)
+                        </li>
+                        <?php endforeach; ?>
                         <?php foreach ($en[$claveMorosos] as $m): ?>
                         <li class="text-danger">
-                            <i class="bi bi-x-circle me-1"></i><?= e(jugador_nombre($m['jugador'])) ?>
+                            <i class="bi bi-cash-coin me-1"></i><?= e(jugador_nombre($m['jugador'])) ?>
                             — debe <?= e(sancion_monto_texto($torneo, $m['total'])) ?>
                         </li>
                         <?php endforeach; ?>
@@ -86,27 +101,36 @@
 </div>
 
 <?php // ---------- Hoja para imprimir y llevar a la cancha ---------- ?>
-<?php if ($cobraMultas): ?>
+<?php if ($hayControlDisciplinario): ?>
 <div class="solo-impresion ficha-imprimir">
     <div class="ficha-titulo">
         <h2><?= e($torneo['nombre']) ?></h2>
-        <p>Jugadores NO habilitados por multa pendiente · Jornada <?= (int) $jornadaElegida ?></p>
+        <p>Jugadores NO habilitados · Jornada <?= (int) $jornadaElegida ?></p>
     </div>
 
     <?php foreach ($encuentros as $en): ?>
     <h3><?= e($en['local']['nombre'] ?? '?') ?> vs <?= e($en['visitante']['nombre'] ?? '?') ?> — <?= e(formatear_fecha_larga($en['partido']['fecha'])) ?> <?= e($en['partido']['hora']) ?></h3>
     <table class="ficha-tabla">
         <thead>
-            <tr><th style="width:34%;">Equipo</th><th>Jugador</th><th style="width:18%;">Debe</th><th style="width:14%;">Pagó</th></tr>
+            <tr><th style="width:28%;">Equipo</th><th>Jugador</th><th style="width:30%;">Motivo</th><th style="width:14%;">Pagó</th></tr>
         </thead>
         <tbody>
             <?php $hayAlguno = false; ?>
-            <?php foreach ([['local', 'morosos_local'], ['visitante', 'morosos_visitante']] as [$claveEquipo, $claveMorosos]): ?>
+            <?php foreach ([['local', 'morosos_local', 'susp_local'], ['visitante', 'morosos_visitante', 'susp_visitante']] as [$claveEquipo, $claveMorosos, $claveSusp]): ?>
+                <?php foreach ($en[$claveSusp] as $s): $hayAlguno = true; ?>
+                <tr>
+                    <td><?= e($en[$claveEquipo]['nombre'] ?? '?') ?></td>
+                    <td><?= e(jugador_nombre($s['jugador'])) ?></td>
+                    <td>SUSPENDIDO — <?= e($s['info']['detalle']) ?></td>
+                    <?php // Una suspensión no se paga: no lleva casilla ?>
+                    <td>—</td>
+                </tr>
+                <?php endforeach; ?>
                 <?php foreach ($en[$claveMorosos] as $m): $hayAlguno = true; ?>
                 <tr>
                     <td><?= e($en[$claveEquipo]['nombre'] ?? '?') ?></td>
                     <td><?= e(jugador_nombre($m['jugador'])) ?></td>
-                    <td><?= e(sancion_monto_texto($torneo, $m['total'])) ?></td>
+                    <td>Debe <?= e(sancion_monto_texto($torneo, $m['total'])) ?></td>
                     <?php // Casilla en blanco: si en la cancha no hay señal, se marca a
                           // mano aquí y se registra en la app al volver. ?>
                     <td><span class="ficha-linea-blanco"></span></td>
@@ -114,7 +138,7 @@
                 <?php endforeach; ?>
             <?php endforeach; ?>
             <?php if (!$hayAlguno): ?>
-            <tr><td colspan="4">Ambos planteles están solventes.</td></tr>
+            <tr><td colspan="4">Ambos planteles completos: nadie suspendido ni en deuda.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

@@ -21,6 +21,7 @@ const COLUMNAS_TORNEO = [
     'genero', 'modalidad', 'duracion_periodo_min', 'modo', 'vueltas',
     'multa_amarilla', 'multa_roja', 'sancion_bloquea', 'partidos_suspension_roja', 'moneda',
     'reglamento', 'reglamento_nombre',
+    'amarillas_para_suspension', 'partidos_suspension_amarillas',
 ];
 
 /**
@@ -62,7 +63,7 @@ function db_parsear_array_pg(?string $valor): array
 
 function db_normalizar_torneo(array $fila): array
 {
-    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'duracion_periodo_min', 'vueltas', 'partidos_suspension_roja'] as $col) {
+    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'duracion_periodo_min', 'vueltas', 'partidos_suspension_roja', 'amarillas_para_suspension', 'partidos_suspension_amarillas'] as $col) {
         if (array_key_exists($col, $fila) && $fila[$col] !== null) {
             $fila[$col] = (int) $fila[$col];
         }

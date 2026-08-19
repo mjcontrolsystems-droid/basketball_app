@@ -357,6 +357,11 @@ function db_migrar_automatico(): void
         // Reglamento del campeonato en PDF: guarda el id del archivo en la tabla binaria
         // `imagenes` (que almacena cualquier tipo, no solo imágenes) y el nombre original
         // para mostrarlo y para el archivo descargado.
+        // Suspensiones por partidos: cada cuántas amarillas se suspende y cuántos partidos
+        // cubre. En 0 la liga no aplica esa regla (partidos_suspension_roja ya existía).
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS amarillas_para_suspension INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS partidos_suspension_amarillas INTEGER NOT NULL DEFAULT 1');
+
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento TEXT NOT NULL DEFAULT ''");
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS reglamento_nombre TEXT NOT NULL DEFAULT ''");
 

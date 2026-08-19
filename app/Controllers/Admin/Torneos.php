@@ -158,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'multa_roja' => max(0, (float) ($_POST['multa_roja'] ?? 0)),
             'sancion_bloquea' => isset($_POST['sancion_bloquea']),
             'partidos_suspension_roja' => max(0, min(10, (int) ($_POST['partidos_suspension_roja'] ?? 0))),
+            'amarillas_para_suspension' => max(0, min(20, (int) ($_POST['amarillas_para_suspension'] ?? 0))),
+            'partidos_suspension_amarillas' => max(0, min(10, (int) ($_POST['partidos_suspension_amarillas'] ?? 1))),
             'moneda' => trim((string) ($_POST['moneda'] ?? 'Q')) !== '' ? mb_substr(trim((string) $_POST['moneda']), 0, 4) : 'Q',
             'es_predeterminado' => !empty($torneoEditar['es_predeterminado']),
             'activo' => true,
