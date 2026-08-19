@@ -192,15 +192,18 @@
                     <?php endforeach; ?>
 
                     <?php foreach (($previa['playoffs'] ?? []) as $pf): ?>
+                    <?php // Una fase puede ocupar más de un día (los cuartos se reparten
+                          // entre sábado y domingo), así que se indexa por nombre de día. ?>
+                    <?php $porDiaFase = array_column($pf['dias'], 'partidos', 'nombre'); ?>
                     <tr class="table-light">
                         <td class="small text-nowrap">
                             <span class="fw-semibold"><?= e($pf['label']) ?></span>
-                            <span class="text-muted"> — <?= e(formatear_fecha_corta($pf['fecha'])) ?></span>
+                            <span class="text-muted"> — <?= e(formatear_fecha_corta($pf['desde'])) ?><?= $pf['hasta'] !== $pf['desde'] ? ' / ' . e(formatear_fecha_corta($pf['hasta'])) : '' ?></span>
                         </td>
                         <?php foreach ($columnasDia as $nombreCol): ?>
-                        <td class="text-center"><?= $nombreCol === $pf['dia'] ? (int) $pf['partidos'] : '—' ?></td>
+                        <td class="text-center"><?= isset($porDiaFase[$nombreCol]) ? (int) $porDiaFase[$nombreCol] : '—' ?></td>
                         <?php endforeach; ?>
-                        <td class="text-center fw-semibold"><?= (int) $pf['partidos'] ?></td>
+                        <td class="text-center fw-semibold"><?= (int) $pf['total'] ?></td>
                         <td class="small text-muted">Fecha reservada</td>
                     </tr>
                     <?php endforeach; ?>

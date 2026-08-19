@@ -443,53 +443,105 @@ function calendario_previa_playoffs(array $torneo, array $calendario, array $dia
         $partidosPorFase[$f] = $cuenta = max(2, $cuenta * 2);
     }
 
-    // Un bloque de días por cada fin de semana de playoffs. Se reutiliza el mismo cálculo
-    // de fechas de la temporada regular para que también respete las fechas excluidas.
-    $semanas = (int) ceil(count($ordenadas) / max(1, count($diasConfig)));
+    // Todos los días de playoffs disponibles, uno detrás de otro. Se piden fines de semana
+    // de sobra (uno por fase más dos) y se reutiliza el mismo cálculo de fechas de la
+    // temporada regular, para que también respete las fechas excluidas.
     $bloques = calendario_fechas(
         date('Y-m-d', $tsSiguiente),
         array_map(fn($d) => (int) $d['dia'], $diasConfig),
-        max(1, $semanas),
+        count($ordenadas) + 2,
         $excluidas
     );
 
-    $planos = [];
-    foreach ($bloques as $bloque) {
+    $slots = [];
+    foreach ($bloques as $iBloque => $bloque) {
         foreach ($bloque as $i => $fecha) {
-            $planos[] = ['fecha' => $fecha, 'dia' => CALENDARIO_DIAS[(int) $diasConfig[$i]['dia']] ?? ''];
+            $slots[] = [
+                'fecha' => $fecha,
+                'dia' => CALENDARIO_DIAS[(int) $diasConfig[$i]['dia']] ?? '',
+                'cupo' => max(0, (int) ($diasConfig[$i]['partidos'] ?? 0)),
+                'usado' => 0,
+                'semana' => $iBloque,
+            ];
         }
+    }
+    if (empty($slots)) {
+        return [];
     }
 
     $salida = [];
-    foreach ($ordenadas as $i => $f) {
-        $slot = $planos[$i] ?? end($planos);
-        if ($slot === false) {
-            break;
+    $desde = 0; // primer día libre: una fase nunca empieza antes de que termine la anterior
+
+    foreach ($ordenadas as $f) {
+        $partidos = $partidosPorFase[$f] ?? 1;
+
+        // El tercer lugar y la final se juegan el MISMO día: el tercer lugar abre la
+        // jornada y la final la cierra. Por eso el tercer lugar no adelanta el puntero.
+        $comparteConLaFinal = $f === 'tercer_lugar' && in_array('final', $ordenadas, true);
+
+        // Los partidos se agrupan de dos en dos porque esos dos ganadores se enfrentan
+        // en la ronda siguiente: si se jugaran en días distintos, uno llegaría con un día
+        // menos de descanso. Por eso una pareja nunca se parte, pero DOS parejas sí pueden
+        // ir en días distintos — que es lo que reparte los cuartos entre sábado y domingo
+        // en vez de amontonarlos todos el sábado.
+        $parejas = [];
+        $restan = $partidos;
+        while ($restan > 0) {
+            $parejas[] = min(2, $restan);
+            $restan -= 2;
         }
+
+        $porSlot = [];
+        $ultimoUsado = $desde;
+
+        foreach ($parejas as $k => $tamano) {
+            // Se rota entre los días disponibles antes de repetir uno: así con cuartos de
+            // final salen 2 el sábado y 2 el domingo, y no 4 el sábado con el domingo libre.
+            $intentos = 0;
+            $indice = $desde + ($k % max(1, count($diasConfig)));
+            while ($intentos < count($slots)) {
+                $slot = $slots[$indice] ?? null;
+                if ($slot !== null && $slot['usado'] + $tamano <= $slot['cupo']) {
+                    break;
+                }
+                $indice++;
+                $intentos++;
+            }
+            if (!isset($slots[$indice])) {
+                break; // no hay más días configurados; el resto se programa a mano
+            }
+
+            $slots[$indice]['usado'] += $tamano;
+            $porSlot[$indice] = ($porSlot[$indice] ?? 0) + $tamano;
+            $ultimoUsado = max($ultimoUsado, $indice);
+        }
+
+        if (empty($porSlot)) {
+            continue;
+        }
+        ksort($porSlot);
+
+        $dias = [];
+        foreach ($porSlot as $indice => $cuantos) {
+            $dias[] = [
+                'fecha' => $slots[$indice]['fecha'],
+                'nombre' => $slots[$indice]['dia'],
+                'partidos' => $cuantos,
+            ];
+        }
+
         $salida[] = [
             'fase' => $f,
             'label' => FASES_LABEL[$f] ?? $f,
-            'fecha' => $slot['fecha'],
-            'dia' => $slot['dia'],
-            'partidos' => $partidosPorFase[$f] ?? 1,
+            'dias' => $dias,
+            'total' => array_sum(array_column($dias, 'partidos')),
+            'desde' => $dias[0]['fecha'],
+            'hasta' => $dias[count($dias) - 1]['fecha'],
         ];
-    }
 
-    // El tercer lugar y la final se juegan el mismo día: el tercer lugar abre y la final
-    // cierra. Si quedaron en días distintos se junta el tercer lugar con la final.
-    $iTercero = null;
-    $iFinal = null;
-    foreach ($salida as $k => $fila) {
-        if ($fila['fase'] === 'tercer_lugar') {
-            $iTercero = $k;
-        }
-        if ($fila['fase'] === 'final') {
-            $iFinal = $k;
-        }
-    }
-    if ($iTercero !== null && $iFinal !== null) {
-        $salida[$iTercero]['fecha'] = $salida[$iFinal]['fecha'];
-        $salida[$iTercero]['dia'] = $salida[$iFinal]['dia'];
+        // La fase siguiente arranca el día DESPUÉS del último que usó esta, salvo el
+        // tercer lugar, que le deja el mismo día a la final.
+        $desde = $comparteConLaFinal ? $ultimoUsado : $ultimoUsado + 1;
     }
 
     return $salida;
