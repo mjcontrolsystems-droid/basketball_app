@@ -164,6 +164,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Segunda barrera del bloqueo por multa: la casilla ya viene deshabilitada en la
+        // pantalla, pero un envío directo del formulario podría colar a un moroso.
+        if (torneo_bloquea_morosos($torneo)) {
+            $deudas = sanciones_deuda_por_jugador($torneo['id']);
+            foreach ($filas as $fila) {
+                $jid = (int) $fila['jugador_id'];
+                if (isset($deudas[$jid])) {
+                    $nombreJugador = jugador_nombre($jugadoresPorId[$jid] ?? null);
+                    $montoDebe = sancion_monto_texto($torneo, $deudas[$jid]['total']);
+                    redirigir_con_mensaje($urlLista, 'error', "{$nombreJugador} tiene {$montoDebe} en multas pendientes y no puede ser alineado. Regístrale el pago en Sanciones o quítalo de la lista.");
+                }
+            }
+        }
+
         db_guardar_alineacion($torneo['id'], $partidoId, $filas);
         bitacora_registrar('alineacion_guardada', 'Encuentro #' . $partidoId . ': alineación actualizada', $torneo['id']);
         redirigir_con_mensaje($urlLista, 'success', 'Alineación guardada.');
@@ -237,10 +251,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($eventoBorrado !== null && ($eventoBorrado['tipo'] ?? '') === 'gol') {
             partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
         }
+        // La multa de una tarjeta se retira junto con ella, salvo que ya se haya cobrado:
+        // una sanción pagada es dinero recibido y no debe borrarse por corregir la ficha.
+        $avisoSancion = '';
+        if ($eventoBorrado !== null && in_array($eventoBorrado['tipo'] ?? '', ['amarilla', 'roja'], true)) {
+            if (!sancion_borrar_por_evento($id) && torneo_cobra_multas($torneo)) {
+                $avisoSancion = ' La multa asociada ya estaba cobrada, así que se conservó en el registro de sanciones.';
+            }
+        }
         if ($eventoBorrado !== null) {
             bitacora_registrar('evento_eliminado', 'Encuentro #' . $partidoId . ': ' . evento_descripcion($eventoBorrado, $jugadoresPorId, $deporte), $torneo['id']);
         }
-        redirigir_con_mensaje($urlLista, 'success', 'Evento eliminado.');
+        redirigir_con_mensaje($urlLista, 'success', 'Evento eliminado.' . $avisoSancion);
     }
 
     if (in_array($accion, ['agregar_gol', 'agregar_tarjeta', 'agregar_cambio'], true)) {
@@ -319,8 +341,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($accion === 'agregar_gol') {
             partido_recalcular_marcador($torneo['id'], $partidoId, $partidos, $deporte);
         }
+
+        // Una tarjeta genera automáticamente su multa con la tarifa vigente de la copa;
+        // el jugador queda en deuda (y por tanto no habilitado) hasta que la pague.
+        $avisoMulta = '';
+        if ($accion === 'agregar_tarjeta') {
+            $evento['partido_id'] = $partidoId;
+            sancion_crear_por_evento($torneo['id'], $evento, $torneo);
+            $montoAplicado = torneo_multa($torneo, (string) $evento['tipo']);
+            if ($montoAplicado > 0) {
+                $avisoMulta = ' Se generó una multa de ' . sancion_monto_texto($torneo, $montoAplicado)
+                    . (torneo_bloquea_morosos($torneo) ? ': el jugador no podrá alinearse hasta pagarla.' : '.');
+            }
+        }
+
         bitacora_registrar('evento_agregado', 'Encuentro #' . $partidoId . ': ' . evento_descripcion($evento, $jugadoresPorId, $deporte), $torneo['id']);
-        redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.');
+        redirigir_con_mensaje($urlLista, 'success', 'Evento agregado.' . $avisoMulta);
     }
 }
 
@@ -355,12 +391,17 @@ foreach ($alineacion as $filaAlineacion) {
 $hoy = date('Y-m-d');
 $fechaEsFutura = ($partido['fecha'] ?? '') > $hoy && ($partido['estado'] ?? '') !== 'jugado';
 
+// Multas pendientes por jugador: la alineación marca (y según la copa, bloquea) a los
+// que deben. Se consulta una sola vez y se reutiliza en toda la pantalla.
+$deudaPorJugador = torneo_cobra_multas($torneo) ? sanciones_deuda_por_jugador($torneo['id']) : [];
+
 $seccion_activa = 'partidos';
 $titulo_pagina = 'Ficha del partido';
 
 vista_admin('admin/partido_eventos', compact(
     'alineacionPorJugador',
     'basketball',
+    'deudaPorJugador',
     'deporte',
     'equipoLocal',
     'equipoVisitante',

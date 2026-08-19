@@ -244,6 +244,37 @@ ALTER TABLE usuarios ALTER COLUMN password_hash DROP NOT NULL;
 -- torneos.genero, que describe la categoría deportiva de la copa (jugadores/jugadoras).
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero TEXT NOT NULL DEFAULT '';
 
+-- Sanciones disciplinarias: tarifas por tarjeta y reglas de la copa. En 0 la liga no
+-- cobra multas y toda la función queda oculta.
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS multa_amarilla NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS multa_roja NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS sancion_bloquea BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS partidos_suspension_roja INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE torneos ADD COLUMN IF NOT EXISTS moneda TEXT NOT NULL DEFAULT 'Q';
+
+-- Una multa por cada tarjeta registrada. evento_id es UNIQUE para que reprocesar la ficha
+-- de un partido nunca duplique el cobro. El monto se congela al crearse: si la liga sube
+-- la tarifa a media temporada, las multas viejas conservan su precio.
+-- estado: 'pendiente' (bloquea al jugador) | 'pagada' (suma al recaudo) | 'condonada'
+-- (habilita al jugador pero NO cuenta como dinero recibido).
+CREATE TABLE IF NOT EXISTS sanciones (
+    id SERIAL PRIMARY KEY,
+    torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+    evento_id INTEGER NOT NULL UNIQUE,
+    partido_id INTEGER NOT NULL,
+    jugador_id INTEGER NOT NULL,
+    equipo_id INTEGER NOT NULL,
+    tipo TEXT NOT NULL,
+    monto NUMERIC(10,2) NOT NULL DEFAULT 0,
+    estado TEXT NOT NULL DEFAULT 'pendiente',
+    nota TEXT NOT NULL DEFAULT '',
+    cobrada_en TIMESTAMPTZ,
+    cobrada_por INTEGER,
+    creada_en TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sanciones_torneo_estado ON sanciones (torneo_id, estado);
+CREATE INDEX IF NOT EXISTS idx_sanciones_jugador ON sanciones (jugador_id, estado);
+
 -- Lista blanca de correos autorizados a crear una cuenta nueva con "Continuar con Google".
 -- El registro público (usuario/contraseña) está cerrado; solo el/los super-admin (definidos
 -- en la variable de entorno SUPERADMIN_EMAILS) pueden agregar/quitar correos de esta lista.

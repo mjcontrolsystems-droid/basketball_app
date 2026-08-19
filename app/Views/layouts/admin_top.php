@@ -21,6 +21,10 @@ function admin_nav_copa(string $seccion_activa, ?array $torneoActivo): string
         ?>
         <a class="nav-link <?= admin_nav_activa('equipos', $seccion_activa) ?>" href="<?= url('admin/equipos.php') ?>"><i class="bi bi-people me-2"></i>Equipos</a>
         <a class="nav-link <?= admin_nav_activa('partidos', $seccion_activa) ?>" href="<?= url('admin/partidos.php') ?>"><i class="bi bi-calendar2-week me-2"></i>Encuentros</a>
+        <?php // Sanciones solo aparece si la liga cobra multas por tarjeta ?>
+        <?php if (torneo_cobra_multas($torneoActivo)): ?>
+        <a class="nav-link <?= admin_nav_activa('sanciones', $seccion_activa) ?>" href="<?= url('admin/sanciones.php') ?>"><i class="bi bi-cash-coin me-2"></i>Sanciones</a>
+        <?php endif; ?>
         <a class="nav-link <?= admin_nav_activa('patrocinadores', $seccion_activa) ?>" href="<?= url('admin/patrocinadores.php') ?>"><i class="bi bi-award me-2"></i>Patrocinadores</a>
         <a class="nav-link <?= admin_nav_activa('comentarios', $seccion_activa) ?>" href="<?= url('admin/comentarios.php') ?>"><i class="bi bi-chat-heart me-2"></i>Comentarios</a>
         <a class="nav-link <?= admin_nav_activa('torneos', $seccion_activa) ?>" href="<?= url('admin/torneos.php?accion=editar&id=' . $torneoActivo['id']) ?>"><i class="bi bi-sliders me-2"></i>Configuración de la copa o liga</a>

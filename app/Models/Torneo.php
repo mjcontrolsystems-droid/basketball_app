@@ -19,6 +19,7 @@ const COLUMNAS_TORNEO = [
     'instagram', 'hero_frase', 'deporte', 'num_equipos', 'fases_playoff', 'permite_empates',
     'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'es_predeterminado', 'activo',
     'genero', 'modalidad', 'duracion_periodo_min', 'modo', 'vueltas',
+    'multa_amarilla', 'multa_roja', 'sancion_bloquea', 'partidos_suspension_roja', 'moneda',
 ];
 
 function db_parsear_array_pg(?string $valor): array
@@ -32,12 +33,18 @@ function db_parsear_array_pg(?string $valor): array
 
 function db_normalizar_torneo(array $fila): array
 {
-    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'duracion_periodo_min', 'vueltas'] as $col) {
+    foreach (['id', 'usuario_id', 'num_equipos', 'puntos_victoria', 'puntos_empate', 'puntos_derrota', 'duracion_periodo_min', 'vueltas', 'partidos_suspension_roja'] as $col) {
         if (array_key_exists($col, $fila) && $fila[$col] !== null) {
             $fila[$col] = (int) $fila[$col];
         }
     }
-    foreach (['permite_empates', 'es_predeterminado', 'activo'] as $col) {
+    // Las multas son decimales (NUMERIC), no enteros: PDO las devuelve como texto.
+    foreach (['multa_amarilla', 'multa_roja'] as $col) {
+        if (array_key_exists($col, $fila) && $fila[$col] !== null) {
+            $fila[$col] = (float) $fila[$col];
+        }
+    }
+    foreach (['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea'] as $col) {
         if (array_key_exists($col, $fila)) {
             $fila[$col] = (bool) (
                 is_string($fila[$col]) ? ($fila[$col] === 't' || $fila[$col] === '1') : $fila[$col]
@@ -180,7 +187,7 @@ function torneos_guardar(array $datos, ?int $usuarioIdCreador = null): int
     // Con prepared statements emulados (necesario por el pooler de Neon, ver db_conexion()),
     // Postgres ya no acepta 0/1 como boolean de forma implícita como sí hacía con prepares
     // nativos: hay que mandar el texto 'true'/'false' para estas 3 columnas.
-    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo'];
+    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea'];
 
     $valores = [];
     foreach (COLUMNAS_TORNEO as $c) {

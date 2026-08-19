@@ -320,6 +320,40 @@ function db_migrar_automatico(): void
         // público dice "El Organizador" o "La Organizadora". '' = no indicado, en cuyo
         // caso se usa la forma masculina genérica, igual criterio que el resto del sitio.
         $pdo->exec("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero TEXT NOT NULL DEFAULT ''");
+
+        // --- Sanciones disciplinarias (multas por tarjeta) ---
+        // Tarifas y reglas por copa. En 0 la liga no cobra multas y toda la función
+        // queda oculta, así que esto no altera a las copas que ya existen.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS multa_amarilla NUMERIC(10,2) NOT NULL DEFAULT 0');
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS multa_roja NUMERIC(10,2) NOT NULL DEFAULT 0');
+        // true = el moroso NO se puede alinear; false = solo se advierte.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS sancion_bloquea BOOLEAN NOT NULL DEFAULT TRUE');
+        // Partidos de suspensión que arrastra una roja (0 = la liga no suspende por fechas).
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS partidos_suspension_roja INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS moneda TEXT NOT NULL DEFAULT 'Q'");
+
+        // Una sanción por evento de tarjeta (UNIQUE en evento_id): así reprocesar la
+        // ficha de un partido no duplica multas. Guarda el monto vigente al crearla.
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS sanciones (
+                id SERIAL PRIMARY KEY,
+                torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+                evento_id INTEGER NOT NULL UNIQUE,
+                partido_id INTEGER NOT NULL,
+                jugador_id INTEGER NOT NULL,
+                equipo_id INTEGER NOT NULL,
+                tipo TEXT NOT NULL,
+                monto NUMERIC(10,2) NOT NULL DEFAULT 0,
+                estado TEXT NOT NULL DEFAULT \'pendiente\',
+                nota TEXT NOT NULL DEFAULT \'\',
+                cobrada_en TIMESTAMPTZ,
+                cobrada_por INTEGER,
+                creada_en TIMESTAMP NOT NULL DEFAULT now()
+            )'
+        );
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_sanciones_torneo_estado ON sanciones (torneo_id, estado)');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_sanciones_jugador ON sanciones (jugador_id, estado)');
+
         $_SESSION['migraciones_v3_ok'] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya

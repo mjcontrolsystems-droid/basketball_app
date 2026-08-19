@@ -130,6 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'puntos_victoria' => (int) $_POST['puntos_victoria'],
             'puntos_empate' => (int) $_POST['puntos_empate'],
             'puntos_derrota' => (int) $_POST['puntos_derrota'],
+            // Disciplina: tarifas por tarjeta y reglas de bloqueo. Se aceptan decimales
+            // (hay ligas que cobran 12.50) y nunca negativos.
+            'multa_amarilla' => max(0, (float) ($_POST['multa_amarilla'] ?? 0)),
+            'multa_roja' => max(0, (float) ($_POST['multa_roja'] ?? 0)),
+            'sancion_bloquea' => isset($_POST['sancion_bloquea']),
+            'partidos_suspension_roja' => max(0, min(10, (int) ($_POST['partidos_suspension_roja'] ?? 0))),
+            'moneda' => trim((string) ($_POST['moneda'] ?? 'Q')) !== '' ? mb_substr(trim((string) $_POST['moneda']), 0, 4) : 'Q',
             'es_predeterminado' => !empty($torneoEditar['es_predeterminado']),
             'activo' => true,
         ];

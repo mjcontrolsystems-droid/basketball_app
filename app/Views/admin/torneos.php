@@ -159,7 +159,43 @@
                     </div>
                 </div>
             </div>
+            <?php // --- Disciplina: multas por tarjeta y control de morosos ---
+                  // Con ambas tarifas en 0, toda la función de sanciones queda oculta:
+                  // una liga que no cobra multas no debería ver pantallas de dinero. ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-cash-coin me-1"></i>Multas por tarjeta (opcional)</label>
+                <p class="form-text mt-0 mb-2">Si tu liga cobra por tarjeta, pon los montos aquí. La multa se genera sola al registrar la tarjeta y el jugador queda en deuda hasta pagarla. Déjalos en 0 si no cobras multas.</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-semibold">Moneda</label>
+                <input type="text" name="moneda" class="form-control" maxlength="4" value="<?= e((string) ($torneoEditar['moneda'] ?? 'Q')) ?>" placeholder="Q">
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-semibold">Multa por amarilla</label>
+                <input type="number" min="0" step="0.01" name="multa_amarilla" class="form-control" value="<?= e((string) ($torneoEditar['multa_amarilla'] ?? 0)) ?>">
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-semibold">Multa por roja</label>
+                <input type="number" min="0" step="0.01" name="multa_roja" class="form-control" value="<?= e((string) ($torneoEditar['multa_roja'] ?? 0)) ?>">
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-semibold">Partidos de suspensión por roja</label>
+                <input type="number" min="0" max="10" name="partidos_suspension_roja" class="form-control" value="<?= e((string) ($torneoEditar['partidos_suspension_roja'] ?? 0)) ?>">
+                <div class="form-text">0 = no suspende por fechas.</div>
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="sancion_bloquea" value="1" id="chkSancionBloquea" <?= !isset($torneoEditar['sancion_bloquea']) || !empty($torneoEditar['sancion_bloquea']) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="chkSancionBloquea">
+                        Impedir que un jugador con multa pendiente sea alineado
+                        <span class="d-block small text-muted">Si lo desmarcas, la app solo advierte y tú decides si lo dejas jugar.</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="col-12" id="grupoFasesPlayoff">
+                <hr class="my-2">
                 <label class="form-label small fw-semibold d-block">Fases de eliminación directa</label>
                 <?php $fasesGuardadas = $torneoEditar['fases_playoff'] ?? ['cuartos', 'semifinal', 'final']; ?>
                 <?php foreach (FASES_PLAYOFF_CATALOGO as $f): ?>

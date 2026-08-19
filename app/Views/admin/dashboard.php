@@ -26,6 +26,25 @@
     </div>
 </div>
 
+<?php // Aviso de morosos: lo primero que debe ver el organizador antes de una jornada,
+      // porque decide quién puede jugar. Solo aparece si la liga cobra multas. ?>
+<?php if (torneo_cobra_multas($torneo)): ?>
+<?php $resumenSanciones = sanciones_resumen($torneo['id']); ?>
+<?php if ($resumenSanciones['cantidad_pendiente'] > 0): ?>
+<div class="alert alert-warning rounded-4 border-0 shadow-sm d-flex align-items-start gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+    <div class="flex-grow-1">
+        <div class="fw-semibold"><?= (int) $resumenSanciones['cantidad_pendiente'] ?> multa<?= $resumenSanciones['cantidad_pendiente'] === 1 ? '' : 's' ?> sin cobrar — <?= e(sancion_monto_texto($torneo, $resumenSanciones['pendiente'])) ?></div>
+        <div class="small">Esos jugadores <?= torneo_bloquea_morosos($torneo) ? 'no pueden ser alineados' : 'tienen deuda pendiente' ?> hasta ponerse al día.</div>
+        <div class="mt-2 d-flex gap-2 flex-wrap">
+            <a href="<?= url('admin/sanciones.php') ?>" class="btn btn-sm btn-degradado rounded-pill px-3"><i class="bi bi-cash-coin me-1"></i>Ver y cobrar</a>
+            <a href="<?= e(url_copa('solvencia.php')) ?>" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-printer me-1"></i>Hoja para la cancha</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php endif; ?>
+
 <?php $visitas = visitas_resumen($torneo['id']); ?>
 <div class="card-suave p-3 mb-4">
     <div class="d-flex flex-wrap align-items-center gap-3 gap-md-4">
