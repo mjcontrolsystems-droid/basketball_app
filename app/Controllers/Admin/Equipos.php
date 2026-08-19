@@ -162,15 +162,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/equipos.php'), 'error', $e->getMessage());
         }
 
+        $quitarLogo = !empty($_POST['quitar_logo']);
+
         if ($id > 0) {
             foreach ($equipos as &$e) {
                 if ($e['id'] === $id) {
-                    if ($logoSubido) {
-                        eliminar_imagen($e['logo'] ?? null);
-                        $datos['logo'] = $logoSubido;
-                    } else {
-                        $datos['logo'] = $e['logo'] ?? '';
-                    }
+                    // Sin escudo el equipo no queda sin nada: se le genera uno automático
+                    // con sus iniciales y colores, así que quitarlo es seguro.
+                    $datos['logo'] = resolver_archivo_guardado($logoSubido, (string) ($e['logo'] ?? ''), $quitarLogo);
                     $e = array_merge($e, $datos, ['id' => $id]);
                 }
             }

@@ -54,6 +54,16 @@
                     </figure>
                     <?php endif; ?>
                 </div>
+                <?php // Quitar el escudo subido, no solo reemplazarlo. ?>
+                <?php if (!empty($equipoEditar['logo'])): ?>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="quitar_logo" value="1" id="chkQuitarLogoEquipo">
+                    <label class="form-check-label small" for="chkQuitarLogoEquipo">
+                        Quitar el escudo actual
+                        <span class="d-block text-muted">Vuelve al escudo automático con las iniciales y colores del equipo.</span>
+                    </label>
+                </div>
+                <?php endif; ?>
             </div>
 
             <?php // --- Plantilla inicial: solo al CREAR ---

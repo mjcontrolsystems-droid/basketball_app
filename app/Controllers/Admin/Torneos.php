@@ -112,24 +112,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             redirigir_con_mensaje(url('admin/torneos.php' . ($id ? "?accion=editar&id={$id}" : '?accion=nuevo')), 'error', $e->getMessage());
         }
 
-        // Reglamento: se sube uno nuevo, se conserva el actual, o se quita con la casilla.
-        // Al reemplazarlo o quitarlo se borra el PDF viejo para no dejar basura en la base.
+        // Reglamento y logo: se sube uno nuevo, se conserva el actual, o se quita con su
+        // casilla. Al reemplazarlo o quitarlo se borra el archivo viejo de la base.
         $reglamentoActual = (string) ($torneoEditar['reglamento'] ?? '');
-        $reglamentoNombreActual = (string) ($torneoEditar['reglamento_nombre'] ?? '');
-        $quitarReglamento = !empty($_POST['quitar_reglamento']);
+        $reglamentoFinal = resolver_archivo_guardado($reglamentoSubido, $reglamentoActual, !empty($_POST['quitar_reglamento']));
+        $reglamentoNombreFinal = match (true) {
+            $reglamentoFinal === '' => '',
+            $reglamentoSubido !== null => mb_substr(basename((string) ($_FILES['reglamento']['name'] ?? 'reglamento.pdf')), 0, 120),
+            default => (string) ($torneoEditar['reglamento_nombre'] ?? ''),
+        };
 
-        if ($reglamentoSubido !== null) {
-            eliminar_imagen($reglamentoActual !== '' ? $reglamentoActual : null);
-            $reglamentoFinal = $reglamentoSubido;
-            $reglamentoNombreFinal = mb_substr(basename((string) ($_FILES['reglamento']['name'] ?? 'reglamento.pdf')), 0, 120);
-        } elseif ($quitarReglamento) {
-            eliminar_imagen($reglamentoActual !== '' ? $reglamentoActual : null);
-            $reglamentoFinal = '';
-            $reglamentoNombreFinal = '';
-        } else {
-            $reglamentoFinal = $reglamentoActual;
-            $reglamentoNombreFinal = $reglamentoNombreActual;
-        }
+        $logoFinal = resolver_archivo_guardado($logoSubido, (string) ($torneoEditar['logo'] ?? ''), !empty($_POST['quitar_logo']));
 
         $datos = [
             'id' => $id ?: null,
@@ -139,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'temporada' => trim((string) $_POST['temporada']),
             'descripcion' => trim((string) $_POST['descripcion']),
             'sede_principal' => trim((string) $_POST['sede_principal']),
-            'logo' => $logoSubido ?: ($torneoEditar['logo'] ?? ''),
+            'logo' => $logoFinal,
             'reglamento' => $reglamentoFinal,
             'reglamento_nombre' => $reglamentoNombreFinal,
             'color_primario' => (string) $_POST['color_primario'],

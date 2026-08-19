@@ -178,6 +178,42 @@ function optimizar_imagen(string $datos, string $mime): ?array
  * Elimina una imagen previamente subida (al reemplazar o borrar un registro).
  * $referencia es el id guardado en la columna logo/foto (ver manejar_subida_imagen).
  */
+/**
+ * Decide con qué archivo se queda un campo de imagen o PDF, y limpia el que se va.
+ *
+ * Son los tres caminos posibles de cualquier formulario con archivo, y antes cada
+ * controlador los resolvía a su manera (o directamente no dejaba quitar nada, que es lo
+ * que obligaba a subir una imagen cualquiera para tapar la que se había subido por error):
+ *
+ *   1. Subió uno nuevo  -> se queda el nuevo y se borra el viejo.
+ *   2. Marcó "quitar"   -> se queda sin nada y se borra el viejo.
+ *   3. No tocó nada     -> se queda el que ya tenía.
+ *
+ * En los casos 1 y 2 el archivo anterior se borra de la tabla de imágenes: si no, cada
+ * cambio de escudo iría dejando basura que nadie referencia.
+ *
+ * @param string|null $subido Lo que devolvió manejar_subida_imagen()/manejar_subida_pdf().
+ * @param string $actual Referencia guardada hoy.
+ * @param bool $quitar Si el organizador marcó la casilla de quitar.
+ * @return string Referencia que hay que guardar ('' = sin archivo).
+ */
+function resolver_archivo_guardado(?string $subido, string $actual, bool $quitar): string
+{
+    if ($subido !== null && $subido !== '') {
+        eliminar_imagen($actual !== '' ? $actual : null);
+
+        return $subido;
+    }
+
+    if ($quitar) {
+        eliminar_imagen($actual !== '' ? $actual : null);
+
+        return '';
+    }
+
+    return $actual;
+}
+
 function eliminar_imagen(?string $referencia): void
 {
     if (empty($referencia) || !ctype_digit($referencia)) {

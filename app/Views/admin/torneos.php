@@ -333,6 +333,17 @@
                     </figure>
                     <?php endif; ?>
                 </div>
+                <?php // Poder QUITAR el logo, no solo reemplazarlo: si se subió uno por
+                      // error, antes había que subir otro encima para taparlo. ?>
+                <?php if (!empty($torneoEditar['logo'])): ?>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="quitar_logo" value="1" id="chkQuitarLogoTorneo">
+                    <label class="form-check-label small" for="chkQuitarLogoTorneo">
+                        Quitar el logo actual
+                        <span class="d-block text-muted">Vuelve a mostrarse el balón del deporte.</span>
+                    </label>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 

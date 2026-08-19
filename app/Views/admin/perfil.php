@@ -15,6 +15,16 @@
                     <label class="form-label small fw-semibold mb-1">Foto de perfil</label>
                     <input type="file" name="foto" class="form-control form-control-sm" accept=".png,.jpg,.jpeg,.webp" data-vista-previa="previewFotoPerfil">
                     <div class="vista-previa-subida mt-2" id="previewFotoPerfil"></div>
+                    <?php // Quitar la foto subida, no solo reemplazarla. ?>
+                    <?php if (!empty($organizador['foto'])): ?>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="quitar_foto" value="1" id="chkQuitarFoto">
+                        <label class="form-check-label small" for="chkQuitarFoto">
+                            Quitar la foto
+                            <span class="d-block text-muted">Se mostrará el avatar con tus iniciales.</span>
+                        </label>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

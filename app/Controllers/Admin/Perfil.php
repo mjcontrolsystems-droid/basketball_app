@@ -27,10 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $organizador['email'] = trim((string) $_POST['email']);
         $organizador['telefono'] = trim((string) $_POST['telefono']);
         $organizador['bio'] = trim((string) $_POST['bio']);
-        if ($fotoSubida) {
-            eliminar_imagen($organizador['foto'] ?? null);
-            $organizador['foto'] = $fotoSubida;
-        }
+        // Sin foto se muestra el avatar con las iniciales, así que quitarla es seguro.
+        $organizador['foto'] = resolver_archivo_guardado($fotoSubida, (string) ($organizador['foto'] ?? ''), !empty($_POST['quitar_foto']));
 
         if ($organizador['nombre'] === '' || $organizador['email'] === '') {
             redirigir_con_mensaje(url('admin/perfil.php'), 'error', 'Nombre y correo son obligatorios.');

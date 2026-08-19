@@ -44,15 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/patrocinadores.php'), 'error', $e->getMessage());
         }
 
+        $quitarLogo = !empty($_POST['quitar_logo']);
+
         if ($id > 0) {
             foreach ($patrocinadores as &$p) {
                 if ($p['id'] === $id) {
-                    if ($logoSubido) {
-                        eliminar_imagen($p['logo'] ?? null);
-                        $datos['logo'] = $logoSubido;
-                    } else {
-                        $datos['logo'] = $p['logo'] ?? '';
-                    }
+                    $datos['logo'] = resolver_archivo_guardado($logoSubido, (string) ($p['logo'] ?? ''), $quitarLogo);
                     $p = array_merge($p, $datos, ['id' => $id]);
                 }
             }
