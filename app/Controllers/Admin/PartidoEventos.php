@@ -213,17 +213,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje($urlLista, 'success', 'Cronómetro actualizado.');
     }
 
+    // Finalizar el encuentro. Antes esto solo paraba el reloj y había que acordarse de ir
+    // a la lista a marcar el switch de "Jugado": el resultado quedaba sin cerrar y no
+    // entraba en la tabla. Ahora finalizar el cronómetro cierra el partido, que es lo que
+    // uno espera cuando aprieta el botón al pitido final.
     if ($accion === 'cronometro_finalizar') {
+        $periodoActual = (int) ($partido['cronometro_periodo'] ?? 1);
+        $periodoMaximo = partido_periodo_maximo($deporte);
+
+        // El marcador sale de los goles registrados, igual que en el resto de la app.
+        [$mLocal, $mVisit] = marcador_jugado_desde_eventos($torneo['id'], $partido, $deporte);
+
+        // Dos casos en los que se para el reloj pero el encuentro NO se puede dar por
+        // jugado, porque marcarlo sería registrar un resultado que no existe:
+        //   - se finalizó antes del último periodo (partido suspendido, o un clic de más);
+        //   - quedó empatado en una copa que no admite empates.
+        $incompleto = $periodoActual < $periodoMaximo;
+        $empateProhibido = $mLocal === $mVisit && empty($torneo['permite_empates']);
+        $cerrar = !$incompleto && !$empateProhibido;
+
         foreach ($partidos as &$p) {
-            if ((int) $p['id'] === $partidoId && in_array($p['cronometro_estado'] ?? 'detenido', ['corriendo', 'pausado'], true)) {
+            if ((int) $p['id'] !== $partidoId) {
+                continue;
+            }
+            if (in_array($p['cronometro_estado'] ?? 'detenido', ['corriendo', 'pausado'], true)) {
                 $p['cronometro_segundos'] = partido_cronometro_segundos($p);
                 $p['cronometro_estado'] = 'finalizado';
                 $p['cronometro_inicio'] = null;
             }
+            if ($cerrar) {
+                $p['estado'] = 'jugado';
+                $p['marcador_local'] = $mLocal;
+                $p['marcador_visitante'] = $mVisit;
+            }
         }
         unset($p);
         partidos_guardar_todos($partidos, $torneo['id']);
-        redirigir_con_mensaje($urlLista, 'success', 'Cronómetro finalizado.');
+
+        if ($cerrar) {
+            bitacora_registrar('partido_jugado', "Encuentro #{$partidoId} finalizado desde el cronómetro con marcador {$mLocal}-{$mVisit}", $torneo['id']);
+            redirigir_con_mensaje($urlLista, 'success', "Encuentro finalizado y marcado como jugado ({$mLocal}-{$mVisit}). El resultado ya cuenta en la tabla.");
+        }
+
+        if ($empateProhibido) {
+            redirigir_con_mensaje($urlLista, 'error', 'Cronómetro finalizado, pero el encuentro quedó ' . $mLocal . '-' . $mVisit . ' y esta copa no permite empates. Registra los ' . mb_strtolower(etiqueta_anotaciones($deporte)) . ' que definen al ganador y vuelve a finalizar.');
+        }
+
+        redirigir_con_mensaje($urlLista, 'error', 'Cronómetro finalizado, pero el encuentro va en ' . mb_strtolower(partido_periodo_etiqueta($deporte, $periodoActual)) . ' y no se dio por jugado. Pasa al último periodo y finaliza ahí, o márcalo a mano si se suspendió.');
     }
 
     // Avanza de periodo (1er a 2do tiempo en fútbol; cuarto a cuarto en basketball). Cada

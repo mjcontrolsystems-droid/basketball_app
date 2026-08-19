@@ -138,11 +138,20 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 <?php if ($cronometroEstado === 'corriendo'): ?><i class="bi bi-pause-fill me-1"></i>Pausar<?php else: ?><i class="bi bi-play-fill me-1"></i>Reanudar<?php endif; ?>
             </button>
         </form>
-        <form method="post" class="mb-0">
+        <?php // El data-confirm va en el FORM, no en el botón: el evento submit nace en el
+              // formulario y no pasa por sus hijos, así que en el botón nunca se disparaba.
+              //
+              // Finalizar aquí cierra el encuentro, no solo para el reloj: marca el partido
+              // como jugado con el marcador de los goles registrados. Por eso el texto avisa
+              // qué va a pasar según el periodo en el que se esté. ?>
+        <?php $esUltimoPeriodo = $cronometroPeriodo >= $cronometroPeriodoMaximo; ?>
+        <form method="post" class="mb-0" data-confirm="<?= $esUltimoPeriodo
+            ? 'Se dará el encuentro por finalizado y quedará marcado como jugado, con el marcador de los ' . e(mb_strtolower(etiqueta_anotaciones($deporte))) . ' registrados. ¿Continuamos?'
+            : 'Vas en ' . e(mb_strtolower(partido_periodo_etiqueta($deporte, $cronometroPeriodo))) . ': se detendrá el cronómetro pero el encuentro NO se dará por jugado. ¿Continuamos?' ?>">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="accion" value="cronometro_finalizar">
             <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
-            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="¿Finalizar el cronómetro de este partido?"><i class="bi bi-stop-fill me-1"></i>Finalizar</button>
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-stop-fill me-1"></i><?= $esUltimoPeriodo ? 'Finalizar encuentro' : 'Detener' ?></button>
         </form>
         <?php endif; ?>
     </div>
