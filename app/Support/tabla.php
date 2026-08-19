@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 // Catálogo fijo de todas las fases de eliminación directa posibles, de mayor a menor.
 // Cada copa elige un subconjunto (torneo['fases_playoff']) al crearse/editarse.
-const FASES_PLAYOFF_CATALOGO = ['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final'];
+// El tercer lugar va entre la semifinal y la final porque lo juegan los perdedores de la
+// semi y suele abrir la jornada de la final, no porque sea una ronda "anterior".
+const FASES_PLAYOFF_CATALOGO = ['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'tercer_lugar', 'final'];
 
 const FASES_LABEL = [
     'grupos' => 'Fase de Grupos',
@@ -11,6 +13,7 @@ const FASES_LABEL = [
     'octavos' => 'Octavos de Final',
     'cuartos' => 'Cuartos de Final',
     'semifinal' => 'Semifinal',
+    'tercer_lugar' => 'Tercer lugar',
     'final' => 'Final',
 ];
 

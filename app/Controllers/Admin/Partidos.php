@@ -75,6 +75,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como jugado. El resultado queda en firme.');
     }
 
+    // Correr el calendario a partir de una jornada. Cuando un fin de semana se cae (un
+    // feriado que se confirmó tarde, una cancha que no prestaron), no sirve mover ese
+    // partido solo: hay que empujar esa jornada y TODAS las siguientes, o se le encima a
+    // la que venía atrás. Los encuentros ya jugados no se tocan nunca.
+    if (($_POST['accion'] ?? '') === 'correr_calendario') {
+        $desdeJornada = (int) ($_POST['jornada'] ?? 0);
+        $semanas = (int) ($_POST['semanas'] ?? 1);
+
+        if ($desdeJornada < 1) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Indica desde qué jornada hay que correr el calendario.');
+        }
+        if ($semanas === 0 || $semanas < -20 || $semanas > 20) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Se puede correr entre 1 y 20 semanas, hacia adelante o hacia atrás.');
+        }
+
+        $dias = $semanas * 7;
+        $movidos = 0;
+        $respetados = 0;
+
+        foreach ($partidos as &$p) {
+            if (($p['fase'] ?? 'grupos') !== 'grupos' || (int) ($p['jornada'] ?? 0) < $desdeJornada) {
+                continue;
+            }
+            // Un encuentro ya jugado es historia: cambiarle la fecha falsearía el registro
+            // de cuándo se disputó y descuadraría las suspensiones, que se calculan por
+            // orden de partidos.
+            if (($p['estado'] ?? '') === 'jugado') {
+                $respetados++;
+                continue;
+            }
+            $ts = strtotime((string) ($p['fecha'] ?? ''));
+            if ($ts === false) {
+                continue;
+            }
+            // En días y no sumando segundos, para que un cambio de horario no corra la fecha.
+            $nuevo = strtotime(($dias >= 0 ? '+' : '-') . abs($dias) . ' days', $ts);
+            if ($nuevo === false) {
+                continue;
+            }
+            $p['fecha'] = date('Y-m-d', $nuevo);
+            $movidos++;
+        }
+        unset($p);
+
+        if ($movidos === 0) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No había encuentros por mover desde la jornada ' . $desdeJornada . '.');
+        }
+
+        partidos_guardar_todos($partidos, $torneo['id']);
+        $texto = abs($semanas) === 1 ? 'una semana' : abs($semanas) . ' semanas';
+        $sentido = $semanas > 0 ? 'adelante' : 'atrás';
+        bitacora_registrar('calendario_corrido', "Calendario corrido {$texto} hacia {$sentido} desde la jornada {$desdeJornada}: {$movidos} encuentros", $torneo['id']);
+
+        $aviso = "Se corrieron {$movidos} encuentros {$texto} hacia {$sentido}, desde la jornada {$desdeJornada}.";
+        if ($respetados > 0) {
+            $aviso .= " {$respetados} ya estaban jugados y no se tocaron.";
+        }
+        redirigir_con_mensaje(url('admin/partidos.php'), 'success', $aviso);
+    }
+
     // Generador automático del calendario de temporada regular (todos contra todos, una o
     // dos vueltas). Sustituye el trabajo de programar los encuentros uno por uno: con 10
     // equipos son 45 partidos a una vuelta y 90 a ida y vuelta.
@@ -88,28 +148,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $vueltasGenerar = ((int) ($_POST['vueltas'] ?? 1)) === 2 ? 2 : 1;
         $fechaInicio = (string) ($_POST['fecha_inicio'] ?? '');
-        $horaPorDefecto = (string) ($_POST['hora'] ?? '');
-        $diasEntreJornadas = max(0, min(60, (int) ($_POST['dias_entre_jornadas'] ?? 7)));
-        $canchaPorDefecto = trim((string) ($_POST['cancha'] ?? ''));
         $reemplazar = !empty($_POST['reemplazar']);
+        $soloPrevia = !empty($_POST['solo_previa']);
+
+        // --- Días de juego ---
+        // El calendario se arma desde la realidad de la cancha: qué días se juega y cuántos
+        // partidos caben en cada uno. De ahí salen las jornadas, no al revés.
+        $diasConfig = [];
+        foreach ((array) ($_POST['dia_activo'] ?? []) as $w) {
+            $w = (int) $w;
+            if (!array_key_exists($w, CALENDARIO_DIAS)) {
+                continue;
+            }
+            $cupoDia = max(0, min(40, (int) ($_POST['dia_partidos'][$w] ?? 0)));
+            if ($cupoDia < 1) {
+                continue;
+            }
+            $diasConfig[] = [
+                'dia' => $w,
+                'partidos' => $cupoDia,
+                'hora' => (string) ($_POST['dia_hora'][$w] ?? '09:00'),
+                'intervalo' => max(0, min(480, (int) ($_POST['dia_intervalo'][$w] ?? 90))),
+            ];
+        }
+
+        $canchas = array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['canchas'] ?? ''))), fn($c) => $c !== ''));
+
+        // Fechas que no se juegan (feriados, fines de semana todavía sin confirmar). Se
+        // aceptan separadas por coma o por salto de línea, que es como se pegan de un chat.
+        $excluidas = [];
+        foreach (preg_split('/[\s,;]+/', (string) ($_POST['fechas_excluidas'] ?? '')) ?: [] as $f) {
+            $f = trim($f);
+            if ($f === '') {
+                continue;
+            }
+            $ts = strtotime($f);
+            if ($ts === false) {
+                redirigir_con_mensaje($urlGenerar, 'error', "No entendí la fecha excluida \"{$f}\". Usa el formato 2026-10-31.");
+            }
+            $excluidas[] = date('Y-m-d', $ts);
+        }
 
         $tsInicio = strtotime($fechaInicio);
         if ($fechaInicio === '' || $tsInicio === false) {
-            redirigir_con_mensaje($urlGenerar, 'error', 'Indica la fecha de la primera jornada.');
+            redirigir_con_mensaje($urlGenerar, 'error', 'Indica la fecha del primer día de juego.');
         }
-        if ($horaPorDefecto === '') {
-            redirigir_con_mensaje($urlGenerar, 'error', 'Indica la hora por defecto de los encuentros.');
+        if (empty($diasConfig)) {
+            redirigir_con_mensaje($urlGenerar, 'error', 'Marca al menos un día de juego e indica cuántos partidos caben ese día.');
+        }
+
+        // El primer día de juego tiene que caer en uno de los días marcados: si no, todo el
+        // calendario nace corrido y el organizador no entiende por qué.
+        $diasMarcados = array_column($diasConfig, 'dia');
+        if (!in_array((int) date('w', $tsInicio), $diasMarcados, true)) {
+            $nombres = array_map(fn($d) => CALENDARIO_DIAS[$d], $diasMarcados);
+            redirigir_con_mensaje($urlGenerar, 'error', 'La fecha de inicio (' . CALENDARIO_DIAS[(int) date('w', $tsInicio)] . ') no es ninguno de los días que marcaste: ' . implode(', ', $nombres) . '.');
         }
 
         // Los encuentros de temporada regular que ya existen. Los de eliminación directa
         // no se tocan nunca: el generador solo arma la fase de grupos/liga.
         $regularesExistentes = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') === 'grupos'));
 
-        if (!empty($regularesExistentes) && !$reemplazar) {
+        if (!empty($regularesExistentes) && !$reemplazar && !$soloPrevia) {
             redirigir_con_mensaje($urlGenerar, 'error', 'Ya hay ' . count($regularesExistentes) . ' encuentros de temporada regular programados. Marca la casilla de reemplazar si quieres rehacer el calendario desde cero.');
         }
 
-        if ($reemplazar) {
+        if ($reemplazar && !$soloPrevia) {
             // Red de seguridad: un encuentro ya jugado o con ficha cargada es historia del
             // torneo. Antes de borrar nada se exige que el organizador lo resuelva a mano,
             // en vez de destruir resultados en firme con un clic.
@@ -128,60 +232,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $jornadasGeneradas = generar_fixture_round_robin($equipoIds, $vueltasGenerar);
-        if (empty($jornadasGeneradas)) {
-            redirigir_con_mensaje($urlGenerar, 'error', 'No se pudo generar el calendario con los equipos cargados.');
+        // La semilla del sorteo viaja en el formulario: así la vista previa que el
+        // organizador aprueba es EXACTAMENTE el calendario que se crea después, y no otro
+        // sorteo distinto. Si le da a "sortear de nuevo" se genera otra.
+        $semilla = (int) ($_POST['semilla'] ?? 0);
+        if ($semilla < 1) {
+            $semilla = random_int(1, 999999);
         }
 
-        if ($reemplazar) {
-            // No hace falta limpiar fichas: la validación de arriba ya garantizó que
-            // ninguno de los encuentros que se van tiene eventos cargados.
-            $partidos = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') !== 'grupos'));
+        $calendarioGenerado = calendario_generar($equipoIds, [
+            'vueltas' => $vueltasGenerar,
+            'dias' => $diasConfig,
+            'canchas' => $canchas,
+            'fecha_inicio' => $fechaInicio,
+            'excluidas' => $excluidas,
+            'semilla' => $semilla,
+        ]);
+
+        if (empty($calendarioGenerado)) {
+            redirigir_con_mensaje($urlGenerar, 'error', 'No se pudo armar el calendario con esos equipos y esos días. Revisa que los cupos por día sean mayores que cero.');
         }
 
-        $siguienteId = partido_nuevo_id();
-        $totalCreados = 0;
-        foreach ($jornadasGeneradas as $indiceJornada => $cruces) {
-            // Se avanza en días con strtotime (no sumando segundos) para que un cambio de
-            // horario de verano no corra las fechas un día.
-            $diasDesplazados = $indiceJornada * $diasEntreJornadas;
-            $tsJornada = strtotime("+{$diasDesplazados} days", $tsInicio);
-            $fechaJornada = date('Y-m-d', $tsJornada !== false ? $tsJornada : $tsInicio);
-            foreach ($cruces as [$localId, $visitanteId]) {
-                $partidos[] = [
-                    'id' => $siguienteId++,
-                    'jornada' => $indiceJornada + 1,
-                    'equipo_local' => $localId,
-                    'equipo_visitante' => $visitanteId,
-                    'fecha' => $fechaJornada,
-                    'hora' => $horaPorDefecto,
-                    'cancha' => $canchaPorDefecto,
-                    'estado' => 'programado',
-                    'marcador_local' => null,
-                    'marcador_visitante' => null,
-                    'fase' => 'grupos',
-                    'arbitro' => '',
-                    'observaciones' => '',
-                    // Columnas NOT NULL del cronómetro: un encuentro nuevo las necesita
-                    // explícitas (mismo motivo que al programar uno a mano).
-                    'cronometro_estado' => 'detenido',
-                    'cronometro_inicio' => null,
-                    'cronometro_segundos' => 0,
-                    'cronometro_periodo' => 1,
-                    'cronometro_extra_min' => 0,
-                ];
-                $totalCreados++;
+        // --- Vista previa: se muestra la tabla y no se toca la base ---
+        if ($soloPrevia) {
+            $previa = calendario_resumen($calendarioGenerado, $equiposPorId);
+            $previa['semilla'] = $semilla;
+            $previa['playoffs'] = calendario_previa_playoffs($torneo, $calendarioGenerado, $diasConfig, $excluidas);
+            $accion = 'generar';
+            $datosPrevios = $_POST;
+        } else {
+            if ($reemplazar) {
+                // No hace falta limpiar fichas: la validación de arriba ya garantizó que
+                // ninguno de los encuentros que se van tiene eventos cargados.
+                $partidos = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') !== 'grupos'));
             }
-        }
 
-        partidos_guardar_todos($partidos, $torneo['id']);
-        $textoVueltas = $vueltasGenerar === 2 ? 'ida y vuelta' : 'una vuelta';
-        bitacora_registrar(
-            'calendario_generado',
-            "Calendario de temporada regular generado: {$totalCreados} encuentros en " . count($jornadasGeneradas) . " jornadas ({$textoVueltas}, " . count($equipoIds) . ' equipos)',
-            $torneo['id']
-        );
-        redirigir_con_mensaje(url('admin/partidos.php'), 'success', "Calendario generado: {$totalCreados} encuentros en " . count($jornadasGeneradas) . ' jornadas. Ajusta fechas, horas o canchas encuentro por encuentro si hace falta.');
+            $siguienteId = partido_nuevo_id();
+            $totalCreados = 0;
+            $totalAdelantados = 0;
+
+            foreach ($calendarioGenerado as $jornada) {
+                foreach ($jornada['dias'] as $dia) {
+                    foreach ($dia['partidos'] as $p) {
+                        $partidos[] = [
+                            'id' => $siguienteId++,
+                            'jornada' => $jornada['numero'],
+                            'equipo_local' => $p['local'],
+                            'equipo_visitante' => $p['visitante'],
+                            'fecha' => $dia['fecha'],
+                            'hora' => $p['hora'],
+                            'cancha' => $p['cancha'],
+                            'estado' => 'programado',
+                            'marcador_local' => null,
+                            'marcador_visitante' => null,
+                            'fase' => 'grupos',
+                            'arbitro' => '',
+                            // Queda anotado en el propio encuentro para que el organizador
+                            // sepa por qué esos dos equipos juegan dos veces ese fin de
+                            // semana, y no parezca un error del calendario.
+                            'observaciones' => !empty($p['adelantado']) ? 'Partido adelantado: estos dos equipos ya jugaron antes en esta misma jornada.' : '',
+                            // Columnas NOT NULL del cronómetro: un encuentro nuevo las necesita
+                            // explícitas (mismo motivo que al programar uno a mano).
+                            'cronometro_estado' => 'detenido',
+                            'cronometro_inicio' => null,
+                            'cronometro_segundos' => 0,
+                            'cronometro_periodo' => 1,
+                            'cronometro_extra_min' => 0,
+                        ];
+                        $totalCreados++;
+                        if (!empty($p['adelantado'])) {
+                            $totalAdelantados++;
+                        }
+                    }
+                }
+            }
+
+            partidos_guardar_todos($partidos, $torneo['id']);
+            $textoVueltas = $vueltasGenerar === 2 ? 'ida y vuelta' : 'una vuelta';
+            $nombresDias = implode(' y ', array_map(fn($d) => mb_strtolower(CALENDARIO_DIAS[$d['dia']]), $diasConfig));
+            bitacora_registrar(
+                'calendario_generado',
+                "Calendario generado: {$totalCreados} encuentros en " . count($calendarioGenerado) . " jornadas ({$textoVueltas}, " . count($equipoIds) . " equipos, se juega {$nombresDias}, {$totalAdelantados} partidos adelantados)",
+                $torneo['id']
+            );
+
+            $aviso = "Calendario generado: {$totalCreados} encuentros en " . count($calendarioGenerado) . ' jornadas.';
+            if ($totalAdelantados > 0) {
+                $aviso .= " {$totalAdelantados} son partidos adelantados para llenar el cupo del fin de semana.";
+            }
+            if (!empty($excluidas)) {
+                $aviso .= ' Se saltaron ' . count($excluidas) . ' fecha(s) excluida(s).';
+            }
+            redirigir_con_mensaje(url('admin/partidos.php'), 'success', $aviso);
+        }
     }
 
     if (($_POST['accion'] ?? '') === 'guardar') {
@@ -295,6 +438,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $jornadas = partidos_por_jornada($partidos);
 $playoffsPorFase = partidos_playoffs_por_fase($partidos, $fasesTorneo);
+
+// Vista previa del calendario. Solo tiene contenido cuando el organizador acaba de pedir
+// "ver previa": el resto del tiempo el formulario se muestra vacío.
+$previa = $previa ?? null;
+$datosPrevios = $datosPrevios ?? [];
 // Para el formulario: qué jornada saldría y hasta cuál se puede corregir a mano. La
 // automática real se recalcula al guardar con la fecha que se haya elegido; esta es solo
 // la que corresponde hoy, para mostrarla como referencia.
@@ -314,9 +462,11 @@ $titulo_pagina = 'Encuentros';
 
 vista_admin('admin/partidos', compact(
     'accion',
+    'datosPrevios',
     'equipos',
     'equiposPorId',
     'errores',
+    'previa',
     'esLiga',
     'faseSeleccionada',
     'fasesTorneo',

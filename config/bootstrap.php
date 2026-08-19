@@ -29,6 +29,7 @@ foreach ([
     'liga',     // reglas por deporte, cronómetro, alineaciones, formato liga/copa
     'tabla',    // tabla de posiciones y fases
     'fixture',  // generación automática de calendario
+    'calendario', // reparto en días, fechas, horas y canchas (usa fixture)
     'disciplina', // suspensiones por roja y acumulación de amarillas
 ] as $modulo) {
     require_once RAIZ_APP . '/app/Support/' . $modulo . '.php';

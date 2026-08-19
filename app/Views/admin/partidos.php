@@ -3,6 +3,7 @@
     // Vista del generador automático de calendario. Se calcula el resumen (cuántas
     // jornadas y encuentros saldrían) para avisarlo ANTES de crear nada.
     $vueltasSugeridas = torneo_vueltas($torneo);
+    $vueltaElegida = (int) ($datosPrevios['vueltas'] ?? $vueltasSugeridas) === 2 ? 2 : 1;
     $resumenUna = fixture_resumen(count($equipos), 1);
     $resumenDoble = fixture_resumen(count($equipos), 2);
     $regularesActuales = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') === 'grupos'));
@@ -42,33 +43,76 @@
             <div class="col-md-6">
                 <label class="form-label small fw-semibold">Vueltas</label>
                 <select name="vueltas" class="form-select">
-                    <option value="1" <?= $vueltasSugeridas === 1 ? 'selected' : '' ?>>Una vuelta — <?= $resumenUna['partidos'] ?> encuentros</option>
-                    <option value="2" <?= $vueltasSugeridas === 2 ? 'selected' : '' ?>>Ida y vuelta — <?= $resumenDoble['partidos'] ?> encuentros</option>
+                    <option value="1" <?= $vueltaElegida === 1 ? 'selected' : '' ?>>Una vuelta — <?= $resumenUna['partidos'] ?> encuentros</option>
+                    <option value="2" <?= $vueltaElegida === 2 ? 'selected' : '' ?>>Ida y vuelta — <?= $resumenDoble['partidos'] ?> encuentros</option>
                 </select>
                 <div class="form-text">Viene de la configuración de la copa o liga; puedes cambiarlo solo para esta generación.</div>
             </div>
             <div class="col-md-6">
-                <label class="form-label small fw-semibold">Días entre jornadas</label>
-                <input type="number" min="0" max="60" name="dias_entre_jornadas" class="form-control" value="7">
-                <div class="form-text">7 = una jornada por semana. Usa 0 si todas se juegan el mismo día.</div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Fecha de la primera jornada</label>
-                <input type="date" name="fecha_inicio" class="form-control" value="<?= e($torneo['fecha_inicio'] ?: date('Y-m-d')) ?>" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Hora por defecto</label>
-                <input type="time" name="hora" class="form-control" value="19:00" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Cancha / sede por defecto</label>
-                <input type="text" name="cancha" class="form-control" value="<?= e($torneo['sede_principal'] ?? '') ?>">
+                <label class="form-label small fw-semibold">Primer día de juego</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="<?= e($datosPrevios['fecha_inicio'] ?? ($torneo['fecha_inicio'] ?: date('Y-m-d'))) ?>" required>
+                <div class="form-text">Tiene que caer en uno de los días que marques abajo.</div>
             </div>
         </div>
 
-        <p class="small text-muted mt-3 mb-0">
-            <i class="bi bi-lightbulb me-1"></i>Fecha, hora y cancha se aplican a todos los encuentros de arranque; después puedes ajustarlos uno por uno desde la lista.
+        <?php // --- Días de juego ---
+              // El corazón del generador. En vez de "una jornada por fecha", el organizador
+              // dice qué días juega y cuántos partidos caben: de ahí salen las jornadas.
+              // Si el cupo del fin de semana es mayor que una ronda, los cupos de más se
+              // llenan adelantando partidos de las últimas jornadas. ?>
+        <hr class="my-4">
+        <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-calendar-week me-1"></i>Días de juego</label>
+        <p class="form-text mt-0 mb-3">
+            Marca los días y cuántos partidos caben en cada uno. Con <?= count($equipos) ?> equipos, una ronda son
+            <strong><?= max(1, intdiv(count($equipos), 2)) ?></strong> partidos: si en el fin de semana caben más,
+            los cupos de sobra se llenan adelantando encuentros, y esos equipos juegan dos veces ese fin de semana.
         </p>
+
+        <div class="table-responsive mb-3">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th style="width:130px;">Día</th>
+                        <th style="width:110px;">Partidos</th>
+                        <th style="width:130px;">Primera hora</th>
+                        <th style="width:150px;">Cada cuánto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach (CALENDARIO_DIAS as $w => $nombreDia): ?>
+                    <?php
+                    $activo = isset($datosPrevios['dia_activo'])
+                        ? in_array((string) $w, array_map('strval', (array) $datosPrevios['dia_activo']), true)
+                        : in_array($w, [6, 0], true);
+                    ?>
+                    <tr>
+                        <td>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="dia_activo[]" value="<?= $w ?>" id="dia<?= $w ?>" <?= $activo ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="dia<?= $w ?>"><?= e($nombreDia) ?></label>
+                            </div>
+                        </td>
+                        <td><input type="number" min="0" max="40" name="dia_partidos[<?= $w ?>]" class="form-control form-control-sm" value="<?= e((string) ($datosPrevios['dia_partidos'][$w] ?? ($w === 0 ? 5 : ($w === 6 ? 4 : 0)))) ?>"></td>
+                        <td><input type="time" name="dia_hora[<?= $w ?>]" class="form-control form-control-sm" value="<?= e((string) ($datosPrevios['dia_hora'][$w] ?? '09:00')) ?>"></td>
+                        <td><div class="input-group input-group-sm"><input type="number" min="0" max="480" step="15" name="dia_intervalo[<?= $w ?>]" class="form-control" value="<?= e((string) ($datosPrevios['dia_intervalo'][$w] ?? 90)) ?>"><span class="input-group-text">min</span></div></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Canchas</label>
+                <input type="text" name="canchas" class="form-control" value="<?= e((string) ($datosPrevios['canchas'] ?? ($torneo['sede_principal'] ?? ''))) ?>" placeholder="Cancha 1, Cancha 2">
+                <div class="form-text">Separadas por coma. Con dos canchas, dos partidos van a la misma hora y la siguiente tanda arranca después del intervalo.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Fechas que no se juegan</label>
+                <textarea name="fechas_excluidas" class="form-control" rows="2" placeholder="2026-10-31, 2026-11-01"><?= e((string) ($datosPrevios['fechas_excluidas'] ?? '')) ?></textarea>
+                <div class="form-text">Feriados o fines de semana sin confirmar. La jornada completa se corre a la semana siguiente.</div>
+            </div>
+        </div>
 
         <?php if (!empty($regularesActuales)): ?>
         <div class="alert alert-warning rounded-4 border-0 small mt-3 mb-0">
@@ -83,15 +127,104 @@
         </div>
         <?php endif; ?>
 
-        <div class="d-flex gap-2 mt-4">
+        <?php // La semilla del sorteo viaja escondida: así el calendario que se crea es
+              // EXACTAMENTE el que se acaba de ver en la vista previa, y no otro sorteo.
+              // Al pedir una previa nueva se manda vacía y se sortea de nuevo. ?>
+        <input type="hidden" name="semilla" value="<?= (int) ($previa['semilla'] ?? 0) ?>">
+
+        <div class="d-flex gap-2 mt-4 flex-wrap">
             <?php // Sin data-confirm a propósito: esta pantalla YA es el paso deliberado
                   // (dice cuántos encuentros va a crear) y el handler de confirmación
                   // resetea el formulario al cancelar, lo que aquí borraría lo que el
                   // organizador acaba de escribir. ?>
-            <button type="submit" class="btn btn-degradado rounded-pill px-4"><i class="bi bi-calendar-plus me-1"></i>Generar calendario</button>
+            <button type="submit" name="solo_previa" value="1" class="btn btn-outline-secondary rounded-pill px-4"><i class="bi bi-eye me-1"></i>Ver vista previa</button>
+            <?php if ($previa !== null): ?>
+            <button type="submit" class="btn btn-degradado rounded-pill px-4"><i class="bi bi-calendar-plus me-1"></i>Crear estos <?= (int) $previa['total'] ?> encuentros</button>
+            <?php endif; ?>
             <a href="<?= url('admin/partidos.php') ?>" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
         </div>
+        <?php if ($previa === null): ?>
+        <p class="small text-muted mt-2 mb-0"><i class="bi bi-lightbulb me-1"></i>Primero mira la vista previa: nada se crea hasta que la apruebes.</p>
+        <?php endif; ?>
     </form>
+
+    <?php // ---------- Vista previa ----------
+          // Se muestra debajo del formulario, con la misma forma que tendría el calendario
+          // impreso: una fila por jornada, con la cantidad de partidos de cada día. ?>
+    <?php if ($previa !== null): ?>
+    <div class="card-suave p-4 mt-4" style="max-width:760px;">
+        <h5 class="mb-1">Así quedaría el calendario</h5>
+        <p class="small text-muted">
+            <?= count($previa['jornadas']) ?> jornadas · <?= (int) $previa['total'] ?> encuentros
+            <?php if ((int) $previa['adelantados'] > 0): ?>
+            · <?= (int) $previa['adelantados'] ?> adelantados
+            <?php endif; ?>
+        </p>
+
+        <?php // Los nombres de día se sacan una sola vez de la primera jornada: son las
+              // columnas de la tabla y también las que usan las filas de playoffs. ?>
+        <?php $columnasDia = array_column($previa['jornadas'][0]['dias'] ?? [], 'nombre'); ?>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Jornada</th>
+                        <?php foreach ($columnasDia as $nombreCol): ?>
+                        <th class="text-center"><?= e($nombreCol) ?></th>
+                        <?php endforeach; ?>
+                        <th class="text-center">Total</th>
+                        <th>Juegan dos veces</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($previa['jornadas'] as $fila): ?>
+                    <tr>
+                        <td class="small text-nowrap">
+                            <span class="fw-semibold"><?= (int) $fila['numero'] ?></span>
+                            <span class="text-muted"> — <?= e(formatear_fecha_corta($fila['desde'])) ?><?= $fila['hasta'] !== $fila['desde'] ? ' / ' . e(formatear_fecha_corta($fila['hasta'])) : '' ?></span>
+                        </td>
+                        <?php foreach ($fila['dias'] as $d): ?>
+                        <td class="text-center"><?= (int) $d['cantidad'] ?: '—' ?></td>
+                        <?php endforeach; ?>
+                        <td class="text-center fw-semibold"><?= (int) $fila['total'] ?></td>
+                        <td class="small text-muted"><?= $fila['dobles'] ? e(implode(', ', $fila['dobles'])) : '—' ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+
+                    <?php foreach (($previa['playoffs'] ?? []) as $pf): ?>
+                    <tr class="table-light">
+                        <td class="small text-nowrap">
+                            <span class="fw-semibold"><?= e($pf['label']) ?></span>
+                            <span class="text-muted"> — <?= e(formatear_fecha_corta($pf['fecha'])) ?></span>
+                        </td>
+                        <?php foreach ($columnasDia as $nombreCol): ?>
+                        <td class="text-center"><?= $nombreCol === $pf['dia'] ? (int) $pf['partidos'] : '—' ?></td>
+                        <?php endforeach; ?>
+                        <td class="text-center fw-semibold"><?= (int) $pf['partidos'] ?></td>
+                        <td class="small text-muted">Fecha reservada</td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php if ((int) $previa['adelantados'] > 0): ?>
+        <div class="alert alert-warning rounded-4 border-0 small mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Hay <?= (int) $previa['adelantados'] ?> partidos adelantados porque el cupo del fin de semana es mayor
+            que una ronda. Esos equipos juegan dos veces el mismo fin de semana, nunca el mismo día, y el sorteo
+            reparte el turno entre todos. Si no quieres que pase, baja los partidos por día.
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($previa['playoffs'])): ?>
+        <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>Las fechas de playoffs quedan reservadas pero no se crean encuentros:
+            todavía no se sabe quién clasifica. Los programas cuando termine la temporada regular.
+        </p>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <?php endif; ?>
 
@@ -260,7 +393,23 @@
     <div class="tab-content">
         <div class="tab-pane fade show active" id="panelGrupos">
             <?php foreach ($jornadas as $numJornada => $lista): ?>
-            <h6 class="text-muted text-uppercase small fw-bold mb-2 mt-4">Jornada <?= $numJornada ?></h6>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 mt-4">
+                <h6 class="text-muted text-uppercase small fw-bold mb-0">Jornada <?= $numJornada ?></h6>
+                <?php // Correr el calendario desde aquí. Nace de un caso real: un fin de
+                      // semana que se cae obliga a empujar esta jornada Y todas las de
+                      // atrás, porque si no se le encima a la siguiente. ?>
+                <form method="post" class="d-flex align-items-center gap-1" data-confirm="Se correrá la jornada <?= (int) $numJornada ?> y todas las siguientes. Los encuentros ya jugados no se tocan. ¿Continuamos?">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="accion" value="correr_calendario">
+                    <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
+                    <select name="semanas" class="form-select form-select-sm" style="width:auto;" aria-label="Semanas a correr desde la jornada <?= (int) $numJornada ?>">
+                        <option value="1">+1 semana</option>
+                        <option value="2">+2 semanas</option>
+                        <option value="-1">−1 semana</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Correr esta jornada y las siguientes"><i class="bi bi-calendar-range me-1"></i>Correr</button>
+                </form>
+            </div>
             <div class="row row-cols-1 row-cols-lg-2 g-3 mb-2">
                 <?php foreach ($lista as $p): ?>
                     <?= admin_tarjeta_partido($p, $equiposPorId) ?>
