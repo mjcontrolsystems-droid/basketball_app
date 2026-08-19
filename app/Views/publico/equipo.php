@@ -6,7 +6,8 @@
                 <div class="col">
                     <p class="small text-uppercase fw-bold mb-1" style="letter-spacing:.1em;opacity:.85;"><?= e($equipo['ciudad']) ?></p>
                     <h1 class="mb-2"><?= e($equipo['nombre']) ?></h1>
-                    <p class="mb-0" style="max-width:560px;opacity:.9;"><?= e($equipo['descripcion']) ?></p>
+                    <p class="mb-2" style="max-width:560px;opacity:.9;"><?= e($equipo['descripcion']) ?></p>
+                    <a href="<?= url_copa('equipo_reporte.php?id=' . (int) $equipo['id']) ?>" class="btn btn-outline-luz btn-sm rounded-pill px-3"><i class="bi bi-file-earmark-text me-1"></i>Reporte del equipo (PDF)</a>
                 </div>
                 <?php if ($filaEquipo): ?>
                 <div class="col-auto text-center">

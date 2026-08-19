@@ -91,6 +91,7 @@
                     <?php // Botón con texto y no solo icono: la plantilla es el paso natural
                           // después de crear el equipo, no debe quedar escondida. ?>
                     <a href="<?= url('admin/jugadores.php?equipo_id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-people me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras')) ?></a>
+                    <a href="<?= e(url_copa('equipo_reporte.php?id=' . $eq['id'])) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Reporte del equipo en PDF"><i class="bi bi-file-earmark-text"></i></a>
                     <a href="<?= url('admin/equipos.php?accion=editar&id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary" title="Editar equipo"><i class="bi bi-pencil"></i></a>
                     <form method="post" data-confirm="¿Eliminar a <?= e($eq['nombre']) ?>? Esta acción no se puede deshacer.">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
