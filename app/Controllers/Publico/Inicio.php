@@ -29,6 +29,12 @@ $jugadores = jugadores_listar($torneo['id']);
 $eventos = eventos_de_torneo($torneo['id']);
 $topGoleadores = array_slice(calcular_goleadores($eventos, $jugadores, $equiposPorId, $deporte), 0, 5);
 
+// Podio de cierre: solo si el organizador ya lo publicó. Se recalcula en vivo, así que si
+// corrige el marcador de la final el campeón cambia sin tener que volver a publicar.
+$podio = torneo_podio_publicado($torneo)
+    ? podio_calcular($torneo, $equipos, $partidos, $eventos)
+    : null;
+
 $patrocOficiales = array_values(array_filter($patrocinadores, fn($p) => $p['nivel'] === 'oficial'));
 $patrocOro = array_values(array_filter($patrocinadores, fn($p) => $p['nivel'] === 'oro'));
 $patrocPlata = array_values(array_filter($patrocinadores, fn($p) => $p['nivel'] === 'plata'));
@@ -48,6 +54,7 @@ vista_publica('publico/inicio', compact(
     'patrocOficiales',
     'patrocOro',
     'patrocPlata',
+    'podio',
     'proximos',
     'resultados',
     'titulo_pagina',

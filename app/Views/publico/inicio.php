@@ -1,3 +1,32 @@
+<?php // ---------- Podio de cierre ----------
+      // Va ARRIBA del hero y de todo lo demás: cuando una temporada termina, lo primero
+      // que quiere ver quien entra es quién salió campeón, no el próximo partido. ?>
+<?php if (!empty($podio)): ?>
+<section class="seccion-podio text-center py-5" style="background:linear-gradient(135deg, <?= e($torneo['color_primario']) ?>, <?= e($torneo['color_secundario']) ?>);">
+    <div class="container">
+        <p class="kicker mb-2" style="color:rgba(255,255,255,.85);"><i class="bi bi-trophy-fill me-1"></i>Temporada <?= e($torneo['temporada']) ?> finalizada</p>
+        <h2 class="text-white mb-1">¡Felicidades <?= e($podio['campeon']['nombre']) ?>!</h2>
+        <p class="mb-4" style="color:rgba(255,255,255,.8);"><?= e(podio_titulo(1, $torneo['genero'] ?? null)) ?> de <?= e($torneo['nombre']) ?></p>
+
+        <div class="row g-3 justify-content-center">
+            <?php foreach (['campeon' => 1, 'subcampeon' => 2, 'tercero' => 3] as $clavePodio => $puestoPodio): ?>
+            <?php if (empty($podio[$clavePodio])) { continue; } ?>
+            <div class="col-6 col-md-4" style="<?= $puestoPodio === 1 ? 'order:-1;' : '' ?>">
+                <div class="podio-tarjeta h-100 p-4 rounded-4" style="background:rgba(255,255,255,.14);backdrop-filter:blur(4px);">
+                    <div class="fs-1 mb-2"><?= $puestoPodio === 1 ? '🥇' : ($puestoPodio === 2 ? '🥈' : '🥉') ?></div>
+                    <div class="mb-2"><?= logo_equipo($podio[$clavePodio], $puestoPodio === 1 ? 84 : 64) ?></div>
+                    <div class="small text-uppercase fw-bold" style="color:rgba(255,255,255,.75);letter-spacing:.08em;"><?= e(podio_titulo($puestoPodio, $torneo['genero'] ?? null)) ?></div>
+                    <div class="text-white <?= $puestoPodio === 1 ? 'fs-4' : 'fs-6' ?> fw-semibold"><?= e($podio[$clavePodio]['nombre']) ?></div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <a href="<?= e(url_copa('podio_imagen.php')) ?>" class="btn btn-outline-luz rounded-pill px-4 mt-4"><i class="bi bi-share me-1"></i>Compartir el podio</a>
+    </div>
+</section>
+<?php endif; ?>
+
 <!-- HERO -->
 <header class="hero-copa">
     <div class="container">

@@ -160,6 +160,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'fases_playoff' => $fasesElegidas,
             'num_grupos' => $numGrupos,
             'clasifican_por_grupo' => $clasificanPorGrupo,
+            // El podio se publica desde el dashboard, no desde este formulario: se
+            // conserva tal cual estaba para que editar la copa no lo baje sin querer.
+            'podio_publicado' => !empty($torneoEditar['podio_publicado']),
             'permite_empates' => isset($_POST['permite_empates']),
             'puntos_victoria' => (int) $_POST['puntos_victoria'],
             'puntos_empate' => (int) $_POST['puntos_empate'],

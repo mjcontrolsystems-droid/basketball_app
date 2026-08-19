@@ -30,6 +30,7 @@ return [
     'partido_vivo.php' => ['controlador' => 'Publico/PartidoVivo', 'copa' => true],
     'partido_vivo_datos.php' => ['controlador' => 'Publico/PartidoVivoDatos', 'copa' => true],
     'partido_imagen.php' => ['controlador' => 'Publico/PartidoImagen', 'copa' => true],
+    'podio_imagen.php' => ['controlador' => 'Publico/PodioImagen', 'copa' => true],
     'patrocinadores.php' => ['controlador' => 'Publico/Patrocinadores', 'copa' => true],
     'organizador.php' => ['controlador' => 'Publico/Organizador', 'copa' => true],
 

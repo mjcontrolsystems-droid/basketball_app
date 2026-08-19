@@ -9,6 +9,27 @@ $titulo_pagina = 'Dashboard';
 
 $equipos = equipos_listar($torneo['id']);
 $partidos = partidos_listar($torneo['id']);
+
+// Publicar o bajar el podio de cierre. El podio en sí no se guarda: se recalcula en vivo,
+// así que corregir el marcador de la final cambia al campeón sin tener que republicar.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'publicar_podio') {
+    csrf_validar();
+    $publicar = !empty($_POST['publicar']);
+
+    if ($publicar && podio_calcular($torneo, $equipos, $partidos) === null) {
+        redirigir_con_mensaje(url('admin/index.php'), 'error', 'Todavía no se puede determinar el campeón. Revisa que el partido decisivo esté jugado y sin empatar.');
+    }
+
+    torneos_guardar(array_merge($torneo, ['podio_publicado' => $publicar]));
+    bitacora_registrar($publicar ? 'podio_publicado' : 'podio_ocultado', $publicar ? 'Podio de cierre publicado en el sitio' : 'Podio de cierre retirado del sitio', $torneo['id']);
+    redirigir_con_mensaje(
+        url('admin/index.php'),
+        'success',
+        $publicar
+            ? '¡Podio publicado! Ya se ve en la portada de la copa.'
+            : 'Podio retirado de la portada.'
+    );
+}
 $patrocinadores = patrocinadores_listar($torneo['id']);
 $tabla = calcular_tabla($equipos, $partidos, $torneo);
 $lider = $tabla[0] ?? null;
@@ -19,15 +40,23 @@ $proximo = proximos_partidos($partidos, 1)[0] ?? null;
 $equiposPorId = [];
 foreach ($equipos as $eq) { $equiposPorId[$eq['id']] = $eq; }
 
+// Cierre de temporada: el podio que la app detecta y si ya está publicado.
+$podio = podio_calcular($torneo, $equipos, $partidos);
+$temporadaTerminada = podio_temporada_terminada($partidos);
+$podioPublicado = torneo_podio_publicado($torneo);
+
 vista_admin('admin/dashboard', compact(
     'equipos',
     'equiposPorId',
     'jugados',
     'patrocinadores',
+    'podio',
+    'podioPublicado',
     'programados',
     'proximo',
     'seccion_activa',
     'tabla',
+    'temporadaTerminada',
     'titulo_pagina',
     'torneo'
 ));

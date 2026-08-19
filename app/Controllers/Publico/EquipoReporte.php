@@ -105,6 +105,17 @@ foreach ($deudaPorJugador as $jid => $info) {
     }
 }
 
+// Si la temporada cerró y el podio está publicado, se anota en la hoja si este equipo
+// terminó campeón, subcampeón o tercero: es lo primero que un club quiere ver en su
+// reporte de fin de temporada.
+$podioEquipo = 0;
+if (torneo_podio_publicado($torneo)) {
+    $podioTorneo = podio_calcular($torneo, $equipos, $partidos, $eventos);
+    if ($podioTorneo !== null) {
+        $podioEquipo = podio_posicion_de($podioTorneo, (int) $equipo['id']);
+    }
+}
+
 $titulo_pagina = 'Reporte de ' . $equipo['nombre'] . ' — ' . $torneo['nombre'];
 $pagina_activa = 'equipos';
 
@@ -113,6 +124,7 @@ vista_publica('publico/equipo_reporte', compact(
     'deporte',
     'deudaEquipo',
     'equipo',
+    'podioEquipo',
     'equiposPorId',
     'filaEquipo',
     'jugados',

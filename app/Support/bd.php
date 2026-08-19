@@ -376,6 +376,10 @@ function db_migrar_automatico(): void
         $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
         $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
 
+        // Podio de cierre. Solo se guarda si está publicado: quiénes son los tres se
+        // recalcula en vivo, así que corregir el marcador de la final cambia al campeón.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS podio_publicado BOOLEAN NOT NULL DEFAULT FALSE');
+
         $_SESSION['migraciones_v3_ok'] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya

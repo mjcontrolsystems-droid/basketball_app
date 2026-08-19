@@ -6,6 +6,67 @@
     <a href="<?= url('admin/partidos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Programar encuentro</a>
 </div>
 
+<?php // ---------- Cierre de temporada ----------
+      // Aparece cuando ya hay un campeón identificable. El podio NO se publica solo: la
+      // app lo detecta y el organizador decide cuándo sacarlo, para que un marcador mal
+      // cargado no corone al equipo equivocado delante de toda la liga. ?>
+<?php if (!empty($podio)): ?>
+<div class="card-suave p-4 mb-4 <?= !empty($podioPublicado) ? 'border border-success border-2' : '' ?>">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+            <h5 class="mb-1"><i class="bi bi-trophy-fill text-warning me-1"></i>
+                <?= !empty($podioPublicado) ? 'Podio publicado' : ($temporadaTerminada ? '¡Terminó la temporada!' : 'Ya hay un campeón') ?>
+            </h5>
+            <p class="small text-muted mb-0">
+                <?php if (!empty($podioPublicado)): ?>
+                    Se está mostrando en la portada de la copa. Si corriges un resultado, el podio se actualiza solo.
+                <?php elseif (!empty($temporadaTerminada)): ?>
+                    Se jugaron todos los encuentros. Revisa el podio y publícalo cuando quieras.
+                <?php else: ?>
+                    El partido decisivo ya se jugó, pero todavía quedan encuentros pendientes. Puedes publicarlo igual si ya es definitivo.
+                <?php endif; ?>
+            </p>
+        </div>
+        <form method="post" data-confirm="<?= !empty($podioPublicado) ? '¿Quitar el podio de la portada pública?' : '¿Publicar el podio en la portada de la copa? Lo va a ver todo el mundo.' ?>">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="publicar_podio">
+            <?php if (empty($podioPublicado)): ?>
+            <input type="hidden" name="publicar" value="1">
+            <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-megaphone me-1"></i>Publicar podio</button>
+            <?php else: ?>
+            <button type="submit" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-eye-slash me-1"></i>Quitar de la portada</button>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <div class="row g-3">
+        <?php foreach (['campeon' => 1, 'subcampeon' => 2, 'tercero' => 3] as $clave => $puesto): ?>
+        <?php if (empty($podio[$clave])) { continue; } ?>
+        <div class="col-md-4">
+            <div class="stat-tile d-flex align-items-center gap-3 h-100">
+                <span class="fs-3"><?= $puesto === 1 ? '🥇' : ($puesto === 2 ? '🥈' : '🥉') ?></span>
+                <?= logo_equipo($podio[$clave], 44) ?>
+                <div style="min-width:0;">
+                    <div class="small text-muted"><?= e(podio_titulo($puesto, $torneo['genero'] ?? null)) ?></div>
+                    <div class="fw-semibold text-truncate"><?= e($podio[$clave]['nombre']) ?></div>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <p class="small text-muted mt-3 mb-0">
+        <i class="bi bi-info-circle me-1"></i>
+        <?= ($podio['origen'] ?? '') === 'final'
+            ? 'El campeón sale de la final, no de la tabla.'
+            : 'En formato liga el campeón es quien termina primero en la tabla.' ?>
+        <?php if (!empty($podioPublicado)): ?>
+        <a href="<?= e(url_copa('podio_imagen.php')) ?>" target="_blank" class="ms-1"><i class="bi bi-image me-1"></i>Imagen para compartir</a>
+        <?php endif; ?>
+    </p>
+</div>
+<?php endif; ?>
+
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg">
         <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-people me-1"></i>Equipos</div><div class="fs-3 fw-bold"><?= count($equipos) ?></div></div>

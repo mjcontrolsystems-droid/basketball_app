@@ -12,6 +12,17 @@
     </p>
 </div>
 
+<?php // ---------- Podio ----------
+      // Solo aparece si la temporada cerró y el equipo quedó entre los tres. Va arriba de
+      // todo porque es lo primero que un club quiere ver en su reporte de cierre. ?>
+<?php if (!empty($podioEquipo)): ?>
+<p class="ficha-podio" style="text-align:center;font-weight:600;border:2px solid #000;padding:8px;margin:0 0 14px;">
+    <?= $podioEquipo === 1 ? '🥇' : ($podioEquipo === 2 ? '🥈' : '🥉') ?>
+    <?= e(podio_titulo($podioEquipo, $torneo['genero'] ?? null)) ?>
+    de <?= e($torneo['nombre']) ?><?= !empty($torneo['temporada']) ? ' · Temporada ' . e($torneo['temporada']) : '' ?>
+</p>
+<?php endif; ?>
+
 <?php // ---------- Situación en la tabla ---------- ?>
 <h3>Posición en la tabla</h3>
 <?php if ($filaEquipo !== null): ?>
