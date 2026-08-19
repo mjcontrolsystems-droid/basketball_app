@@ -19,6 +19,13 @@ if (getenv('DATABASE_URL') === false && file_exists($archivoEnv)) {
     }
 }
 
+// Contacto de MJ Control Systems (quien hace la plataforma), no del organizador de cada
+// copa. Va en el pie del sitio y en la ficha imprimible del partido. Como constante y no
+// suelto en cada plantilla: estaba escrito a mano en la ficha y ya iba camino a
+// desincronizarse del resto.
+const CONTACTO_PLATAFORMA = 'mjcontrolsystems@gmail.com';
+const LEMA_PLATAFORMA = 'Plataformas web inteligentes, control total de tu negocio.';
+
 // Credenciales de Google OAuth ("Continuar con Google"). En Render se configuran como
 // variables de entorno reales (panel "Environment"), igual que DATABASE_URL.
 define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');

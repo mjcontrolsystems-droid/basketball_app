@@ -791,7 +791,39 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
    documento aparte (.solo-impresion) con formato de formulario oficial lleno. */
 .solo-impresion { display: none; }
 
+/* Vista previa EN PANTALLA de la hoja del calendario imprimible: las clases .ficha-*
+   solo tienen estilo dentro de @media print, así que aquí se les da un aspecto de
+   documento para que lo que se ve antes de imprimir se parezca al papel. */
+.hoja-previa .ficha-titulo { text-align: center; margin-bottom: 1.2rem; }
+.hoja-previa .ficha-titulo h2 { font-size: 1.25rem; margin: 0; }
+.hoja-previa .ficha-titulo p { font-size: .85rem; color: #6b5e8f; margin: .2rem 0 0; }
+.hoja-previa h3 {
+    font-size: .95rem;
+    font-weight: 700;
+    margin: 1.4rem 0 .5rem;
+    color: var(--color-primario-oscuro);
+}
+.hoja-previa .ficha-tabla { width: 100%; border-collapse: collapse; margin-bottom: .5rem; }
+.hoja-previa .ficha-tabla th,
+.hoja-previa .ficha-tabla td {
+    border: 1px solid rgba(var(--color-primario-oscuro-rgb), .18);
+    padding: .4rem .55rem;
+    font-size: .82rem;
+    text-align: left;
+}
+.hoja-previa .ficha-tabla th {
+    background: rgba(var(--color-primario-rgb), .07);
+    text-transform: uppercase;
+    font-size: .7rem;
+    letter-spacing: .04em;
+}
+.hoja-previa .ficha-pie { margin-top: 1.2rem; font-size: .72rem; color: #8b7fa8; }
+.hoja-previa .ficha-pie p { margin: 0; }
+
 @media print {
+    /* Cada jornada intenta no partirse a la mitad entre dos hojas */
+    .ficha-imprimir .ficha-tabla { break-inside: avoid; page-break-inside: avoid; }
+
     .navbar-copa, .footer-copa, .btn-imprimir-pdf,
     #modalCompartir, #modalCodigo, .offcanvas,
     .solo-pantalla {
@@ -1517,4 +1549,20 @@ main.flex-grow-1 {
    que en la transmisión en vivo: se le sube el contraste del borde. */
 .card-suave .punto-titular {
     border-color: #adb5bd;
+}
+
+/* Contacto de MJ Control Systems en el pie: sobre el fondo oscuro del footer, un enlace
+   apagado no se lee. Se mantiene discreto (no compite con los datos de la copa) pero
+   legible y con área de toque cómoda en el teléfono. */
+.link-contacto-plataforma {
+    color: rgba(255, 255, 255, .72);
+    text-decoration: none;
+    display: inline-block;
+    padding: .35rem .25rem;
+}
+
+.link-contacto-plataforma:hover,
+.link-contacto-plataforma:focus-visible {
+    color: #fff;
+    text-decoration: underline;
 }

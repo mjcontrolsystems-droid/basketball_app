@@ -20,6 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $organizador['nombre'] = trim((string) $_POST['nombre']);
         $organizador['cargo'] = trim((string) $_POST['cargo']);
+        // Solo se aceptan los dos valores del catálogo; cualquier otra cosa queda como
+        // "no indicado" (el sitio usará entonces la forma masculina genérica).
+        $generoElegido = (string) ($_POST['genero'] ?? '');
+        $organizador['genero'] = in_array($generoElegido, ['masculino', 'femenino'], true) ? $generoElegido : '';
         $organizador['email'] = trim((string) $_POST['email']);
         $organizador['telefono'] = trim((string) $_POST['telefono']);
         $organizador['bio'] = trim((string) $_POST['bio']);

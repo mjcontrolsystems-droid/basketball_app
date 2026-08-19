@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // La copa que resolvió el front controller a partir del slug de la URL.
 $torneo = copa_actual();
-$organizador = torneo_organizador($torneo) ?? ['nombre' => 'Organizador', 'cargo' => '', 'email' => '', 'telefono' => '', 'bio' => '', 'foto' => ''];
+$organizador = torneo_organizador($torneo) ?? ['nombre' => 'Organizador', 'cargo' => '', 'email' => '', 'telefono' => '', 'bio' => '', 'foto' => '', 'genero' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Honeypot: los bots suelen rellenar este campo oculto; los humanos lo dejan vacío

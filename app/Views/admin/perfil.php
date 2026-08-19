@@ -27,6 +27,17 @@
                     <label class="form-label small fw-semibold">Cargo</label>
                     <input type="text" name="cargo" class="form-control" value="<?= e($organizador['cargo']) ?>">
                 </div>
+                <?php // Género de la persona (no el de la copa): define si el sitio público
+                      // dice "El Organizador" o "La Organizadora". ?>
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold">¿Cómo prefieres que te nombremos?</label>
+                    <select name="genero" class="form-select">
+                        <option value="" <?= ($organizador['genero'] ?? '') === '' ? 'selected' : '' ?>>Prefiero no indicarlo</option>
+                        <option value="masculino" <?= ($organizador['genero'] ?? '') === 'masculino' ? 'selected' : '' ?>>Organizador (masculino)</option>
+                        <option value="femenino" <?= ($organizador['genero'] ?? '') === 'femenino' ? 'selected' : '' ?>>Organizadora (femenino)</option>
+                    </select>
+                    <div class="form-text">Así aparecerás en la página pública "Organizador" de tus copas.</div>
+                </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-semibold">Correo electrónico</label>
                     <input type="email" name="email" class="form-control" value="<?= e($organizador['email']) ?>" required>

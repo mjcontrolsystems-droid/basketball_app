@@ -239,6 +239,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- del correo (que en teoría podría cambiar de dueño en Google en casos raros).
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
 ALTER TABLE usuarios ALTER COLUMN password_hash DROP NOT NULL;
+-- Género de la PERSONA organizadora ('masculino' | 'femenino' | '' = no indicado), para
+-- que el sitio público diga "El Organizador" o "La Organizadora". Es distinto de
+-- torneos.genero, que describe la categoría deportiva de la copa (jugadores/jugadoras).
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero TEXT NOT NULL DEFAULT '';
 
 -- Lista blanca de correos autorizados a crear una cuenta nueva con "Continuar con Google".
 -- El registro público (usuario/contraseña) está cerrado; solo el/los super-admin (definidos

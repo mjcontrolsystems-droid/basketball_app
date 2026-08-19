@@ -214,6 +214,7 @@
             <div class="small text-muted"><?= $esLiga ? 'Liga' : 'Campeonato' ?> · <?= e(torneo_vueltas_label($torneo)) ?></div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            <a href="<?= e(url_copa('calendario_imprimir.php')) ?>" target="_blank" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-printer me-1"></i>Imprimir calendario</a>
             <a href="<?= url('admin/partidos.php?accion=generar') ?>" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-calendar-plus me-1"></i>Generar calendario</a>
             <a href="<?= url('admin/partidos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Programar encuentro</a>
         </div>
