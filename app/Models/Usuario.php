@@ -3,7 +3,26 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../Support/bd.php';
 
-const COLUMNAS_USUARIO = ['usuario', 'email', 'nombre', 'cargo', 'telefono', 'foto', 'bio'];
+const COLUMNAS_USUARIO = ['usuario', 'email', 'nombre', 'cargo', 'telefono', 'foto', 'bio', 'genero'];
+
+/**
+ * Género de la persona organizadora, para hablarle correctamente en el sitio público
+ * ("El Organizador" / "La Organizadora"). Es independiente del género de la copa
+ * (torneos.genero), que se refiere a la categoría deportiva (jugadores/jugadoras).
+ * Sin indicar se usa la forma masculina genérica, igual que forma_genero().
+ */
+function forma_genero_persona(?array $usuario, string $masculino, string $femenino): string
+{
+    return ($usuario['genero'] ?? '') === 'femenino' ? $femenino : $masculino;
+}
+
+/**
+ * Título con artículo del organizador para el hero del sitio público.
+ */
+function titulo_organizador(?array $usuario): string
+{
+    return forma_genero_persona($usuario, 'El <span class="text-degradado">Organizador</span>', 'La <span class="text-degradado">Organizadora</span>');
+}
 
 function usuarios_normalizar(array $fila): array
 {
@@ -96,7 +115,7 @@ function usuarios_vincular_google(int $id, string $googleId): void
 function usuarios_guardar(array $datos): bool
 {
     $pdo = db_conexion();
-    $columnas = ['nombre', 'cargo', 'email', 'telefono', 'foto', 'bio'];
+    $columnas = ['nombre', 'cargo', 'email', 'telefono', 'foto', 'bio', 'genero'];
     if (!empty($datos['password_hash'])) {
         $columnas[] = 'password_hash';
     }

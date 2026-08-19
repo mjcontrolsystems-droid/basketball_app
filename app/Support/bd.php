@@ -316,6 +316,10 @@ function db_migrar_automatico(): void
                 PRIMARY KEY (partido_id, jugador_id)
             )'
         );
+        // Género de la PERSONA organizadora (no el de la copa): decide si el sitio
+        // público dice "El Organizador" o "La Organizadora". '' = no indicado, en cuyo
+        // caso se usa la forma masculina genérica, igual criterio que el resto del sitio.
+        $pdo->exec("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero TEXT NOT NULL DEFAULT ''");
         $_SESSION['migraciones_v3_ok'] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya

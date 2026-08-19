@@ -241,8 +241,8 @@
         <?php if ($usuarioImprime): ?>
         <p>Impreso por: <?= e($usuarioImprime['nombre'] ?: $usuarioImprime['email']) ?> · <?= e(date('d/m/Y H:i')) ?></p>
         <?php endif; ?>
-        <p>MJ Control Systems · Plataformas web inteligentes, control total de tu negocio.</p>
-        <p>Contrataciones: mjcontrolsystems@gmail.com</p>
+        <p>MJ Control Systems · <?= e(LEMA_PLATAFORMA) ?></p>
+        <p>Contrataciones: <?= e(CONTACTO_PLATAFORMA) ?></p>
     </div>
 </div>
 

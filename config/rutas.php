@@ -20,6 +20,7 @@ return [
     'index.php' => ['controlador' => 'Publico/Inicio', 'copa' => true],
     'tabla.php' => ['controlador' => 'Publico/Tabla', 'copa' => true],
     'calendario.php' => ['controlador' => 'Publico/Calendario', 'copa' => true],
+    'calendario_imprimir.php' => ['controlador' => 'Publico/CalendarioImprimir', 'copa' => true],
     'equipos.php' => ['controlador' => 'Publico/Equipos', 'copa' => true],
     'equipo.php' => ['controlador' => 'Publico/Equipo', 'copa' => true],
     'partido.php' => ['controlador' => 'Publico/Partido', 'copa' => true],
