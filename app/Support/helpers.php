@@ -471,3 +471,39 @@ function obtener_flash(): ?array
     }
     return null;
 }
+
+/**
+ * Botón "X" para quitar un archivo ya subido, con su campo oculto y el enlace de deshacer.
+ *
+ * Va DENTRO de la miniatura (.vista-previa-item), encima de la imagen. Sustituye a la
+ * casilla de "quitar la actual": ver la imagen con su X es más directo que leer una
+ * casilla, y no deja dudas de cuál se está quitando.
+ *
+ * No borra nada al momento: pone el campo oculto en 1 y tacha la miniatura. El borrado
+ * real lo hace resolver_archivo_guardado() al guardar el formulario, así que un clic de
+ * más se deshace sin haber perdido nada.
+ *
+ * @param string $campo Nombre del campo POST (quitar_logo, quitar_foto...).
+ * @param string $queCosa Cómo se le llama en el diálogo ("el escudo", "la foto"...).
+ * @param string $nota Qué pasa al quitarlo, para que nadie borre a ciegas.
+ */
+function boton_quitar_archivo(string $campo, string $queCosa, string $nota = ''): string
+{
+    $id = 'campo_' . preg_replace('/[^a-z0-9_]/i', '', $campo);
+
+    return '<input type="hidden" name="' . e($campo) . '" id="' . e($id) . '" value="0">'
+        . '<button type="button" class="btn-quitar-archivo" data-campo="' . e($id) . '"'
+        . ' data-nombre="' . e($queCosa) . '" data-nota="' . e($nota) . '"'
+        . ' aria-pressed="false" aria-label="Quitar ' . e($queCosa) . '" title="Quitar ' . e($queCosa) . '">'
+        . '<i class="bi bi-x-lg"></i></button>';
+}
+
+/**
+ * Enlace de deshacer que acompaña al botón de quitar. Va fuera de la miniatura, como
+ * hermano suyo dentro del contenedor de vista previa.
+ */
+function enlace_deshacer_quitar(): string
+{
+    return '<button type="button" class="deshacer-quitar btn btn-link btn-sm p-0 d-none">'
+        . '<i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer, no quitarla</button>';
+}

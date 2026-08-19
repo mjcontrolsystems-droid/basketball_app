@@ -311,10 +311,14 @@
                         <?= e(trim((string) ($torneoEditar['reglamento_nombre'] ?? '')) !== '' ? $torneoEditar['reglamento_nombre'] : 'Reglamento cargado') ?>
                     </span>
                     <a href="<?= e(url_reglamento($torneoEditar)) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye me-1"></i>Ver</a>
-                    <div class="form-check ms-1">
-                        <input class="form-check-input" type="checkbox" name="quitar_reglamento" value="1" id="chkQuitarReglamento">
-                        <label class="form-check-label small text-danger" for="chkQuitarReglamento">Quitar</label>
-                    </div>
+                    <?php // Mismo patrón que las imágenes: una X con confirmación, y el
+                          // borrado se aplica al guardar para poder deshacerlo. ?>
+                    <span class="vista-previa-item vista-previa-item--linea">
+                        <?= boton_quitar_archivo('quitar_reglamento', 'el reglamento', 'La sección del reglamento dejará de aparecer en el sitio público. Se aplica al guardar.') ?>
+                    </span>
+                    <?php // El enlace de deshacer tiene que ser HERMANO de la miniatura:
+                          // el JS lo busca dentro del mismo contenedor. ?>
+                    <?= enlace_deshacer_quitar() ?>
                 </div>
                 <div class="form-text">Si subes otro PDF, reemplaza al actual.</div>
                 <?php endif; ?>
@@ -329,21 +333,12 @@
                     <?php if (!empty($torneoEditar['logo'])): ?>
                     <figure class="vista-previa-item mb-0">
                         <img src="<?= e(url_imagen((string) $torneoEditar['logo'])) ?>" alt="Logo actual">
+                        <?= boton_quitar_archivo('quitar_logo', 'el logo', 'Volverá a mostrarse el balón del deporte. Se aplica al guardar.') ?>
                         <figcaption>Logo actual</figcaption>
                     </figure>
+                    <?= enlace_deshacer_quitar() ?>
                     <?php endif; ?>
                 </div>
-                <?php // Poder QUITAR el logo, no solo reemplazarlo: si se subió uno por
-                      // error, antes había que subir otro encima para taparlo. ?>
-                <?php if (!empty($torneoEditar['logo'])): ?>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="quitar_logo" value="1" id="chkQuitarLogoTorneo">
-                    <label class="form-check-label small" for="chkQuitarLogoTorneo">
-                        Quitar el logo actual
-                        <span class="d-block text-muted">Vuelve a mostrarse el balón del deporte.</span>
-                    </label>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
 

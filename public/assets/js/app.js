@@ -23,12 +23,100 @@ document.addEventListener('DOMContentLoaded', function () {
     // Confirmación para acciones destructivas en el panel del organizador. Si el usuario
     // cancela, el formulario se resetea: importante para el switch de "Jugado", que si no
     // quedaría visualmente cambiado aunque la acción nunca se envió.
+    // Colores de la marca, para que SweetAlert2 no desentone con el resto del sitio.
+    var COLOR_ACCION = '#7b2ff7';
+    var COLOR_PELIGRO = '#e24b4a';
+
+    // Si SweetAlert2 no cargó (CDN caído, sin conexión), se cae a los diálogos del
+    // navegador en vez de dejar botones que no hacen nada.
+    var haySwal = function () {
+        return typeof window.Swal !== 'undefined';
+    };
+
+    var avisar = function (tipo, mensaje) {
+        if (!haySwal()) {
+            window.alert(mensaje);
+            return;
+        }
+        // Un error se queda hasta que lo cierras; un "guardado correctamente" no debe
+        // estorbar, así que sale como aviso chico en la esquina y se va solo.
+        if (tipo === 'error') {
+            window.Swal.fire({
+                icon: 'error',
+                title: 'Algo no salió bien',
+                text: mensaje,
+                confirmButtonColor: COLOR_ACCION,
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+        window.Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: tipo === 'warning' ? 'warning' : 'success',
+            title: mensaje,
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true
+        });
+    };
+    window.avisoApp = avisar;
+
+    // Mensaje que dejó la página anterior (guardado, error de validación, etc.). Viaja en
+    // data-attributes porque el CSP no permite JavaScript inline.
+    var flash = document.getElementById('datosFlash');
+    if (flash && flash.dataset.mensaje) {
+        avisar(flash.dataset.tipo, flash.dataset.mensaje);
+    }
+
+    // Formularios que piden confirmación antes de enviarse (eliminar, rehacer calendario,
+    // sortear grupos...). Con SweetAlert2 la respuesta es asíncrona, así que se corta el
+    // envío siempre y se reenvía a mano si el usuario confirma.
     document.querySelectorAll('[data-confirm]').forEach(function (form) {
+        var yaConfirmado = false;
         form.addEventListener('submit', function (e) {
-            if (!window.confirm(form.getAttribute('data-confirm'))) {
-                e.preventDefault();
-                form.reset();
+            if (yaConfirmado) {
+                return; // segundo paso: dejar pasar el envío de verdad
             }
+            e.preventDefault();
+
+            var enviar = function () {
+                yaConfirmado = true;
+                // El botón que disparó el envío puede llevar name/value que el servidor
+                // necesita (por ejemplo "ver vista previa" contra "crear"). Al reenviar
+                // por código ese dato se perdería, así que se agrega como campo oculto.
+                var boton = e.submitter;
+                if (boton && boton.name) {
+                    var oculto = document.createElement('input');
+                    oculto.type = 'hidden';
+                    oculto.name = boton.name;
+                    oculto.value = boton.value;
+                    form.appendChild(oculto);
+                }
+                if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            };
+
+            if (!haySwal()) {
+                if (window.confirm(form.getAttribute('data-confirm'))) { enviar(); }
+                return;
+            }
+
+            // Rojo solo cuando de verdad se borra algo, para que el color signifique algo.
+            var esBorrado = /elimin|borrar|se pierde|no se puede deshacer/i.test(form.getAttribute('data-confirm'));
+            window.Swal.fire({
+                title: '¿Confirmas?',
+                text: form.getAttribute('data-confirm'),
+                icon: esBorrado ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: esBorrado ? 'Sí, continuar' : 'Continuar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: esBorrado ? COLOR_PELIGRO : COLOR_ACCION,
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                focusCancel: esBorrado
+            }).then(function (r) {
+                if (r.isConfirmed) { enviar(); }
+            });
         });
     });
 
@@ -327,6 +415,60 @@ document.addEventListener('DOMContentLoaded', function () {
                 control.form.submit();
             }
         });
+    });
+
+    // Botón "X" sobre la miniatura de una imagen ya subida. Reemplaza a la casilla de
+    // "quitar la actual": ver la imagen con su X encima es más directo que leer una
+    // casilla, y deja claro CUÁL se está quitando cuando hay más de una.
+    //
+    // No borra nada al instante: marca el campo oculto y tacha la miniatura, y el borrado
+    // ocurre al guardar. Así se puede deshacer y no se pierde nada por un clic de más.
+    document.querySelectorAll('.btn-quitar-archivo').forEach(function (boton) {
+        var figura = boton.closest('.vista-previa-item');
+        var campo = document.getElementById(boton.getAttribute('data-campo'));
+        if (!figura || !campo) {
+            return;
+        }
+
+        var deshacer = figura.parentNode.querySelector('.deshacer-quitar');
+
+        var marcar = function (quitar) {
+            campo.value = quitar ? '1' : '0';
+            figura.classList.toggle('archivo-quitado', quitar);
+            boton.setAttribute('aria-pressed', quitar ? 'true' : 'false');
+            if (deshacer) {
+                deshacer.classList.toggle('d-none', !quitar);
+            }
+        };
+
+        boton.addEventListener('click', function () {
+            var nombre = boton.getAttribute('data-nombre') || 'la imagen';
+            if (!haySwal()) {
+                if (window.confirm('¿Quitar ' + nombre + '? Se aplicará al guardar.')) { marcar(true); }
+                return;
+            }
+            window.Swal.fire({
+                title: '¿Quitar ' + nombre + '?',
+                text: boton.getAttribute('data-nota') || 'Se aplicará cuando guardes el formulario.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, quitar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: COLOR_PELIGRO,
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (r) {
+                if (r.isConfirmed) { marcar(true); }
+            });
+        });
+
+        if (deshacer) {
+            deshacer.addEventListener('click', function (e) {
+                e.preventDefault();
+                marcar(false);
+            });
+        }
     });
 
     // Casillas que desbloquean otro campo (ej. "Ajustar la jornada manualmente"). El campo

@@ -253,10 +253,18 @@ function db_buscar_por_id(array $registros, int $id): ?array
  * Se ejecuta una vez por sesión del panel admin (ver admin_layout_top.php): evita el
  * paso manual de "corre el script de migración en el servidor", que en un hosting sin
  * acceso a terminal (como el plan gratuito de Render) es difícil de hacer.
+ *
+ * La marca de "ya corrieron" lleva el HASH DE ESTE ARCHIVO, no un nombre fijo. El nombre
+ * fijo causó un bug feo: al agregar columnas nuevas, quien ya tenía la sesión abierta se
+ * saltaba las migraciones, la columna nunca se creaba y el UPDATE fallaba en silencio —
+ * el botón de guardar parecía no hacer nada. Con el hash, cualquier cambio en este archivo
+ * invalida la marca y las migraciones vuelven a correr solas. Correrlas de más es gratis
+ * porque son idempotentes.
  */
 function db_migrar_automatico(): void
 {
-    if (!empty($_SESSION['migraciones_v3_ok'])) {
+    $clave = 'migraciones_' . substr((string) @md5_file(__FILE__), 0, 12);
+    if (!empty($_SESSION[$clave])) {
         return;
     }
     try {
@@ -380,7 +388,14 @@ function db_migrar_automatico(): void
         // recalcula en vivo, así que corregir el marcador de la final cambia al campeón.
         $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS podio_publicado BOOLEAN NOT NULL DEFAULT FALSE');
 
-        $_SESSION['migraciones_v3_ok'] = true;
+        // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
+        // clave por cada cambio del archivo a lo largo de la vida del proyecto.
+        foreach (array_keys($_SESSION) as $k) {
+            if (str_starts_with((string) $k, 'migraciones_')) {
+                unset($_SESSION[$k]);
+            }
+        }
+        $_SESSION[$clave] = true;
     } catch (Throwable $e) {
         // No bloquear el panel por esto: las funciones que dependen de estas tablas ya
         // tienen sus propias redes de seguridad. Se reintentará en la próxima sesión.

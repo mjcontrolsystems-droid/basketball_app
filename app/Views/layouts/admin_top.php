@@ -128,9 +128,14 @@ function admin_tarjeta_usuario(array $usuario): string
         </div>
 
         <div class="p-3 p-md-4">
+            <?php // El mensaje viaja en data-attributes y lo muestra SweetAlert2 desde
+                  // app.js (el CSP no permite JavaScript inline). El <noscript> deja el
+                  // aviso visible si el navegador tiene el JS desactivado. ?>
             <?php if ($flash): ?>
-            <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> rounded-4 border-0 shadow-sm alert-dismissible fade show" data-autoclose role="alert">
-                <?= e($flash['mensaje']) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>
+            <noscript>
+                <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> rounded-4 border-0 shadow-sm" role="alert">
+                    <?= e($flash['mensaje']) ?>
+                </div>
+            </noscript>
             <?php endif; ?>

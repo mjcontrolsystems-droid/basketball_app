@@ -38,20 +38,12 @@
                     <?php if (!empty($itemEditar['logo'])): ?>
                     <figure class="vista-previa-item mb-0">
                         <img src="<?= e(url_imagen((string) $itemEditar['logo'])) ?>" alt="Logo actual">
+                        <?= boton_quitar_archivo('quitar_logo', 'el logo', 'Se mostrará el nombre como insignia de texto. Se aplica al guardar.') ?>
                         <figcaption>Logo actual</figcaption>
                     </figure>
+                    <?= enlace_deshacer_quitar() ?>
                     <?php endif; ?>
                 </div>
-                <?php // Quitar el logo subido, no solo reemplazarlo. ?>
-                <?php if (!empty($itemEditar['logo'])): ?>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="quitar_logo" value="1" id="chkQuitarLogoPatrocinador">
-                    <label class="form-check-label small" for="chkQuitarLogoPatrocinador">
-                        Quitar el logo actual
-                        <span class="d-block text-muted">Se mostrará el nombre como insignia de texto.</span>
-                    </label>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
 

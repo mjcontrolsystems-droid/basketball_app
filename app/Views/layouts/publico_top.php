@@ -111,11 +111,14 @@ function nav_activa(string $clave, string $activa): string
     </div>
 </nav>
 
+<?php // Igual que en el panel: el mensaje lo pinta SweetAlert2 desde app.js. ?>
 <?php if ($flash): ?>
-<div class="container position-fixed top-0 start-50 translate-middle-x pt-5 mt-5" style="z-index:2000;max-width:520px;">
-    <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> shadow-lg rounded-4 border-0 alert-dismissible fade show" data-autoclose role="alert">
-        <?= e($flash['mensaje']) ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>
+<noscript>
+    <div class="container pt-4">
+        <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> shadow-lg rounded-4 border-0" role="alert">
+            <?= e($flash['mensaje']) ?>
+        </div>
     </div>
-</div>
+</noscript>
 <?php endif; ?>

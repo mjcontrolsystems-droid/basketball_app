@@ -1399,6 +1399,72 @@ main.flex-grow-1 {
 .vista-previa-item {
     text-align: center;
     margin: 0;
+    /* Ancla del botón X, que va superpuesto en la esquina de la miniatura. */
+    position: relative;
+    display: inline-block;
+}
+
+/* Botón "X" para quitar el archivo, encima de su propia miniatura. Se ve siempre y no
+   solo al pasar el mouse: en una tablet o un celular no hay hover que valga. */
+.btn-quitar-archivo {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    line-height: 1;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #e24b4a;
+    color: #fff;
+    font-size: .7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+    cursor: pointer;
+    transition: transform .15s ease, background .15s ease;
+    z-index: 2;
+}
+
+.btn-quitar-archivo:hover,
+.btn-quitar-archivo:focus-visible {
+    background: #b93130;
+    transform: scale(1.12);
+}
+
+/* Marcado para quitarse: se tacha en vez de desaparecer, para que se vea qué se va a
+   borrar y el enlace de deshacer tenga a qué referirse. */
+.vista-previa-item.archivo-quitado img,
+.vista-previa-item.archivo-quitado svg {
+    opacity: .3;
+    filter: grayscale(1);
+}
+
+.vista-previa-item.archivo-quitado figcaption {
+    text-decoration: line-through;
+    color: #e24b4a;
+}
+
+.vista-previa-item.archivo-quitado .btn-quitar-archivo {
+    background: #6c757d;
+}
+
+/* Variante en línea (el PDF del reglamento), donde no hay miniatura que envolver. */
+.vista-previa-item--linea {
+    width: 26px;
+    height: 26px;
+}
+
+.vista-previa-item--linea .btn-quitar-archivo {
+    top: 0;
+    right: 0;
+}
+
+.deshacer-quitar {
+    text-decoration: none;
+    font-size: .8rem;
 }
 
 .vista-previa-item img,

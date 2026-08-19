@@ -20,8 +20,12 @@
             <p class="text-muted small mb-0">Esta plataforma no tiene registro abierto. Si el administrador ya autorizó tu correo, entra con tu cuenta de Google.</p>
         </div>
 
+        <?php // Lo pinta SweetAlert2 desde app.js; el <noscript> es el respaldo. ?>
         <?php if ($flash): ?>
-        <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> rounded-3 py-2 small"><i class="bi bi-info-circle me-1"></i><?= e($flash['mensaje']) ?></div>
+        <div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>
+        <noscript>
+            <div class="alert alert-<?= $flash['tipo'] === 'error' ? 'danger' : $flash['tipo'] ?> rounded-3 py-2 small"><?= e($flash['mensaje']) ?></div>
+        </noscript>
         <?php endif; ?>
 
         <?php if (GOOGLE_CLIENT_ID !== ''): ?>
@@ -39,5 +43,7 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script src="<?= asset_url('assets/js/app.js') ?>"></script>
 </body>
 </html>
