@@ -9,6 +9,9 @@
             <?= $esLiga ? 'Todas las jornadas de la temporada regular.' : 'Fase de grupos y eliminación directa.' ?>
             <?php if (torneo_vueltas($torneo) === 2): ?>Se juega a ida y vuelta: cada equipo enfrenta dos veces a cada rival, una en casa y otra de visita.<?php endif; ?>
         </p>
+        <div class="mt-3">
+            <a href="<?= url_copa('calendario_imprimir.php') ?>" class="btn btn-outline-luz btn-sm rounded-pill px-3"><i class="bi bi-printer me-1"></i>Imprimir calendario</a>
+        </div>
     </div>
 </header>
 

@@ -337,6 +337,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Calendario imprimible: el selector de Jornada solo aplica al alcance "una jornada",
+    // y el de Fase solo a "una fase" — se muestran/ocultan según lo elegido.
+    var selectAlcance = document.getElementById('selectAlcance');
+    if (selectAlcance) {
+        var grupoJornadaImp = document.getElementById('grupoJornadaImprimir');
+        var grupoFaseImp = document.getElementById('grupoFaseImprimir');
+        var actualizarAlcance = function () {
+            if (grupoJornadaImp) {
+                grupoJornadaImp.style.display = selectAlcance.value === 'jornada' ? '' : 'none';
+            }
+            if (grupoFaseImp) {
+                grupoFaseImp.style.display = selectAlcance.value === 'fase' ? '' : 'none';
+            }
+        };
+        selectAlcance.addEventListener('change', actualizarAlcance);
+        actualizarAlcance();
+    }
+
     // Modales que deben abrirse solos al cargar la página (ej. aviso de fecha futura en
     // la ficha de eventos del partido). Se hace aquí, en el JS externo, porque el CSP del
     // sitio no permite <script> inline en las páginas.
