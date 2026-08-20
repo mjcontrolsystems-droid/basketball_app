@@ -35,6 +35,15 @@
             <?php endif; ?>
         </div>
 
+        <?php if ($enMantenimiento): ?>
+        <div class="alert alert-warning rounded-4 border-0 small mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Si abres el sitio y lo ves normal, es correcto:</strong> a ti te deja pasar porque tienes sesión.
+            Para comprobar cómo lo ve la gente, abre el enlace en una <strong>ventana de incógnito</strong> o desde
+            otro teléfono sin sesión iniciada.
+        </div>
+        <?php endif; ?>
+
         <?php // El mensaje se puede editar aunque el sitio esté abierto, para dejarlo listo. ?>
         <div class="mt-3">
             <label class="form-label small fw-semibold" for="mensajeMantenimiento">Mensaje que verán los visitantes</label>

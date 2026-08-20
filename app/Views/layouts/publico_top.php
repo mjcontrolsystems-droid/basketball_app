@@ -111,6 +111,19 @@ function nav_activa(string $clave, string $activa): string
     </div>
 </nav>
 
+<?php // Aviso de que el sitio está cerrado al público.
+      //
+      // Solo lo ve quien tiene permiso para entrar en mantenimiento — el organizador y los
+      // superadmins. Sin esta franja no había forma de notar que estaba cerrado: uno abre
+      // el sitio, lo ve normal, y concluye que el botón no sirvió. Pasó exactamente eso. ?>
+<?php if (torneo_en_mantenimiento($torneo ?? null)): ?>
+<div class="w-100 text-center py-2 px-3" style="background:#ffc93c;color:#3d2c00;font-weight:600;font-size:.9rem;position:relative;z-index:1080;">
+    <i class="bi bi-cone-striped me-1"></i>
+    Este sitio está <strong>cerrado al público</strong>. Lo estás viendo porque tienes tu sesión abierta.
+    <a href="<?= url('admin/index.php') ?>" class="ms-2 text-decoration-underline" style="color:#3d2c00;">Reabrirlo</a>
+</div>
+<?php endif; ?>
+
 <?php // Igual que en el panel: el mensaje lo pinta SweetAlert2 desde app.js. ?>
 <?php if ($flash): ?>
 <div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>
