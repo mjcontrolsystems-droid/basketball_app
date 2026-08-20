@@ -43,6 +43,13 @@ const CALENDARIO_DIAS = [
 const CALENDARIO_MAX_SALTOS = 52;
 
 /**
+ * Cuántos órdenes distintos se prueban al armar cada jornada, buscando que juegue la mayor
+ * cantidad posible de equipos. Se corta antes en cuanto se alcanza el máximo teórico, que
+ * es lo normal, así que el costo real es de uno o dos intentos por jornada.
+ */
+const CALENDARIO_INTENTOS_EMPAREJAR = 40;
+
+/**
  * Reparte el fixture en jornadas que llenen el cupo de cada fin de semana.
  *
  * @param array<int> $equipoIds
@@ -96,60 +103,116 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
         $rondas[$i] = $mt->shuffleArray($r);
     }
 
+    // Todos los cruces que quedan por programar, con la ronda de la que salieron. La ronda
+    // sirve como preferencia (se intenta respetar el orden del round-robin), no como regla.
+    $bolsa = [];
+    foreach ($rondas as $i => $ronda) {
+        foreach ($ronda as $cruce) {
+            $bolsa[] = ['ronda' => $i, 'cruce' => $cruce];
+        }
+    }
+
     $jornadas = [];
-    $totalRondas = count($rondas);
 
-    while (true) {
-        $vecesPorEquipo = [];
-        $principal = [];
+    while (!empty($bolsa)) {
+        // --- Fase 1: que juegue la MAYOR cantidad posible de equipos, sin repetir ---
+        //
+        // Antes esto recorría las rondas en orden y tomaba lo que cupiera. Funcionaba
+        // mientras cada ronda fuera un emparejamiento perfecto (cubre a todos los equipos
+        // exactamente una vez), que es como sale del round-robin. Pero en cuanto se le
+        // quitan cruces — porque ya estaban programados a mano, o porque se los llevó un
+        // adelantado — la ronda deja de cubrir a todos, el llenado sigue con la ronda
+        // siguiente y algunos equipos se quedaban SIN JUGAR esa jornada mientras otros
+        // jugaban dos veces. Pasaba de verdad: 6 de 13 jornadas quedaban así.
+        //
+        // Ahora se busca el emparejamiento más grande posible. No hay una fórmula simple
+        // para el óptimo exacto en un grafo cualquiera, así que se prueban varios órdenes
+        // al azar y se guarda el mejor; en cuanto se alcanza el máximo teórico se corta.
+        // El primer intento respeta el orden de las rondas, así que cuando el fixture está
+        // intacto sale el mismo resultado de siempre a la primera.
+        $disponibles = [];
+        foreach ($bolsa as $item) {
+            $disponibles[$item['cruce'][0]] = true;
+            $disponibles[$item['cruce'][1]] = true;
+        }
+        $tope = min($cupoPorJornada, intdiv(count($disponibles), 2));
 
-        // --- Fase 1: llenar la jornada sin que nadie repita ---
-        // Se toma de las rondas en orden. Como cada ronda cubre a todos los equipos, en
-        // cuanto se agota la primera ya nadie tiene el cupo libre y la fase se detiene
-        // sola. Si el cupo del fin de semana es MENOR que una ronda, la ronda queda a
-        // medias y su resto abre la jornada siguiente: ahí simplemente descansan los
-        // equipos que no cupieron, que es lo que pasa en una liga con pocas canchas.
-        for ($i = 0; $i < $totalRondas && count($principal) < $cupoPorJornada; $i++) {
-            foreach ($rondas[$i] as $pos => $cruce) {
-                if (count($principal) >= $cupoPorJornada) {
+        $mejor = [];
+        for ($intento = 0; $intento < CALENDARIO_INTENTOS_EMPAREJAR; $intento++) {
+            if ($intento === 0) {
+                // Orden natural: primero las rondas más tempranas.
+                $orden = $bolsa;
+                usort($orden, fn($a, $b) => $a['ronda'] <=> $b['ronda']);
+            } else {
+                $orden = $mt->shuffleArray($bolsa);
+            }
+
+            $usados = [];
+            $seleccion = [];
+            foreach ($orden as $item) {
+                if (count($seleccion) >= $tope) {
                     break;
                 }
-                if (($vecesPorEquipo[$cruce[0]] ?? 0) !== 0 || ($vecesPorEquipo[$cruce[1]] ?? 0) !== 0) {
+                [$a, $b] = $item['cruce'];
+                if (isset($usados[$a]) || isset($usados[$b])) {
                     continue;
                 }
-                $principal[] = $cruce;
-                $vecesPorEquipo[$cruce[0]] = 1;
-                $vecesPorEquipo[$cruce[1]] = 1;
-                unset($rondas[$i][$pos]);
+                $seleccion[] = $item;
+                $usados[$a] = true;
+                $usados[$b] = true;
             }
-            $rondas[$i] = array_values($rondas[$i]);
+
+            if (count($seleccion) > count($mejor)) {
+                $mejor = $seleccion;
+            }
+            if (count($mejor) >= $tope) {
+                break;
+            }
         }
+
+        $principal = $mejor;
+        $vecesPorEquipo = [];
+        foreach ($principal as $item) {
+            $vecesPorEquipo[$item['cruce'][0]] = 1;
+            $vecesPorEquipo[$item['cruce'][1]] = 1;
+        }
+
+        // Lo que no entró en la fase 1.
+        $clavesUsadas = [];
+        foreach ($principal as $item) {
+            $clavesUsadas[$item['ronda'] . ':' . $item['cruce'][0] . '-' . $item['cruce'][1]] = true;
+        }
+        $resto = array_values(array_filter($bolsa, fn($x) => !isset($clavesUsadas[$x['ronda'] . ':' . $x['cruce'][0] . '-' . $x['cruce'][1]])));
 
         // --- Fase 2: los adelantados ---
         // Los cupos que sobran se llenan con cruces de las ÚLTIMAS rondas. Solo sirve uno
         // cuyos DOS equipos jueguen exactamente una vez hoy: si alguno ya va dos veces, un
         // tercer partido en el mismo fin de semana es abuso; si va cero es que descansa.
+        usort($resto, fn($a, $b) => $b['ronda'] <=> $a['ronda']);
         $adelantados = [];
-        for ($i = $totalRondas - 1; $i >= 0 && count($principal) + count($adelantados) < $cupoPorJornada; $i--) {
-            foreach ($rondas[$i] as $pos => $cruce) {
-                if (count($principal) + count($adelantados) >= $cupoPorJornada) {
-                    break;
-                }
-                if (($vecesPorEquipo[$cruce[0]] ?? 0) !== 1 || ($vecesPorEquipo[$cruce[1]] ?? 0) !== 1) {
-                    continue;
-                }
-                $adelantados[] = $cruce;
-                $vecesPorEquipo[$cruce[0]] = 2;
-                $vecesPorEquipo[$cruce[1]] = 2;
-                unset($rondas[$i][$pos]);
+        foreach ($resto as $k => $item) {
+            if (count($principal) + count($adelantados) >= $cupoPorJornada) {
+                break;
             }
-            $rondas[$i] = array_values($rondas[$i]);
+            [$a, $b] = $item['cruce'];
+            if (($vecesPorEquipo[$a] ?? 0) !== 1 || ($vecesPorEquipo[$b] ?? 0) !== 1) {
+                continue;
+            }
+            $adelantados[] = $item;
+            $vecesPorEquipo[$a] = 2;
+            $vecesPorEquipo[$b] = 2;
+            unset($resto[$k]);
         }
+
+        $bolsa = array_values($resto);
 
         if (empty($principal) && empty($adelantados)) {
             break; // ya no queda nada por programar
         }
-        $jornadas[] = ['principal' => $principal, 'adelantados' => $adelantados];
+        $jornadas[] = [
+            'principal' => array_map(fn($x) => $x['cruce'], $principal),
+            'adelantados' => array_map(fn($x) => $x['cruce'], $adelantados),
+        ];
     }
 
     return $jornadas;
