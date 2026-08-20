@@ -283,6 +283,28 @@ function importacion_detectar(array $filas): array
 
     // Un dorsal detectado por encabezado pero que en realidad trae DPIs se descarta: el
     // encabezado miente más seguido que los datos.
+    // Un dorsal detectado por encabezado que en realidad numera las filas (1, 2, 3...) se
+    // suelta para que lo reclame la columna de verdad. Pasa con las listas que empiezan
+    // con una columna "#": el encabezado calza con dorsal, pero el dato es el correlativo
+    // y la columna "DORSAL" de más a la derecha se quedaba sin usar.
+    if ($mapa['dorsal'] !== null && ($perfil[$mapa['dorsal']]['es_correlativo'] ?? false)) {
+        $motivos[] = 'La columna "' . $encabezados[$mapa['dorsal']] . '" solo numera las filas (1, 2, 3...), así que no se usó como dorsal.';
+        $ignoradas[$mapa['dorsal']] = $encabezados[$mapa['dorsal']];
+        $mapa['dorsal'] = null;
+
+        // Se vuelve a intentar por encabezado, ahora sin la columna descartada.
+        foreach ($encabezados as $col => $titulo) {
+            if (isset($ignoradas[$col]) || in_array($col, $mapa, true)) {
+                continue;
+            }
+            if (in_array(importacion_normalizar((string) $titulo), IMPORTACION_PISTAS['dorsal'], true)) {
+                $mapa['dorsal'] = $col;
+                $motivos[] = "\"{$titulo}\" se usará como dorsal.";
+                break;
+            }
+        }
+    }
+
     if ($mapa['dorsal'] !== null && ($perfil[$mapa['dorsal']]['parece_dpi'] ?? false)) {
         $motivos[] = 'La columna "' . $encabezados[$mapa['dorsal']] . '" trae números de 13 dígitos (parecen DPI), así que no se usó como dorsal.';
         $ignoradas[$mapa['dorsal']] = $encabezados[$mapa['dorsal']];
@@ -374,6 +396,7 @@ function importacion_perfil_columna(array $datos, int $col): array
     $total = count($muestra);
 
     return [
+        'es_correlativo' => importacion_es_correlativo($muestra),
         'parece_dorsal' => $dorsales / $total >= 0.7 && !importacion_es_correlativo($muestra),
         'parece_dpi' => $dpis / $total >= 0.5,
         'parece_nombre' => $textos / $total >= 0.7,
