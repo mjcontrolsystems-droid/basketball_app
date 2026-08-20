@@ -131,6 +131,27 @@
         <a href="<?= url('admin/equipos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nuevo equipo</a>
     </div>
 
+    <?php // ---------- Crear varios de una vez ----------
+          // Una liga de ex alumnos son 16 promociones: cargarlas una por una son 16
+          // vueltas por el formulario completo. Aquí se pegan los nombres y ya. ?>
+    <div class="card-suave p-4 mb-4">
+        <h5 class="mb-1"><i class="bi bi-list-ul me-1"></i>Crear varios equipos de una vez</h5>
+        <p class="small text-muted">
+            Pega un nombre por línea. Se crean con colores distintos entre sí y sin plantilla;
+            el escudo, el color y los jugadores se los cargas después a cada uno.
+        </p>
+        <form method="post" data-confirm="Se van a crear los equipos de la lista, con colores automáticos. ¿Continuamos?">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="crear_varios">
+            <textarea name="nombres" class="form-control mb-2" rows="5" required
+                      placeholder="Promoción 30&#10;Promoción 36&#10;Promoción 37&#10;Promoción 40"></textarea>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="small text-muted">Los nombres que ya existan se omiten, y si pegas una lista numerada el número se quita solo.</span>
+                <button type="submit" class="btn btn-degradado rounded-pill px-4"><i class="bi bi-plus-lg me-1"></i>Crear equipos</button>
+            </div>
+        </form>
+    </div>
+
     <?php // ---------- Fase de grupos ----------
           // Solo aparece si la competencia usa el formato de grupos. Junta en una sola
           // pantalla el sorteo, las cabezas de serie y la corrección a mano, porque son

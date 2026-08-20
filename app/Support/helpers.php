@@ -473,6 +473,59 @@ function obtener_flash(): ?array
 }
 
 /**
+ * Par de colores para un equipo, repartidos por el círculo cromático.
+ *
+ * No son aleatorios de verdad a propósito: con azar puro, en una liga de 16 equipos
+ * salen dos o tres casi del mismo color y en la tabla no se distinguen. Se reparten los
+ * tonos con el ángulo áureo (137.5°), que va llenando el círculo dejando la mayor
+ * separación posible entre uno y el siguiente, sin importar cuántos sean.
+ *
+ * La saturación y la luminosidad se dejan fijas en un rango que se ve bien sobre fondo
+ * claro y sobre fondo oscuro, para que el escudo automático sea legible en los dos.
+ *
+ * @param int $indice Posición del equipo en la tanda (0, 1, 2...).
+ * @return array{primario: string, secundario: string}
+ */
+function colores_para_equipo(int $indice): array
+{
+    $tono = fmod($indice * 137.508, 360.0);
+
+    // Con 16 equipos el ángulo áureo deja dos tonos a solo 12° de distancia, que a simple
+    // vista se parecen. Por eso además se alterna la luminosidad en un ciclo de tres: los
+    // pares que quedan cerca de tono terminan cayendo en luminosidades distintas, así que
+    // igual se diferencian. Es más barato que buscar el reparto perfecto.
+    $luminosidad = [0.46, 0.36, 0.56][$indice % 3];
+
+    return [
+        'primario' => color_hsl_a_hex($tono, 0.62, $luminosidad),
+        // El secundario va a 35° del primario: se nota distinto sin pelearse con él.
+        'secundario' => color_hsl_a_hex(fmod($tono + 35.0, 360.0), 0.70, min(0.68, $luminosidad + 0.14)),
+    ];
+}
+
+function color_hsl_a_hex(float $h, float $s, float $l): string
+{
+    $c = (1 - abs(2 * $l - 1)) * $s;
+    $x = $c * (1 - abs(fmod($h / 60.0, 2.0) - 1));
+    $m = $l - $c / 2;
+
+    [$r, $g, $b] = match (true) {
+        $h < 60 => [$c, $x, 0.0],
+        $h < 120 => [$x, $c, 0.0],
+        $h < 180 => [0.0, $c, $x],
+        $h < 240 => [0.0, $x, $c],
+        $h < 300 => [$x, 0.0, $c],
+        default => [$c, 0.0, $x],
+    };
+
+    return sprintf('#%02x%02x%02x',
+        (int) round(($r + $m) * 255),
+        (int) round(($g + $m) * 255),
+        (int) round(($b + $m) * 255)
+    );
+}
+
+/**
  * Enlace de WhatsApp a partir de lo que el organizador haya escrito.
  *
  * Se acepta tanto un número suelto ("5512 3456", "502 5512 3456") como un enlace ya armado

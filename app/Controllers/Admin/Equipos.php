@@ -49,6 +49,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje(url('admin/equipos.php'), 'success', 'Grupos sorteados. Revisa el reparto y vuelve a sortear si no te convence.');
     }
 
+    // Crear varios equipos de un solo envío, pegando la lista de nombres.
+    //
+    // Una liga de ex alumnos son 16 promociones: cargarlas una por una son 16 vueltas por
+    // el formulario completo. Aquí se pegan los nombres y listo; el color, el escudo y la
+    // plantilla se ajustan después equipo por equipo.
+    if (($_POST['accion'] ?? '') === 'crear_varios') {
+        $lineas = preg_split('/\r\n|\r|\n/', (string) ($_POST['nombres'] ?? '')) ?: [];
+
+        // Los nombres que ya existen no se duplican. La comparación ignora mayúsculas,
+        // espacios de más Y TILDES: "Promoción 45" y "promocion 45" son el mismo equipo, y
+        // sin lo de las tildes se colaban los dos. Se reutiliza el normalizador de la
+        // importación, que ya hace exactamente eso.
+        $claveNombre = fn(string $n): string => importacion_normalizar(preg_replace('/\s+/', ' ', trim($n)));
+
+        $existentes = [];
+        foreach ($equipos as $eq) {
+            $existentes[$claveNombre((string) $eq['nombre'])] = true;
+        }
+
+        $nuevos = [];
+        $repetidos = [];
+        foreach ($lineas as $linea) {
+            // Se limpia una numeración pegada al inicio ("1. Promoción 45"), que es como
+            // suele venir cuando se copia de una lista de WhatsApp.
+            $nombre = trim(preg_replace('/^\s*\d{1,3}\s*[\.\)\-]\s*/', '', (string) $linea));
+            if ($nombre === '') {
+                continue;
+            }
+            $clave = $claveNombre($nombre);
+            if (isset($existentes[$clave])) {
+                $repetidos[] = $nombre;
+                continue;
+            }
+            $existentes[$clave] = true;
+            $nuevos[] = mb_substr($nombre, 0, 120);
+        }
+
+        if (empty($nuevos)) {
+            $detalle = $repetidos ? ' Ya existen: ' . implode(', ', array_slice($repetidos, 0, 5)) . '.' : '';
+            redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'No hay ningún equipo nuevo en esa lista.' . $detalle);
+        }
+
+        // Los colores arrancan donde terminaron los equipos que ya estaban, para que los
+        // nuevos no repitan el tono de los anteriores.
+        $desplazamiento = count($equipos);
+        foreach ($nuevos as $i => $nombre) {
+            $colores = colores_para_equipo($desplazamiento + $i);
+            $equipos[] = [
+                'id' => equipo_nuevo_id(),
+                'nombre' => $nombre,
+                'ciudad' => '',
+                'sede' => '',
+                'entrenador' => '',
+                'fundacion' => '',
+                'color_primario' => $colores['primario'],
+                'color_secundario' => $colores['secundario'],
+                'descripcion' => '',
+                'logo' => '',
+                'grupo' => '',
+                'cabeza_serie' => false,
+            ];
+        }
+
+        equipos_guardar_todos($equipos, $torneo['id']);
+        bitacora_registrar('equipos_creados_en_lote', count($nuevos) . ' equipos creados de una lista', $torneo['id']);
+
+        $aviso = count($nuevos) . ' equipos creados con colores distintos entre sí. Ya puedes cargarles la plantilla y el escudo.';
+        if (!empty($repetidos)) {
+            $aviso .= ' Se omitieron ' . count($repetidos) . ' que ya existían.';
+        }
+        redirigir_con_mensaje(url('admin/equipos.php'), 'success', $aviso);
+    }
+
     // Corrección a mano del grupo y de las cabezas de serie, todo de un envío.
     if (($_POST['accion'] ?? '') === 'guardar_grupos') {
         $gruposEnviados = (array) ($_POST['grupo'] ?? []);
