@@ -142,6 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'fecha_fin' => (string) $_POST['fecha_fin'],
             'formato' => trim((string) $_POST['formato']),
             'instagram' => trim((string) $_POST['instagram']),
+            'facebook' => trim((string) ($_POST['facebook'] ?? '')),
+            'tiktok' => trim((string) ($_POST['tiktok'] ?? '')),
+            // WhatsApp se guarda tal como lo escribió el organizador (número o enlace) y
+            // se convierte a enlace al mostrarlo, con url_whatsapp().
+            'whatsapp' => trim((string) ($_POST['whatsapp'] ?? '')),
             'hero_frase' => trim((string) $_POST['hero_frase']),
             'deporte' => $deporte,
             'genero' => $genero,

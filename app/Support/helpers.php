@@ -473,6 +473,78 @@ function obtener_flash(): ?array
 }
 
 /**
+ * Enlace de WhatsApp a partir de lo que el organizador haya escrito.
+ *
+ * Se acepta tanto un número suelto ("5512 3456", "502 5512 3456") como un enlace ya armado
+ * de wa.me o de chat.whatsapp.com (los grupos), porque cada quien copia lo que tiene a
+ * mano. Un número de 8 dígitos se asume de Guatemala y se le antepone el 502: es el caso
+ * normal aquí y ahorra explicar qué es un código de país.
+ *
+ * Devuelve la URL SIN escapar: quien la imprima tiene que pasarla por e(). Se hace así
+ * para no mezclar con url_externa_segura(), que sí devuelve escapado.
+ *
+ * @return string Vacío si no hay nada usable.
+ */
+function url_whatsapp(?string $valor): string
+{
+    $valor = trim((string) $valor);
+    if ($valor === '') {
+        return '';
+    }
+
+    // Un enlace de invitación a grupo o un wa.me ya armado se respeta tal cual.
+    if (preg_match('#^https?://#i', $valor)) {
+        return $valor;
+    }
+
+    $digitos = preg_replace('/\D/', '', $valor);
+    if ($digitos === '' || mb_strlen($digitos) < 8) {
+        return '';
+    }
+    if (mb_strlen($digitos) === 8) {
+        $digitos = '502' . $digitos;
+    }
+
+    return 'https://wa.me/' . $digitos;
+}
+
+/**
+ * Redes de la copa que tienen algo cargado, listas para pintar en el pie del sitio.
+ *
+ * @return array<int, array{url:string, icono:string, texto:string}>
+ */
+function redes_del_torneo(array $torneo): array
+{
+    $redes = [];
+    foreach ([
+        ['clave' => 'instagram', 'icono' => 'bi-instagram', 'texto' => 'Instagram'],
+        ['clave' => 'facebook', 'icono' => 'bi-facebook', 'texto' => 'Facebook'],
+        ['clave' => 'tiktok', 'icono' => 'bi-tiktok', 'texto' => 'TikTok'],
+    ] as $red) {
+        $valor = trim((string) ($torneo[$red['clave']] ?? ''));
+        if ($valor === '') {
+            continue;
+        }
+        // url_externa_segura() devuelve '#' cuando el enlace no es http(s) — por ejemplo
+        // un javascript: — y ya viene escapado.
+        $url = url_externa_segura($valor);
+        if ($url === '#') {
+            continue;
+        }
+        $redes[] = ['url' => $url, 'icono' => $red['icono'], 'texto' => $red['texto']];
+    }
+
+    $wa = url_whatsapp($torneo['whatsapp'] ?? null);
+    if ($wa !== '') {
+        // url_whatsapp() devuelve la URL cruda, así que aquí se escapa para dejar toda la
+        // lista en el mismo estado: lista para imprimir sin volver a escapar.
+        $redes[] = ['url' => url_externa_segura($wa), 'icono' => 'bi-whatsapp', 'texto' => 'WhatsApp'];
+    }
+
+    return $redes;
+}
+
+/**
  * Botón "X" para quitar un archivo ya subido, con su campo oculto y el enlace de deshacer.
  *
  * Va DENTRO de la miniatura (.vista-previa-item), encima de la imagen. Sustituye a la

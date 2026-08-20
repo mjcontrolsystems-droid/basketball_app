@@ -23,6 +23,7 @@ const COLUMNAS_TORNEO = [
     'reglamento', 'reglamento_nombre',
     'amarillas_para_suspension', 'partidos_suspension_amarillas',
     'num_grupos', 'clasifican_por_grupo', 'podio_publicado',
+    'facebook', 'tiktok', 'whatsapp',
 ];
 
 /**

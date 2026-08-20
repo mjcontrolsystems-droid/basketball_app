@@ -282,9 +282,32 @@
                 <label class="form-label small fw-semibold">Sede principal</label>
                 <input type="text" name="sede_principal" class="form-control" placeholder="Ej. Polideportivo Municipal, Ciudad Capital" value="<?= e($torneoEditar['sede_principal'] ?? '') ?>">
             </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold">Instagram (opcional)</label>
-                <input type="url" name="instagram" class="form-control" placeholder="https://instagram.com/tu_copa" value="<?= e($torneoEditar['instagram'] ?? '') ?>">
+            <?php // Redes de la copa. Todas opcionales: las que se dejen vacías no
+                  // aparecen en el sitio público. El grupo de WhatsApp suele ser el canal
+                  // real con los delegados, por eso está junto a las demás. ?>
+            <div class="col-12">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-share me-1"></i>Redes de la copa (opcionales)</label>
+                <p class="form-text mt-0 mb-2">Solo aparecen en el sitio público las que llenes.</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1" for="redInstagram"><i class="bi bi-instagram me-1"></i>Instagram</label>
+                        <input type="url" name="instagram" id="redInstagram" class="form-control" placeholder="https://instagram.com/tu_copa" value="<?= e($torneoEditar['instagram'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1" for="redFacebook"><i class="bi bi-facebook me-1"></i>Facebook</label>
+                        <input type="url" name="facebook" id="redFacebook" class="form-control" placeholder="https://facebook.com/tu_copa" value="<?= e($torneoEditar['facebook'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1" for="redTiktok"><i class="bi bi-tiktok me-1"></i>TikTok</label>
+                        <input type="url" name="tiktok" id="redTiktok" class="form-control" placeholder="https://tiktok.com/@tu_copa" value="<?= e($torneoEditar['tiktok'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1" for="redWhatsapp"><i class="bi bi-whatsapp me-1"></i>WhatsApp</label>
+                        <?php // No es type="url" a propósito: aquí se acepta un número suelto. ?>
+                        <input type="text" name="whatsapp" id="redWhatsapp" class="form-control" placeholder="5512 3456 o el enlace del grupo" value="<?= e($torneoEditar['whatsapp'] ?? '') ?>">
+                        <div class="form-text">Puedes poner el número tal cual o pegar el enlace de invitación al grupo. Si son 8 dígitos se asume Guatemala.</div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label small fw-semibold">Color primario</label>

@@ -388,6 +388,12 @@ function db_migrar_automatico(): void
         // recalcula en vivo, así que corregir el marcador de la final cambia al campeón.
         $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS podio_publicado BOOLEAN NOT NULL DEFAULT FALSE');
 
+        // Redes de la copa. Instagram ya existía; el resto son las que de verdad usan las
+        // ligas aquí — el grupo de WhatsApp suele ser el canal principal con los delegados.
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS facebook TEXT NOT NULL DEFAULT ''");
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS tiktok TEXT NOT NULL DEFAULT ''");
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS whatsapp TEXT NOT NULL DEFAULT ''");
+
         // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
         // clave por cada cambio del archivo a lo largo de la vida del proyecto.
         foreach (array_keys($_SESSION) as $k) {

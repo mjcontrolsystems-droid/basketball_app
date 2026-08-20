@@ -9,8 +9,18 @@
                 </div>
                 <?php if ($torneo): ?>
                 <p class="small mb-3"><?= e($torneo['descripcion']) ?></p>
-                <?php if (!empty($torneo['instagram'])): ?>
-                <a href="<?= url_externa_segura($torneo['instagram']) ?>" target="_blank" rel="noopener" class="small"><i class="bi bi-instagram me-1"></i>Síguenos en Instagram</a>
+                <?php // Solo se pintan las redes que el organizador llenó: un pie con
+                      // iconos que no llevan a ningún lado se ve peor que no tenerlos. ?>
+                <?php $redesCopa = redes_del_torneo($torneo); ?>
+                <?php if (!empty($redesCopa)): ?>
+                <div class="d-flex flex-wrap gap-3">
+                    <?php foreach ($redesCopa as $red): ?>
+                    <?php // La URL ya viene escapada desde redes_del_torneo(). ?>
+                    <a href="<?= $red['url'] ?>" target="_blank" rel="noopener" class="small text-decoration-none" title="<?= e($red['texto']) ?>">
+                        <i class="bi <?= e($red['icono']) ?> me-1"></i><?= e($red['texto']) ?>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
                 <?php endif; ?>
                 <?php else: ?>
                 <p class="small mb-0">Un solo panel para administrar todas tus copas y ligas.</p>
