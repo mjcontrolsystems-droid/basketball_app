@@ -33,6 +33,59 @@
         </div>
         <?php endif; ?>
 
+        <?php // Corrección de columnas. Es la salida cuando la detección se equivoca: sin
+              // esto habría que reescribir los doce nombres a mano, o volver a armar el
+              // Excel. Se re-lee el mismo archivo, que quedó guardado en la sesión. ?>
+        <form method="post" class="border rounded-4 p-3 mb-3">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="importar_remapear">
+            <input type="hidden" name="equipo_id" value="<?= (int) $equipoId ?>">
+            <div class="small fw-semibold mb-2"><i class="bi bi-sliders me-1"></i>¿Tomó mal alguna columna? Corrígela aquí</div>
+            <div class="row g-2">
+                <?php foreach ([
+                    'nombre' => 'Nombre',
+                    'apellido' => 'Apellido (si viene aparte)',
+                    'dorsal' => 'Dorsal',
+                    'posicion' => 'Posición',
+                ] as $campo => $etiqueta): ?>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label small text-muted mb-1" for="col_<?= e($campo) ?>"><?= e($etiqueta) ?></label>
+                    <select name="col_<?= e($campo) ?>" id="col_<?= e($campo) ?>" class="form-select form-select-sm">
+                        <option value="">— ninguna —</option>
+                        <?php foreach ($previaImport['columnas'] as $indice => $columna): ?>
+                        <option value="<?= (int) $indice ?>" <?= ($previaImport['mapa'][$campo] ?? null) === $indice ? 'selected' : '' ?>>
+                            <?= e($columna['etiqueta']) ?><?= $columna['muestra'] !== '' ? ' (' . e($columna['muestra']) . ')' : '' ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endforeach; ?>
+                <?php // Poder decir "no tiene encabezado" no es un detalle: en las listas
+                      // escritas a mano la primera fila ya es un jugador, y tratarla como
+                      // encabezado lo dejaría fuera de la importación sin avisar. ?>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label small text-muted mb-1" for="fila_encabezado">Encabezado</label>
+                    <select name="fila_encabezado" id="fila_encabezado" class="form-select form-select-sm">
+                        <option value="-1" <?= (int) $previaImport['fila_encabezado'] === -1 ? 'selected' : '' ?>>No tiene encabezado</option>
+                        <?php for ($f = 0; $f < 10; $f++): ?>
+                        <option value="<?= $f ?>" <?= (int) $previaImport['fila_encabezado'] === $f ? 'selected' : '' ?>>Fila <?= $f + 1 ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3 w-100"><i class="bi bi-arrow-repeat me-1"></i>Volver a leer</button>
+                </div>
+            </div>
+        </form>
+
+        <?php if (empty($previaImport['jugadores'])): ?>
+        <div class="alert alert-danger rounded-4 border-0 small">
+            <i class="bi bi-exclamation-octagon-fill me-1"></i>
+            Con estas columnas no sale ningún <?= e(mb_strtolower($etJugador)) ?> nuevo. Elige arriba cuál es la columna
+            del nombre y vuelve a leer.
+        </div>
+        <?php endif; ?>
+
         <?php if (!empty($previaImport['omitidos'])): ?>
         <div class="alert alert-warning rounded-4 border-0 small">
             <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Filas que no entran</div>

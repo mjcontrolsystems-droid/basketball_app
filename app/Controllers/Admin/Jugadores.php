@@ -50,20 +50,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $deteccion = importacion_detectar($filas);
-        $propuesta = importacion_preparar_jugadores($filas, $deteccion['fila_encabezado'], $deteccion['mapa'], $jugadores);
 
-        if (empty($propuesta['jugadores'])) {
-            $detalle = $propuesta['omitidos'] ? ' ' . implode(' ', array_slice($propuesta['omitidos'], 0, 3)) : '';
-            redirigir_con_mensaje($urlLista, 'error', 'No se encontró ningún ' . mb_strtolower($etJugador) . ' nuevo en el archivo.' . $detalle);
+        // Las filas quedan en la sesión para poder RE-LEER el archivo con otras columnas
+        // si la detección se equivocó, sin obligar a subirlo de nuevo. Sin esto, corregir
+        // una columna mal elegida significaría reescribir a mano los doce nombres.
+        $_SESSION['importacion_jugadores'] = [
+            'equipo_id' => $equipoId,
+            'archivo' => (string) $_FILES['archivo']['name'],
+            'filas' => $filas,
+        ];
+
+        $previaImport = importacion_armar_previa($filas, $deteccion['fila_encabezado'], $deteccion['mapa'], $jugadores, (string) $_FILES['archivo']['name'], $deteccion['motivos']);
+        $accion = 'importar';
+    }
+
+    // Re-leer el mismo archivo con las columnas que eligió el organizador.
+    if (($_POST['accion'] ?? '') === 'importar_remapear') {
+        $guardado = $_SESSION['importacion_jugadores'] ?? null;
+        if (!is_array($guardado) || (int) ($guardado['equipo_id'] ?? 0) !== $equipoId) {
+            redirigir_con_mensaje($urlLista, 'error', 'Se perdió el archivo que estabas importando. Vuelve a subirlo.');
         }
 
-        $previaImport = [
-            'archivo' => (string) $_FILES['archivo']['name'],
-            'encabezados' => $deteccion['encabezados'],
-            'motivos' => $deteccion['motivos'],
-            'jugadores' => $propuesta['jugadores'],
-            'omitidos' => $propuesta['omitidos'],
-        ];
+        $mapa = [];
+        foreach (['nombre', 'apellido', 'dorsal', 'posicion'] as $campo) {
+            $valor = $_POST['col_' . $campo] ?? '';
+            // Cadena vacía = "no usar esta columna". El 0 es una columna válida, así que
+            // se compara contra '' y no con empty().
+            $mapa[$campo] = $valor === '' ? null : (int) $valor;
+        }
+        // -1 significa "el archivo no trae encabezado": los datos empiezan en la fila 1.
+        $filaEncabezado = max(-1, (int) ($_POST['fila_encabezado'] ?? 0));
+
+        $previaImport = importacion_armar_previa($guardado['filas'], $filaEncabezado, $mapa, $jugadores, (string) $guardado['archivo'], ['Columnas elegidas por ti.']);
         $accion = 'importar';
     }
 
@@ -116,6 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         jugadores_guardar_todos($jugadoresTodos, $torneo['id']);
+        // El archivo ya cumplió: no tiene por qué seguir ocupando la sesión.
+        unset($_SESSION['importacion_jugadores']);
         bitacora_registrar('jugadores_importados', "{$creados} " . mb_strtolower($etJugadores) . " importados a {$equipo['nombre']}", $torneo['id']);
         redirigir_con_mensaje($urlLista, 'success', "Se importaron {$creados} " . mb_strtolower($etJugadores) . " a {$equipo['nombre']}.");
     }

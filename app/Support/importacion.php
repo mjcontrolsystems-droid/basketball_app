@@ -426,6 +426,15 @@ function importacion_preparar_jugadores(array $filas, int $filaEncabezado, array
             $dorsal = (string) (int) (float) $dorsal;
         }
 
+        // Listas escritas a mano en una sola columna: "10 Mario Estrada", "7.- Carlos".
+        // Si no hay columna de dorsal, el número pegado adelante ES el dorsal, y dejarlo
+        // dentro del nombre haría que el jugador se llamara "10 Mario Estrada".
+        // Los separadores se aceptan de a varios: la gente escribe "7.-", "9 -", "10)".
+        if ($dorsal === '' && preg_match('/^\s*(\d{1,2})\s*[\.\-–)]*\s+(\p{L}.*)$/u', $nombre, $m)) {
+            $dorsal = $m[1];
+            $nombre = trim($m[2]);
+        }
+
         if ($nombre === '' && $dorsal === '') {
             continue; // fila vacía, ni se menciona
         }
@@ -463,6 +472,61 @@ function importacion_preparar_jugadores(array $filas, int $filaEncabezado, array
     }
 
     return ['jugadores' => $jugadores, 'omitidos' => $omitidos];
+}
+
+/**
+ * Arma todo lo que la vista previa necesita mostrar.
+ *
+ * Se usa tanto en la primera lectura (con las columnas detectadas) como al re-leer con las
+ * columnas que eligió el organizador, para que las dos pasen exactamente por el mismo
+ * camino y la previa no pueda mentir sobre lo que se va a crear.
+ *
+ * A diferencia del primer intento, aquí NO se corta con un error cuando no sale ningún
+ * jugador: se devuelve la previa igual, con los selectores de columna, que es justo lo que
+ * el organizador necesita para arreglarlo.
+ *
+ * @return array{archivo:string, encabezados:array, columnas:array, mapa:array, fila_encabezado:int, motivos:array, jugadores:array, omitidos:array}
+ */
+function importacion_armar_previa(array $filas, int $filaEncabezado, array $mapa, array $jugadoresActuales, string $archivo, array $motivos = []): array
+{
+    $propuesta = importacion_preparar_jugadores($filas, $filaEncabezado, $mapa, $jugadoresActuales);
+    $encabezados = array_map('strval', $filas[$filaEncabezado] ?? []);
+
+    // Cuántas columnas tiene el archivo de verdad: la fila de encabezado puede ser más
+    // corta que las de datos, y entonces faltarían opciones en los selectores.
+    $anchoMaximo = 0;
+    foreach ($filas as $fila) {
+        $anchoMaximo = max($anchoMaximo, count($fila));
+    }
+
+    // Cada columna con su nombre y una muestra del contenido, para que el organizador
+    // reconozca cuál es cuál aunque el encabezado no diga nada útil.
+    $columnas = [];
+    for ($c = 0; $c < $anchoMaximo; $c++) {
+        $muestra = [];
+        foreach (array_slice($filas, $filaEncabezado + 1, 3) as $fila) {
+            $v = trim((string) ($fila[$c] ?? ''));
+            if ($v !== '') {
+                $muestra[] = mb_substr($v, 0, 22);
+            }
+        }
+        $titulo = trim((string) ($encabezados[$c] ?? ''));
+        $columnas[$c] = [
+            'etiqueta' => importacion_letra_columna($c) . ($titulo !== '' ? ' · ' . $titulo : ''),
+            'muestra' => implode(', ', $muestra),
+        ];
+    }
+
+    return [
+        'archivo' => $archivo,
+        'encabezados' => $encabezados,
+        'columnas' => $columnas,
+        'mapa' => $mapa,
+        'fila_encabezado' => $filaEncabezado,
+        'motivos' => $motivos,
+        'jugadores' => $propuesta['jugadores'],
+        'omitidos' => $propuesta['omitidos'],
+    ];
 }
 
 /**
