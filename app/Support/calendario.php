@@ -58,7 +58,93 @@ const CALENDARIO_INTENTOS_EMPAREJAR = 40;
  * @param int|null $semilla Para el sorteo de los adelantados. null = aleatorio de verdad.
  * @return array<int, array{principal: array, adelantados: array}>
  */
+/** Cuántos planes distintos se prueban antes de quedarse con el mejor. */
+const CALENDARIO_PLANES_A_PROBAR = 6;
+
+/**
+ * Arma el plan de jornadas y se queda con el más justo de varios intentos.
+ *
+ * Repartir bien es un tira y afloja: forzar que todos doblen la misma cantidad de veces
+ * puede dejar un residuo feo al final y costar un fin de semana extra — que es justo lo
+ * que no sobra cuando hay fecha de cierre. Así que en vez de imponer un criterio se
+ * arman varios planes (con y sin equilibrio de dobletes, con distintos sorteos) y se
+ * elige por orden: menos jornadas, menos equipos sin jugar, y carga más pareja.
+ *
+ * @param array<int> $equipoIds
+ * @param array<int, array{0:int, 1:int}> $yaProgramados Cruces que no hay que volver a crear.
+ */
 function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = []): array
+{
+    $mejor = null;
+    $mejorPunt = null;
+
+    foreach ([true, false] as $balancear) {
+        for ($i = 0; $i < CALENDARIO_PLANES_A_PROBAR; $i++) {
+            $plan = calendario_plan_intento(
+                $equipoIds,
+                $vueltas,
+                $cupoPorJornada,
+                $semilla === null ? null : $semilla + $i,
+                $rondasPrearmadas,
+                $yaProgramados,
+                $balancear
+            );
+            if (empty($plan)) {
+                continue;
+            }
+
+            $punt = calendario_puntuar_plan($plan, $equipoIds);
+            if ($mejorPunt === null || $punt < $mejorPunt) {
+                $mejorPunt = $punt;
+                $mejor = $plan;
+            }
+        }
+    }
+
+    return $mejor ?? [];
+}
+
+/**
+ * Puntúa un plan. Menor es mejor; se compara como cadena ordenable por eso los ceros.
+ *
+ * Orden de importancia:
+ *   1. Cantidad de jornadas — cada una es un fin de semana más, y suele haber fecha tope.
+ *   2. Equipos que se quedan sin jugar una jornada mientras otros juegan.
+ *   3. Diferencia entre el que más veces dobla y el que menos.
+ *   4. El máximo de dobletes que carga un solo equipo.
+ */
+function calendario_puntuar_plan(array $plan, array $equipoIds): string
+{
+    $dobles = array_fill_keys(array_map('intval', $equipoIds), 0);
+    $huecos = 0;
+
+    foreach ($plan as $jornada) {
+        $juegan = [];
+        foreach ($jornada['principal'] as [$a, $b]) {
+            $juegan[(int) $a] = true;
+            $juegan[(int) $b] = true;
+        }
+        foreach ($jornada['adelantados'] as [$a, $b]) {
+            $juegan[(int) $a] = true;
+            $juegan[(int) $b] = true;
+            if (isset($dobles[(int) $a])) { $dobles[(int) $a]++; }
+            if (isset($dobles[(int) $b])) { $dobles[(int) $b]++; }
+        }
+        foreach ($equipoIds as $eq) {
+            if (!isset($juegan[(int) $eq])) {
+                $huecos++;
+            }
+        }
+    }
+
+    $valores = array_values($dobles);
+    $spread = $valores === [] ? 0 : max($valores) - min($valores);
+    $tope = $valores === [] ? 0 : max($valores);
+
+    return sprintf('%04d|%04d|%04d|%04d', count($plan), $huecos, $spread, $tope);
+}
+
+function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla, ?array $rondasPrearmadas, array $yaProgramados, bool $balancearDobles): array
 {
     // La fase de grupos manda sus propias rondas ya armadas (el todos contra todos de cada
     // grupo, mezclados para que una jornada tenga partidos de todos los grupos). El resto
@@ -113,6 +199,8 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
     }
 
     $jornadas = [];
+    // Cuántas veces le ha tocado a cada equipo jugar dos veces en un mismo fin de semana.
+    $dobles = [];
 
     while (!empty($bolsa)) {
         // --- Fase 1: que juegue la MAYOR cantidad posible de equipos, sin repetir ---
@@ -188,20 +276,38 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
         // Los cupos que sobran se llenan con cruces de las ÚLTIMAS rondas. Solo sirve uno
         // cuyos DOS equipos jueguen exactamente una vez hoy: si alguno ya va dos veces, un
         // tercer partido en el mismo fin de semana es abuso; si va cero es que descansa.
-        usort($resto, fn($a, $b) => $b['ronda'] <=> $a['ronda']);
+        //
+        // Entre los que califican se prefiere a quienes MENOS veces han doblado en la
+        // temporada. Antes solo mandaba la ronda, y con 16 equipos y 9 cupos hay 14
+        // adelantados para repartir entre 16 equipos: a unos les tocaba 3 veces y a otros
+        // 1. Doblar es inevitable, pero que siempre le toque al mismo no.
         $adelantados = [];
-        foreach ($resto as $k => $item) {
-            if (count($principal) + count($adelantados) >= $cupoPorJornada) {
+        while (count($principal) + count($adelantados) < $cupoPorJornada) {
+            $elegido = null;
+            $mejorPeso = null;
+            foreach ($resto as $k => $item) {
+                [$a, $b] = $item['cruce'];
+                if (($vecesPorEquipo[$a] ?? 0) !== 1 || ($vecesPorEquipo[$b] ?? 0) !== 1) {
+                    continue;
+                }
+                // Carga acumulada primero; a igualdad, la ronda más tardía (se roba del final).
+                $carga = $balancearDobles ? (($dobles[$a] ?? 0) + ($dobles[$b] ?? 0)) : 0;
+                $peso = $carga * 1000 - $item['ronda'];
+                if ($mejorPeso === null || $peso < $mejorPeso) {
+                    $mejorPeso = $peso;
+                    $elegido = $k;
+                }
+            }
+            if ($elegido === null) {
                 break;
             }
-            [$a, $b] = $item['cruce'];
-            if (($vecesPorEquipo[$a] ?? 0) !== 1 || ($vecesPorEquipo[$b] ?? 0) !== 1) {
-                continue;
-            }
-            $adelantados[] = $item;
+            [$a, $b] = $resto[$elegido]['cruce'];
+            $adelantados[] = $resto[$elegido];
             $vecesPorEquipo[$a] = 2;
             $vecesPorEquipo[$b] = 2;
-            unset($resto[$k]);
+            $dobles[$a] = ($dobles[$a] ?? 0) + 1;
+            $dobles[$b] = ($dobles[$b] ?? 0) + 1;
+            unset($resto[$elegido]);
         }
 
         $bolsa = array_values($resto);
