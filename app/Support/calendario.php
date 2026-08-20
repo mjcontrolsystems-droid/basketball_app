@@ -73,7 +73,7 @@ const CALENDARIO_PLANES_A_PROBAR = 6;
  * @param array<int> $equipoIds
  * @param array<int, array{0:int, 1:int}> $yaProgramados Cruces que no hay que volver a crear.
  */
-function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = []): array
+function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = [], array $doblesPrevios = []): array
 {
     $mejor = null;
     $mejorPunt = null;
@@ -87,13 +87,14 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
                 $semilla === null ? null : $semilla + $i,
                 $rondasPrearmadas,
                 $yaProgramados,
-                $balancear
+                $balancear,
+                $doblesPrevios
             );
             if (empty($plan)) {
                 continue;
             }
 
-            $punt = calendario_puntuar_plan($plan, $equipoIds);
+            $punt = calendario_puntuar_plan($plan, $equipoIds, $doblesPrevios);
             if ($mejorPunt === null || $punt < $mejorPunt) {
                 $mejorPunt = $punt;
                 $mejor = $plan;
@@ -113,9 +114,14 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
  *   3. Diferencia entre el que más veces dobla y el que menos.
  *   4. El máximo de dobletes que carga un solo equipo.
  */
-function calendario_puntuar_plan(array $plan, array $equipoIds): string
+function calendario_puntuar_plan(array $plan, array $equipoIds, array $doblesPrevios = []): string
 {
     $dobles = array_fill_keys(array_map('intval', $equipoIds), 0);
+    foreach ($doblesPrevios as $eq => $n) {
+        if (isset($dobles[(int) $eq])) {
+            $dobles[(int) $eq] = (int) $n;
+        }
+    }
     $huecos = 0;
 
     foreach ($plan as $jornada) {
@@ -144,7 +150,7 @@ function calendario_puntuar_plan(array $plan, array $equipoIds): string
     return sprintf('%04d|%04d|%04d|%04d', count($plan), $huecos, $spread, $tope);
 }
 
-function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla, ?array $rondasPrearmadas, array $yaProgramados, bool $balancearDobles): array
+function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla, ?array $rondasPrearmadas, array $yaProgramados, bool $balancearDobles, array $doblesPrevios = []): array
 {
     // La fase de grupos manda sus propias rondas ya armadas (el todos contra todos de cada
     // grupo, mezclados para que una jornada tenga partidos de todos los grupos). El resto
@@ -200,7 +206,12 @@ function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJor
 
     $jornadas = [];
     // Cuántas veces le ha tocado a cada equipo jugar dos veces en un mismo fin de semana.
+    // Arranca con lo que ya está publicado: si no, a quien ya dobló en la jornada 1 se le
+    // vuelve a cargar la mano. Pasó con la Promoción 58, que terminó doblando 3 veces.
     $dobles = [];
+    foreach ($doblesPrevios as $eq => $n) {
+        $dobles[(int) $eq] = (int) $n;
+    }
 
     while (!empty($bolsa)) {
         // --- Fase 1: que juegue la MAYOR cantidad posible de equipos, sin repetir ---
@@ -559,6 +570,39 @@ function calendario_historial_previo(array $historial, array $dias, int $simulta
 }
 
 /**
+ * Cuántas veces dobló cada equipo en las jornadas ya publicadas.
+ *
+ * Doblar es jugar dos veces la misma jornada. Sin este conteo el generador arranca de
+ * cero y le puede volver a tocar al que ya dobló en lo que está publicado.
+ *
+ * @param array<int, array{local:int, visitante:int, jornada?:int}> $historial
+ * @return array<int, int>
+ */
+function calendario_dobles_previos(array $historial): array
+{
+    $porJornada = [];
+    foreach ($historial as $p) {
+        $j = (int) ($p['jornada'] ?? 0);
+        if ($j <= 0) {
+            continue;
+        }
+        $porJornada[$j][] = (int) ($p['local'] ?? 0);
+        $porJornada[$j][] = (int) ($p['visitante'] ?? 0);
+    }
+
+    $dobles = [];
+    foreach ($porJornada as $equipos) {
+        foreach (array_count_values($equipos) as $eq => $veces) {
+            if ($veces > 1) {
+                $dobles[(int) $eq] = ($dobles[(int) $eq] ?? 0) + ($veces - 1);
+            }
+        }
+    }
+
+    return $dobles;
+}
+
+/**
  * Ordena los partidos de un día para que el turno no le caiga siempre al mismo.
  *
  * Sin esto el orden lo decide el fixture, que no sabe nada de horas: en el primer
@@ -660,7 +704,8 @@ function calendario_generar(array $equipoIds, array $opciones): array
         $cupoTotal,
         isset($opciones['semilla']) ? (int) $opciones['semilla'] : null,
         isset($opciones['rondas']) ? (array) $opciones['rondas'] : null,
-        (array) ($opciones['ya_programados'] ?? [])
+        (array) ($opciones['ya_programados'] ?? []),
+        calendario_dobles_previos((array) ($opciones['historial'] ?? []))
     );
     if (empty($plan)) {
         return [];

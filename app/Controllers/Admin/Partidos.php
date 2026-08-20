@@ -414,6 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'local' => (int) $p['equipo_local'],
                     'visitante' => (int) $p['equipo_visitante'],
                     'hora' => (string) ($p['hora'] ?? ''),
+                    'jornada' => (int) ($p['jornada'] ?? 0),
                 ];
                 $jornadaInicial = max($jornadaInicial, (int) ($p['jornada'] ?? 0));
             }
