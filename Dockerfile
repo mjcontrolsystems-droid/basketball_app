@@ -1,9 +1,11 @@
 FROM php:8.3-apache
 
 # libpq-dev es necesario para compilar pdo_pgsql; libcurl4-openssl-dev para curl
-# (usado por google_callback.php para hablar con los endpoints de Google OAuth)
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libcurl4-openssl-dev \
-    && docker-php-ext-install pdo pdo_pgsql fileinfo curl \
+# (usado por google_callback.php para hablar con los endpoints de Google OAuth);
+# libzip-dev para la extensión zip, que hace falta para leer archivos .xlsx — un Excel
+# es en realidad un ZIP con XML adentro (ver app/Support/importacion.php).
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libcurl4-openssl-dev libzip-dev \
+    && docker-php-ext-install pdo pdo_pgsql fileinfo curl zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && a2enmod rewrite
 
