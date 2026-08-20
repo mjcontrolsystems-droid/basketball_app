@@ -51,7 +51,7 @@ const CALENDARIO_MAX_SALTOS = 52;
  * @param int|null $semilla Para el sorteo de los adelantados. null = aleatorio de verdad.
  * @return array<int, array{principal: array, adelantados: array}>
  */
-function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null): array
+function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = []): array
 {
     // La fase de grupos manda sus propias rondas ya armadas (el todos contra todos de cada
     // grupo, mezclados para que una jornada tenga partidos de todos los grupos). El resto
@@ -59,6 +59,30 @@ function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJo
     $rondas = $rondasPrearmadas !== null ? array_values(array_filter($rondasPrearmadas)) : generar_fixture_round_robin($equipoIds, $vueltas);
     if (empty($rondas)) {
         return [];
+    }
+
+    // Cruces que ya están programados a mano y no hay que volver a crear. Es el caso de
+    // quien ya publicó la primera jornada y solo quiere que la app arme el resto: sin
+    // esto habría que borrar todo y rehacerlo, cambiando partidos ya avisados a los
+    // equipos. Se comparan sin importar quién es local, porque el cruce es el mismo.
+    if (!empty($yaProgramados)) {
+        $fuera = [];
+        foreach ($yaProgramados as [$a, $b]) {
+            $par = [(int) $a, (int) $b];
+            sort($par);
+            $fuera[$par[0] . '-' . $par[1]] = true;
+        }
+        foreach ($rondas as $i => $ronda) {
+            $rondas[$i] = array_values(array_filter($ronda, function ($cruce) use ($fuera) {
+                $par = [(int) $cruce[0], (int) $cruce[1]];
+                sort($par);
+                return !isset($fuera[$par[0] . '-' . $par[1]]);
+            }));
+        }
+        $rondas = array_values(array_filter($rondas));
+        if (empty($rondas)) {
+            return [];
+        }
     }
 
     // El sorteo: se baraja el orden DENTRO de cada ronda de la que se va a robar. El
@@ -335,7 +359,8 @@ function calendario_generar(array $equipoIds, array $opciones): array
         (int) ($opciones['vueltas'] ?? 1),
         $cupoTotal,
         isset($opciones['semilla']) ? (int) $opciones['semilla'] : null,
-        isset($opciones['rondas']) ? (array) $opciones['rondas'] : null
+        isset($opciones['rondas']) ? (array) $opciones['rondas'] : null,
+        (array) ($opciones['ya_programados'] ?? [])
     );
     if (empty($plan)) {
         return [];
@@ -385,7 +410,9 @@ function calendario_generar(array $equipoIds, array $opciones): array
             ];
         }
 
-        $calendario[] = ['numero' => $j + 1, 'dias' => $diasJornada];
+        // Al continuar un calendario ya empezado, la numeración sigue desde la última
+        // jornada existente en vez de volver a 1.
+        $calendario[] = ['numero' => $j + 1 + (int) ($opciones['jornada_inicial'] ?? 0), 'dias' => $diasJornada];
     }
 
     return $calendario;

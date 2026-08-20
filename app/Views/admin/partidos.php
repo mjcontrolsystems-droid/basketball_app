@@ -125,15 +125,40 @@
         </div>
 
         <?php if (!empty($regularesActuales)): ?>
+        <?php
+        // Última jornada y última fecha de lo que ya está programado, para sugerir por
+        // dónde seguir sin que el organizador tenga que ir a buscarlo.
+        $ultimaJornadaActual = 0;
+        $ultimaFechaActual = '';
+        foreach ($regularesActuales as $pExistente) {
+            $ultimaJornadaActual = max($ultimaJornadaActual, (int) ($pExistente['jornada'] ?? 0));
+            $ultimaFechaActual = max($ultimaFechaActual, (string) ($pExistente['fecha'] ?? ''));
+        }
+        ?>
         <div class="alert alert-warning rounded-4 border-0 small mt-3 mb-0">
-            <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" name="reemplazar" id="checkReemplazar" value="1">
-                <label class="form-check-label" for="checkReemplazar">
-                    <span class="fw-semibold">Ya hay <?= count($regularesActuales) ?> encuentros de temporada regular.</span>
-                    Bórralos y rehaz el calendario desde cero.
+            <div class="fw-semibold mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Ya hay <?= count($regularesActuales) ?> encuentros de temporada regular
+                <?= $ultimaFechaActual !== '' ? '(hasta el ' . e(formatear_fecha_corta($ultimaFechaActual)) . ', jornada ' . (int) $ultimaJornadaActual . ')' : '' ?>.
+            </div>
+
+            <?php // Continuar es lo que hace falta cuando la primera jornada ya se publicó
+                  // a los equipos: rehacer el calendario cambiaría partidos ya avisados. ?>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="que_hacer" id="checkContinuar" value="continuar" checked>
+                <label class="form-check-label" for="checkContinuar">
+                    <span class="fw-semibold">Conservarlos y generar solo lo que falta.</span>
+                    <span class="d-block">No se toca ninguno de los que ya existen, no se repiten esos cruces, y las jornadas siguen desde la <?= (int) $ultimaJornadaActual + 1 ?>. Pon arriba como primer día de juego el del siguiente fin de semana.</span>
                 </label>
             </div>
-            <div class="mt-2">Si alguno ya está jugado o tiene eventos cargados en su ficha, la generación se detiene y no se borra nada: primero tienes que resolverlo a mano.</div>
+
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="radio" name="que_hacer" id="checkReemplazar" value="reemplazar">
+                <label class="form-check-label" for="checkReemplazar">
+                    <span class="fw-semibold text-danger">Borrarlos y rehacer el calendario desde cero.</span>
+                    <span class="d-block">Solo si todavía no publicaste nada: los encuentros actuales se pierden.</span>
+                </label>
+            </div>
+            <div class="mt-2 text-muted">Si alguno ya está jugado o tiene eventos cargados, rehacer se detiene y no se borra nada.</div>
         </div>
         <?php endif; ?>
 

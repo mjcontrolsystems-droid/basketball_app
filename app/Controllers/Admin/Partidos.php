@@ -241,8 +241,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $vueltasGenerar = ((int) ($_POST['vueltas'] ?? 1)) === 2 ? 2 : 1;
         $fechaInicio = (string) ($_POST['fecha_inicio'] ?? '');
-        $reemplazar = !empty($_POST['reemplazar']);
         $soloPrevia = !empty($_POST['solo_previa']);
+        // Qué hacer con los encuentros que ya existen. "Continuar" es lo que hace falta
+        // cuando la primera jornada ya se publicó a los equipos: rehacer el calendario
+        // cambiaría partidos ya avisados. Por eso viene marcado por defecto.
+        $queHacer = (string) ($_POST['que_hacer'] ?? 'continuar');
+        $reemplazar = $queHacer === 'reemplazar';
+        $continuar = $queHacer === 'continuar';
 
         // --- Días de juego ---
         // El calendario se arma desde la realidad de la cancha: qué días se juega y cuántos
@@ -302,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // no se tocan nunca: el generador solo arma la fase de grupos/liga.
         $regularesExistentes = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') === 'grupos'));
 
-        if (!empty($regularesExistentes) && !$reemplazar && !$soloPrevia) {
+        if (!empty($regularesExistentes) && !$reemplazar && !$continuar && !$soloPrevia) {
             redirigir_con_mensaje($urlGenerar, 'error', 'Ya hay ' . count($regularesExistentes) . ' encuentros de temporada regular programados. Marca la casilla de reemplazar si quieres rehacer el calendario desde cero.');
         }
 
@@ -347,6 +352,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Al continuar, los cruces ya programados se sacan del fixture y la numeración de
+        // jornadas arranca donde va, para no repetir partidos ni volver a la jornada 1.
+        $yaProgramados = [];
+        $jornadaInicial = 0;
+        if ($continuar) {
+            foreach ($regularesExistentes as $p) {
+                $yaProgramados[] = [(int) $p['equipo_local'], (int) $p['equipo_visitante']];
+                $jornadaInicial = max($jornadaInicial, (int) ($p['jornada'] ?? 0));
+            }
+        }
+
         $calendarioGenerado = calendario_generar($equipoIds, [
             'vueltas' => $vueltasGenerar,
             'dias' => $diasConfig,
@@ -355,6 +371,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'excluidas' => $excluidas,
             'semilla' => $semilla,
             'rondas' => $rondasPrearmadas,
+            'ya_programados' => $yaProgramados,
+            'jornada_inicial' => $jornadaInicial,
         ]);
 
         if (empty($calendarioGenerado)) {
@@ -369,7 +387,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $accion = 'generar';
             $datosPrevios = $_POST;
         } else {
-            if ($reemplazar) {
+            // Al continuar NO se borra nada: los encuentros existentes se quedan como están.
+            if ($reemplazar && !$continuar) {
                 // No hace falta limpiar fichas: la validación de arriba ya garantizó que
                 // ninguno de los encuentros que se van tiene eventos cargados.
                 $partidos = array_values(array_filter($partidos, fn($p) => ($p['fase'] ?? 'grupos') !== 'grupos'));
