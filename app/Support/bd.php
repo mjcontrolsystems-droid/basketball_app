@@ -179,6 +179,25 @@ function db_guardar_coleccion(PDO $pdo, string $tabla, array $registros, int $to
         throw new InvalidArgumentException("Tabla desconocida: {$tabla}");
     }
 
+    // Red contra ids repetidos ANTES de tocar la base.
+    //
+    // Los ids se asignan en PHP con "SELECT MAX(id)+1", así que quien cree varios
+    // registros de un golpe tiene que pedir el id una vez e ir incrementándolo; pedirlo
+    // dentro del bucle devuelve el mismo número para todos, porque hasta el final no se
+    // guarda nada. Cuando eso pasaba, Postgres tiraba un "duplicate key" críptico apuntando
+    // a bd.php y no al bucle que lo causó. Este chequeo dice qué tabla y qué id.
+    $vistos = [];
+    foreach ($registros as $r) {
+        $id = (int) ($r['id'] ?? 0);
+        if ($id > 0 && isset($vistos[$id])) {
+            throw new RuntimeException(
+                "Se intentó guardar dos registros de '{$tabla}' con el mismo id ({$id}). "
+                . 'Al crear varios de una vez hay que pedir el id una sola vez e ir sumándole 1 a cada uno.'
+            );
+        }
+        $vistos[$id] = true;
+    }
+
     $columnas = COLUMNAS_POR_TABLA[$tabla];
     $marcadores = array_map(fn($c) => ":{$c}", $columnas);
     $sql = sprintf(

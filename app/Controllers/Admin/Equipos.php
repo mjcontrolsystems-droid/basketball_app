@@ -94,10 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Los colores arrancan donde terminaron los equipos que ya estaban, para que los
         // nuevos no repitan el tono de los anteriores.
         $desplazamiento = count($equipos);
+
+        // El id se pide UNA vez y se va incrementando en memoria. equipo_nuevo_id() hace
+        // "SELECT MAX(id)+1", así que llamarlo dentro del bucle devolvía el mismo número
+        // para los 16 equipos (nada se ha guardado todavía) y el segundo INSERT reventaba
+        // con "duplicate key". Es el mismo patrón que usa el generador de calendario.
+        $siguienteId = equipo_nuevo_id();
+
         foreach ($nuevos as $i => $nombre) {
             $colores = colores_para_equipo($desplazamiento + $i);
             $equipos[] = [
-                'id' => equipo_nuevo_id(),
+                'id' => $siguienteId++,
                 'nombre' => $nombre,
                 'ciudad' => '',
                 'sede' => '',
@@ -267,9 +274,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // del equipo, que solo existe una vez creado.
         if ($id === 0 && !empty($plantillaInicial)) {
             $jugadores = jugadores_listar($torneo['id']);
+            // Un id por jugador: pedirlo dentro del bucle daría el mismo para todos.
+            $siguienteJugadorId = jugador_nuevo_id();
             foreach ($plantillaInicial as $nuevo) {
                 $jugadores[] = [
-                    'id' => jugador_nuevo_id(),
+                    'id' => $siguienteJugadorId++,
                     'equipo_id' => $datos['id'],
                     'dorsal' => $nuevo['dorsal'],
                     'nombre' => $nuevo['nombre'],

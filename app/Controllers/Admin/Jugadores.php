@@ -100,6 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $creados = 0;
+        // El id se pide UNA vez y se incrementa en memoria: jugador_nuevo_id() hace
+        // "SELECT MAX(id)+1" y dentro del bucle devolvería el mismo número para todos,
+        // porque hasta el final no se guarda nada.
+        $siguienteId = jugador_nuevo_id();
+
         foreach ($nombres as $i => $nombreFila) {
             if (!in_array((int) $i, $incluidos, true)) {
                 continue; // el organizador lo desmarcó en la vista previa
@@ -119,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $jugadoresTodos[] = [
-                'id' => jugador_nuevo_id(),
+                'id' => $siguienteId++,
                 'equipo_id' => $equipoId,
                 'dorsal' => mb_substr($dorsal, 0, 3),
                 'nombre' => mb_substr($nombreFila, 0, 120),
