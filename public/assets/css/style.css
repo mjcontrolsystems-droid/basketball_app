@@ -913,8 +913,23 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 .hoja-previa .ficha-pie p { margin: 0; }
 
 @media print {
-    /* Cada jornada intenta no partirse a la mitad entre dos hojas */
-    .ficha-imprimir .ficha-tabla { break-inside: avoid; page-break-inside: avoid; }
+    /* Cortes de página en las tablas.
+       Antes era "break-inside: avoid" sobre la TABLA entera, pensando en la hoja del
+       calendario, donde cada jornada es una tabla corta. Pero en el reporte de un equipo
+       las tablas son largas — 15 encuentros, 20 jugadores — y cuando una tabla no cabe en
+       una página, el navegador no puede cumplir esa regla: la empuja entera a la hoja
+       siguiente y, si tampoco cabe ahí, recorta contenido. Eso desaparecía la plantilla y
+       las estadísticas del PDF del equipo.
+
+       Lo correcto es pedir que no se parta cada FILA, no la tabla, y repetir el encabezado
+       en cada página. Así una tabla larga fluye entre hojas sin perder nada, y de paso el
+       encabezado de columnas se ve en todas. */
+    .ficha-imprimir .ficha-tabla thead { display: table-header-group; }
+    .ficha-imprimir .ficha-tabla tr { break-inside: avoid; page-break-inside: avoid; }
+
+    /* Las tablas cortas que sí conviene mantener juntas (cada jornada del calendario)
+       llevan esta clase de forma explícita. */
+    .ficha-imprimir .ficha-tabla--junta { break-inside: avoid; page-break-inside: avoid; }
 
     .navbar-copa, .footer-copa, .btn-imprimir-pdf,
     #modalCompartir, #modalCodigo, .offcanvas,

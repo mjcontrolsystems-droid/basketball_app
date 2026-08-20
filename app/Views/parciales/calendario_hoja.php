@@ -17,7 +17,10 @@
 
 <?php foreach ($bloques as $bloque): ?>
 <h3><?= e($bloque['titulo']) ?></h3>
-<table class="ficha-tabla">
+<?php // --junta: cada jornada son pocos partidos y conviene que no se parta entre dos
+      // hojas. Las tablas largas (reporte de equipo) no llevan esta clase a propósito:
+      // una tabla que no cabe en una página y pide no partirse termina recortada. ?>
+<table class="ficha-tabla ficha-tabla--junta">
     <thead>
         <tr>
             <th style="width:16%;">Fecha</th>
