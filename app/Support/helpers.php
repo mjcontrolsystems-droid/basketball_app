@@ -39,16 +39,44 @@ function iniciales_de(string $nombre): string
 }
 
 /**
- * Genera un escudo circular en SVG a partir de las iniciales y colores del equipo.
+ * Qué se pinta dentro del escudo de un equipo que no subió logo.
+ *
+ * Cuando el nombre lleva un número, ese número ES el equipo: "Promoción 45" se conoce
+ * como la 45, no como "P4" — que era lo que salía al tomar la inicial de cada palabra y
+ * no le decía nada a nadie. Lo mismo con "Equipo 7" o "Sala 12".
+ *
+ * Sin número se usan las iniciales de siempre.
+ */
+function siglas_de_equipo(string $nombre): string
+{
+    if (preg_match_all('/\d+/', $nombre, $coincidencias)) {
+        // El más largo: en "Promoción 45 B" interesa el 45, no un dígito suelto.
+        $numeros = $coincidencias[0];
+        usort($numeros, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        $numero = ltrim($numeros[0], '0');
+        if ($numero !== '' && mb_strlen($numero) <= 4) {
+            return $numero;
+        }
+    }
+
+    return iniciales_de($nombre);
+}
+
+/**
+ * Genera un escudo circular en SVG a partir de las siglas y colores del equipo.
  * Se usa como respaldo cuando el equipo no tiene un logo cargado.
  */
 function escudo_svg(string $nombre, string $color1 = '#7b2ff7', string $color2 = '#ff6b35', int $size = 96): string
 {
-    $iniciales = e(iniciales_de($nombre));
+    $texto = siglas_de_equipo($nombre);
+    $iniciales = e($texto);
     $gradId = 'g' . substr(md5($nombre . $color1), 0, 8);
     $c1 = e($color1);
     $c2 = e($color2);
-    $fontSize = (int) round($size * 0.36);
+
+    // Con 3 o 4 caracteres el texto se sale del círculo si no se achica la letra.
+    $proporciones = [1 => 0.46, 2 => 0.36, 3 => 0.30, 4 => 0.24];
+    $fontSize = (int) round($size * ($proporciones[mb_strlen($texto)] ?? 0.24));
 
     return <<<SVG
 <svg viewBox="0 0 100 100" width="{$size}" height="{$size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{$iniciales}">
