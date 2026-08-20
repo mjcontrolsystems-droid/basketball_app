@@ -150,6 +150,39 @@ function torneos_obtener_predeterminado(): ?array
  * es el filtro que evita que un usuario entre/edite/borre la copa de otro adivinando su id.
  * Sin él (páginas públicas, resolución por slug/código), devuelve cualquier copa por id.
  */
+/**
+ * Copas que esta persona puede abrir: las suyas y aquellas donde la invitaron a ayudar.
+ *
+ * Las de colaboración vienen marcadas con 'es_colaboracion' para que la pantalla de
+ * "Mis copas" pueda distinguirlas — no son suyas, y ofrecerle borrarlas sería un susto.
+ *
+ * @return array<int, array>
+ */
+function torneos_accesibles(int $usuarioId, string $email = '', bool $soloActivos = false): array
+{
+    $propias = torneos_listar($soloActivos, $usuarioId);
+
+    $idsColaboro = colaborador_torneos_de($usuarioId, $email);
+    if (empty($idsColaboro)) {
+        return $propias;
+    }
+
+    $yaEstan = array_column($propias, 'id');
+    foreach ($idsColaboro as $id) {
+        if (in_array($id, $yaEstan, true)) {
+            continue;
+        }
+        $copa = torneos_obtener_por_id($id);
+        if ($copa === null || ($soloActivos && empty($copa['activo']))) {
+            continue;
+        }
+        $copa['es_colaboracion'] = true;
+        $propias[] = $copa;
+    }
+
+    return $propias;
+}
+
 function torneos_obtener_por_id(int $id, ?int $usuarioId = null): ?array
 {
     $pdo = db_conexion();

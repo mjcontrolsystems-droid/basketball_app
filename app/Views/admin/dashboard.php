@@ -3,8 +3,14 @@
         <h3 class="mb-1">Hola, <?= e(explode(' ', $organizador['nombre'])[0]) ?> 👋</h3>
         <p class="text-muted mb-0">Este es el resumen de <?= e($torneo['nombre']) ?> — Temporada <?= e($torneo['temporada']) ?>.</p>
     </div>
+    <?php if (puede('partidos_editar', $torneo)): ?>
     <a href="<?= url('admin/partidos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Programar encuentro</a>
+    <?php endif; ?>
 </div>
+
+<?php // Cerrar el sitio y publicar el podio son del dueño: una apaga la copa para todo
+      // el público y la otra la da por terminada. Un colaborador ni siquiera los ve. ?>
+<?php if (es_dueno_de_copa($torneo)): ?>
 
 <?php // ---------- Sitio público abierto o en mantenimiento ---------- ?>
 <?php $enMantenimiento = !empty($torneo['en_mantenimiento']); ?>
@@ -114,6 +120,8 @@
     </p>
 </div>
 <?php endif; ?>
+
+<?php endif; // fin del bloque solo para el dueño de la copa ?>
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg">

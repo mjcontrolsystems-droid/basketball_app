@@ -4,6 +4,28 @@ declare(strict_types=1);
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
 
+// Esta pantalla mezcla tres niveles de riesgo, así que el permiso no es uno solo:
+//   - ver la lista y entrar a un partido lo puede hacer hasta la mesa;
+//   - crear, editar o borrar un encuentro suelto es de asistente para arriba;
+//   - todo lo que rehace el calendario o arma el cuadro final es solo del dueño,
+//     porque de un botón puede salir un torneo entero distinto al que ya se anunció.
+requerir_permiso('partido_capturar');
+
+const PARTIDOS_ACCIONES_DE_DUENO = ['generar_fixture', 'borrar_desde_jornada', 'correr_calendario', 'armar_cruces'];
+const PARTIDOS_ACCIONES_DE_ASISTENTE = ['guardar', 'eliminar', 'alternar_jugado'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $accionPost = (string) ($_POST['accion'] ?? '');
+    if (in_array($accionPost, PARTIDOS_ACCIONES_DE_DUENO, true)) {
+        requerir_permiso('calendario');
+    } elseif (in_array($accionPost, PARTIDOS_ACCIONES_DE_ASISTENTE, true)) {
+        requerir_permiso('partidos_editar');
+    }
+}
+if (in_array($_GET['accion'] ?? '', ['generar', 'nuevo', 'editar'], true)) {
+    requerir_permiso(($_GET['accion'] ?? '') === 'generar' ? 'calendario' : 'partidos_editar');
+}
+
 $equipos = equipos_listar($torneo['id']);
 $partidos = partidos_listar($torneo['id']);
 $equiposPorId = [];

@@ -22,7 +22,10 @@ if ($accion === 'nuevo' && !$puedeCrearTorneo) {
 // Cambiar de copa activa (no necesita CSRF: es solo un cambio de contexto, no una escritura de datos)
 if ($accion === 'entrar' && isset($_GET['id'])) {
     $id = (int) $_GET['id'];
-    if (torneos_obtener_por_id($id, $usuarioId) !== null) {
+    // Se puede entrar a una copa propia o a una donde se colabora; nivel_en_copa()
+    // devuelve null para cualquier otra y ahí no se cambia el contexto.
+    $copa = torneos_obtener_por_id($id);
+    if ($copa !== null && nivel_en_copa($copa) !== null) {
         $_SESSION['torneo_activo_id'] = $id;
     }
     header('Location: ' . url('admin/index.php'));
@@ -230,7 +233,9 @@ $generoPorDefecto = $torneoEditar['genero'] ?? 'mixto';
 // (mismo comportamiento que tenían), no como liga.
 $modoPorDefecto = ($torneoEditar['modo'] ?? FORMATO_CAMPEONATO) === FORMATO_LIGA ? FORMATO_LIGA : FORMATO_CAMPEONATO;
 $vueltasPorDefecto = torneo_vueltas($torneoEditar ?? []);
-$torneos = torneos_listar(false, $usuarioId);
+// Además de las propias se listan aquellas donde a esta persona la invitaron a ayudar.
+$usuarioActual = usuarios_obtener_por_id($usuarioId);
+$torneos = torneos_accesibles($usuarioId, (string) ($usuarioActual['email'] ?? ''));
 
 $seccion_activa = 'torneos';
 $titulo_pagina = 'Mis Copas y Ligas';

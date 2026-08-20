@@ -403,6 +403,23 @@ function db_migrar_automatico(): void
         $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
         $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
 
+        // Colaboradores: gente que ayuda a administrar una copa sin ser su dueño. Se
+        // guardan por correo porque casi siempre se invita a quien todavía no tiene
+        // cuenta; usuario_id se llena cuando entra por primera vez (ver Colaborador.php).
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS colaboradores (
+                id SERIAL PRIMARY KEY,
+                torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+                email TEXT NOT NULL,
+                nivel TEXT NOT NULL DEFAULT \'mesa\',
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+                creado_en TIMESTAMP NOT NULL DEFAULT NOW(),
+                UNIQUE (torneo_id, email)
+            )'
+        );
+        $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_usuario_idx ON colaboradores (usuario_id)');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_email_idx ON colaboradores (email)');
+
         // Qué se pinta en el escudo del equipo que no subió logo. Vacío = lo decide la app
         // (el número del nombre, o las iniciales). Sirve para los casos que ninguna regla
         // automática acierta: un apodo, una sigla del club, una letra.

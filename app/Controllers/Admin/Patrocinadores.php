@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
+requerir_permiso('patrocinadores');
 
 $patrocinadores = patrocinadores_listar($torneo['id']);
 usort($patrocinadores, fn($a, $b) => ($a['orden'] ?? 0) <=> ($b['orden'] ?? 0));

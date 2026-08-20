@@ -19,15 +19,27 @@ function admin_nav_copa(string $seccion_activa, ?array $torneoActivo): string
     ob_start();
     if ($torneoActivo) {
         ?>
+        <?php // Cada quien ve solo lo que puede abrir. Esconder el enlace es cortesía, no
+              // seguridad: el candado de verdad está en requerir_permiso() dentro de cada
+              // controlador, porque el menú no impide escribir la URL a mano. ?>
+        <?php if (puede('equipos', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('equipos', $seccion_activa) ?>" href="<?= url('admin/equipos.php') ?>"><i class="bi bi-people me-2"></i>Equipos</a>
+        <?php endif; ?>
         <a class="nav-link <?= admin_nav_activa('partidos', $seccion_activa) ?>" href="<?= url('admin/partidos.php') ?>"><i class="bi bi-calendar2-week me-2"></i>Encuentros</a>
         <?php // Sanciones solo aparece si la liga cobra multas por tarjeta ?>
-        <?php if (torneo_cobra_multas($torneoActivo)): ?>
+        <?php if (torneo_cobra_multas($torneoActivo) && puede('sanciones', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('sanciones', $seccion_activa) ?>" href="<?= url('admin/sanciones.php') ?>"><i class="bi bi-cash-coin me-2"></i>Sanciones</a>
         <?php endif; ?>
+        <?php if (puede('patrocinadores', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('patrocinadores', $seccion_activa) ?>" href="<?= url('admin/patrocinadores.php') ?>"><i class="bi bi-award me-2"></i>Patrocinadores</a>
+        <?php endif; ?>
+        <?php if (puede('comentarios', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('comentarios', $seccion_activa) ?>" href="<?= url('admin/comentarios.php') ?>"><i class="bi bi-chat-heart me-2"></i>Comentarios</a>
+        <?php endif; ?>
+        <?php if (es_dueno_de_copa($torneoActivo)): ?>
+        <a class="nav-link <?= admin_nav_activa('colaboradores', $seccion_activa) ?>" href="<?= url('admin/colaboradores.php') ?>"><i class="bi bi-person-plus me-2"></i>Colaboradores</a>
         <a class="nav-link <?= admin_nav_activa('torneos', $seccion_activa) ?>" href="<?= url('admin/torneos.php?accion=editar&id=' . $torneoActivo['id']) ?>"><i class="bi bi-sliders me-2"></i>Configuración de la copa o liga</a>
+        <?php endif; ?>
         <?php
     }
     return (string) ob_get_clean();

@@ -42,7 +42,7 @@ foreach ([
 // --- Modelos: acceso a datos por entidad ---
 foreach ([
     'Torneo', 'Equipo', 'Jugador', 'Partido', 'Evento', 'Alineacion', 'Sancion',
-    'Patrocinador', 'Comentario', 'Usuario', 'Bitacora', 'Visita',
+    'Patrocinador', 'Comentario', 'Usuario', 'Bitacora', 'Visita', 'Colaborador',
 ] as $modelo) {
     require_once RAIZ_APP . '/app/Models/' . $modelo . '.php';
 }

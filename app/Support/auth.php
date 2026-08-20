@@ -122,16 +122,114 @@ function auth_requerir(): void
 }
 
 /**
+ * Qué puede hacer cada quien dentro de una copa.
+ *
+ * El dueño puede todo. Los colaboradores son una ayuda acotada, y el corte no es
+ * caprichoso: lo que se les deja es lo que se repite cada fin de semana y lo que, si se
+ * equivocan, se arregla editando. Lo que decide la forma del torneo — calendario,
+ * formato, reglas, quién más entra — se queda con el dueño, porque ahí un error se paga
+ * con avisarle a 16 equipos que todo cambió.
+ */
+const PERMISOS_POR_NIVEL = [
+    // La mesa es quien está en la cancha: solo la ficha del partido.
+    'mesa' => ['partido_capturar'],
+    'asistente' => [
+        'partido_capturar', 'partidos_editar', 'equipos', 'jugadores',
+        'sanciones', 'patrocinadores', 'comentarios',
+    ],
+];
+
+/**
+ * Nivel de la persona logueada en la copa activa: 'dueno', 'mesa', 'asistente' o null.
+ *
+ * Se resuelve una vez por petición y se guarda en una estática: lo consultan el menú, las
+ * vistas y cada controlador, y no tiene sentido ir a la base cada vez.
+ */
+function nivel_en_copa(?array $torneo = null): ?string
+{
+    static $cache = [];
+
+    $torneo = $torneo ?? copa_actual();
+    $torneoId = (int) ($torneo['id'] ?? 0);
+    $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
+    if ($torneoId <= 0 || $usuarioId <= 0) {
+        return null;
+    }
+
+    $clave = $torneoId . ':' . $usuarioId;
+    if (array_key_exists($clave, $cache)) {
+        return $cache[$clave];
+    }
+
+    if ((int) ($torneo['usuario_id'] ?? 0) === $usuarioId) {
+        return $cache[$clave] = 'dueno';
+    }
+
+    $usuario = usuarios_obtener_por_id($usuarioId);
+    // El superadmin entra a todo como dueño: es quien da soporte cuando algo se rompe.
+    if (es_superadmin($usuario)) {
+        return $cache[$clave] = 'dueno';
+    }
+
+    return $cache[$clave] = colaborador_nivel_de($torneoId, $usuarioId, (string) ($usuario['email'] ?? ''));
+}
+
+function es_dueno_de_copa(?array $torneo = null): bool
+{
+    return nivel_en_copa($torneo) === 'dueno';
+}
+
+/**
+ * ¿Puede la persona logueada hacer esta acción en la copa activa?
+ */
+function puede(string $accion, ?array $torneo = null): bool
+{
+    $nivel = nivel_en_copa($torneo);
+    if ($nivel === null) {
+        return false;
+    }
+    if ($nivel === 'dueno') {
+        return true;
+    }
+
+    return in_array($accion, PERMISOS_POR_NIVEL[$nivel] ?? [], true);
+}
+
+/**
+ * Corta la petición si no tiene permiso. Va al principio del controlador, ANTES de
+ * procesar cualquier POST: ocultar el botón del menú no sirve de nada si la URL sigue
+ * respondiendo a quien la escriba a mano.
+ */
+function requerir_permiso(string $accion, ?array $torneo = null): void
+{
+    if (puede($accion, $torneo)) {
+        return;
+    }
+
+    redirigir_con_mensaje(
+        url('admin/index.php'),
+        'error',
+        'No tienes permiso para entrar ahí. Si crees que deberías, pídeselo a quien organiza la copa.'
+    );
+}
+
+/**
  * Exige que haya una copa activa elegida en la sesión del admin (equipos, partidos,
  * patrocinadores y comentarios viven "dentro" de una copa). Si no hay ninguna, o si la
- * copa activa no pertenece al usuario logueado (alguien manipuló torneo_activo_id, o
- * es de otro usuario), manda a elegir/crear una. Devuelve la copa ya resuelta.
+ * persona no es ni dueña ni colaboradora de esa copa (alguien manipuló torneo_activo_id,
+ * o es de otro usuario), manda a elegir/crear una. Devuelve la copa ya resuelta.
  */
 function admin_requerir_torneo_activo(): array
 {
     $torneoId = $_SESSION['torneo_activo_id'] ?? null;
     $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
-    $torneo = $torneoId !== null ? torneos_obtener_por_id((int) $torneoId, $usuarioId) : null;
+    // Se busca sin filtrar por dueño y el permiso se decide después, porque ahora una
+    // copa la puede abrir tanto quien la creó como quien fue invitado a ayudar.
+    $torneo = $torneoId !== null ? torneos_obtener_por_id((int) $torneoId) : null;
+
+    if ($torneo !== null && nivel_en_copa($torneo) === null) {
+        $torneo = null;
+    }
 
     if ($torneo === null) {
         unset($_SESSION['torneo_activo_id']);

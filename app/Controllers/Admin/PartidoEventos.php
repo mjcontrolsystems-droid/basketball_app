@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
+requerir_permiso('partido_capturar');
 
 $partidoId = (int) ($_GET['partido_id'] ?? $_POST['partido_id'] ?? 0);
 $partidos = partidos_listar($torneo['id']);

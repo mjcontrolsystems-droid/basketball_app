@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
+requerir_permiso('jugadores');
 
 $equipoId = (int) ($_GET['equipo_id'] ?? $_POST['equipo_id'] ?? 0);
 $equipos = equipos_listar($torneo['id']);

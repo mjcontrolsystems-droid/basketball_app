@@ -25,6 +25,8 @@ const BITACORA_ETIQUETAS = [
     'evento_eliminado' => ['Evento eliminado', 'bi-clipboard-x', 'warning'],
     'fecha_adelantada' => ['Fecha adelantada a hoy', 'bi-calendar-check', 'secondary'],
     'correo_autorizado' => ['Correo autorizado', 'bi-person-plus', 'success'],
+    'colaborador_invitado' => ['Colaborador agregado', 'bi-person-plus', 'success'],
+    'colaborador_quitado' => ['Colaborador quitado', 'bi-person-dash', 'danger'],
     'correo_desautorizado' => ['Correo quitado', 'bi-person-dash', 'danger'],
     'cupo_actualizado' => ['Cupo actualizado', 'bi-ticket-perforated', 'secondary'],
 ];

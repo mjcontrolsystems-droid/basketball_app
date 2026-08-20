@@ -61,6 +61,7 @@ return [
     'admin/sanciones.php' => ['controlador' => 'Admin/Sanciones', 'copa' => false],
     'admin/patrocinadores.php' => ['controlador' => 'Admin/Patrocinadores', 'copa' => false],
     'admin/comentarios.php' => ['controlador' => 'Admin/Comentarios', 'copa' => false],
+    'admin/colaboradores.php' => ['controlador' => 'Admin/Colaboradores', 'copa' => false],
     'admin/bitacora.php' => ['controlador' => 'Admin/Bitacora', 'copa' => false],
     'admin/perfil.php' => ['controlador' => 'Admin/Perfil', 'copa' => false],
     'admin/usuarios_autorizados.php' => ['controlador' => 'Admin/UsuariosAutorizados', 'copa' => false],

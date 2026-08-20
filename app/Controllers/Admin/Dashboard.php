@@ -15,6 +15,12 @@ $partidos = partidos_listar($torneo['id']);
 // Abrir o cerrar el sitio público. Sirve para reacomodar el calendario sin que la gente
 // vea a medias los cambios — publicar un calendario y estarlo corrigiendo en vivo genera
 // más reclamos que tenerlo cerrado un rato.
+// Cerrar el sitio y publicar el podio son decisiones de quien organiza, no de quien
+// ayuda: una apaga la copa para todo el público y la otra la da por terminada.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['accion'] ?? '', ['mantenimiento', 'publicar_podio'], true)) {
+    requerir_permiso('configuracion');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'mantenimiento') {
     csrf_validar();
     $cerrar = !empty($_POST['cerrar']);

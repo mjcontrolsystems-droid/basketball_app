@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 auth_requerir();
 $torneo = admin_requerir_torneo_activo();
+requerir_permiso('sanciones');
 
 $urlLista = url('admin/sanciones.php');
 
