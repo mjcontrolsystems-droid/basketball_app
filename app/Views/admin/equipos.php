@@ -14,9 +14,19 @@
                 <label class="form-label small fw-semibold">Nombre del equipo</label>
                 <input type="text" name="nombre" class="form-control" value="<?= e($equipoEditar['nombre'] ?? '') ?>" required>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <label class="form-label small fw-semibold">Ciudad</label>
                 <input type="text" name="ciudad" class="form-control" value="<?= e($equipoEditar['ciudad'] ?? '') ?>">
+            </div>
+            <?php // Qué se ve en el escudo cuando el equipo no subió logo. En blanco lo
+                  // decide la app: el número del nombre ("Promoción 45" -> 45) o las
+                  // iniciales. El campo existe para los casos que ninguna regla acierta. ?>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Texto del escudo</label>
+                <input type="text" name="siglas" class="form-control" maxlength="4"
+                       value="<?= e($equipoEditar['siglas'] ?? '') ?>"
+                       placeholder="<?= e(siglas_de_equipo($equipoEditar['nombre'] ?? '')) ?>">
+                <div class="form-text">Máximo 4 caracteres. Si lo dejas vacío se usa <strong><?= e(siglas_de_equipo($equipoEditar['nombre'] ?? '')) ?></strong>. Solo se ve si el equipo no tiene escudo propio.</div>
             </div>
             <div class="col-md-6">
                 <label class="form-label small fw-semibold">Sede / Cancha local</label>

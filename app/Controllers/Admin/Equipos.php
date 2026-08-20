@@ -116,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'logo' => '',
                 'grupo' => '',
                 'cabeza_serie' => false,
+                'siglas' => '',
             ];
         }
 
@@ -184,6 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'color_primario' => (string) $_POST['color_primario'],
             'color_secundario' => (string) $_POST['color_secundario'],
             'descripcion' => trim((string) $_POST['descripcion']),
+            // Vacío = lo decide la app (el número del nombre o las iniciales). Se recorta
+            // aquí además de en el HTML: el maxlength del navegador no es una garantía.
+            'siglas' => mb_substr(trim((string) ($_POST['siglas'] ?? '')), 0, 4),
         ];
 
         if ($datos['nombre'] === '') {

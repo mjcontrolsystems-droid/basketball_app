@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../config/config.php';
 const TABLAS_SINGLETON = ['organizador'];
 
 const COLUMNAS_POR_TABLA = [
-    'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion', 'grupo', 'cabeza_serie'],
+    'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion', 'grupo', 'cabeza_serie', 'siglas'],
     'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo', 'cronometro_extra_min'],
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
@@ -402,6 +402,11 @@ function db_migrar_automatico(): void
         // dice todo el mundo en la cancha y así se imprime en el calendario.
         $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
         $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
+
+        // Qué se pinta en el escudo del equipo que no subió logo. Vacío = lo decide la app
+        // (el número del nombre, o las iniciales). Sirve para los casos que ninguna regla
+        // automática acierta: un apodo, una sigla del club, una letra.
+        $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS siglas TEXT NOT NULL DEFAULT ''");
 
         // Podio de cierre. Solo se guarda si está publicado: quiénes son los tres se
         // recalcula en vivo, así que corregir el marcador de la final cambia al campeón.

@@ -47,8 +47,15 @@ function iniciales_de(string $nombre): string
  *
  * Sin número se usan las iniciales de siempre.
  */
-function siglas_de_equipo(string $nombre): string
+function siglas_de_equipo(string $nombre, string $manual = ''): string
 {
+    // Lo que escribió el organizador manda. Se recorta a 4 porque más no entra en el
+    // círculo, y así el campo no puede romper el diseño por un dedazo.
+    $manual = trim($manual);
+    if ($manual !== '') {
+        return mb_substr($manual, 0, 4);
+    }
+
     if (preg_match_all('/\d+/', $nombre, $coincidencias)) {
         // El más largo: en "Promoción 45 B" interesa el 45, no un dígito suelto.
         $numeros = $coincidencias[0];
@@ -66,9 +73,9 @@ function siglas_de_equipo(string $nombre): string
  * Genera un escudo circular en SVG a partir de las siglas y colores del equipo.
  * Se usa como respaldo cuando el equipo no tiene un logo cargado.
  */
-function escudo_svg(string $nombre, string $color1 = '#7b2ff7', string $color2 = '#ff6b35', int $size = 96): string
+function escudo_svg(string $nombre, string $color1 = '#7b2ff7', string $color2 = '#ff6b35', int $size = 96, string $siglas = ''): string
 {
-    $texto = siglas_de_equipo($nombre);
+    $texto = siglas_de_equipo($nombre, $siglas);
     $iniciales = e($texto);
     $gradId = 'g' . substr(md5($nombre . $color1), 0, 8);
     $c1 = e($color1);
@@ -113,7 +120,7 @@ function logo_equipo(array $equipo, int $size = 96, string $clase = ''): string
     }
     $c1 = $equipo['color_primario'] ?? '#7b2ff7';
     $c2 = $equipo['color_secundario'] ?? '#ff6b35';
-    return "<span class=\"{$clase}\">" . escudo_svg($equipo['nombre'] ?? '?', $c1, $c2, $size) . '</span>';
+    return "<span class=\"{$clase}\">" . escudo_svg($equipo['nombre'] ?? '?', $c1, $c2, $size, (string) ($equipo['siglas'] ?? '')) . '</span>';
 }
 
 /**
