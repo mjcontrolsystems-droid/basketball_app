@@ -24,6 +24,7 @@ const COLUMNAS_TORNEO = [
     'amarillas_para_suspension', 'partidos_suspension_amarillas',
     'num_grupos', 'clasifican_por_grupo', 'podio_publicado',
     'facebook', 'tiktok', 'whatsapp',
+    'en_mantenimiento', 'mensaje_mantenimiento',
 ];
 
 /**
@@ -219,7 +220,7 @@ function torneos_guardar(array $datos, ?int $usuarioIdCreador = null): int
     // Con prepared statements emulados (necesario por el pooler de Neon, ver db_conexion()),
     // Postgres ya no acepta 0/1 como boolean de forma implícita como sí hacía con prepares
     // nativos: hay que mandar el texto 'true'/'false' para estas 3 columnas.
-    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado'];
+    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento'];
 
     $valores = [];
     foreach (COLUMNAS_TORNEO as $c) {

@@ -413,6 +413,11 @@ function db_migrar_automatico(): void
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS tiktok TEXT NOT NULL DEFAULT ''");
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS whatsapp TEXT NOT NULL DEFAULT ''");
 
+        // Modo mantenimiento: cierra el sitio público mientras se reacomoda el calendario,
+        // sin tener que borrar nada ni desactivar la copa.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS en_mantenimiento BOOLEAN NOT NULL DEFAULT FALSE');
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS mensaje_mantenimiento TEXT NOT NULL DEFAULT ''");
+
         // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
         // clave por cada cambio del archivo a lo largo de la vida del proyecto.
         foreach (array_keys($_SESSION) as $k) {

@@ -72,7 +72,7 @@
 
         <h4 class="mb-3">Partidos de <?= e($equipo['nombre']) ?></h4>
         <div class="row row-cols-1 row-cols-lg-2 g-3">
-            <?php foreach ($partidosEquipo as $p): $local = $equiposPorId[$p['equipo_local']]; $visit = $equiposPorId[$p['equipo_visitante']]; $jugado = $p['estado'] === 'jugado'; $clicable = $jugado; ?>
+            <?php foreach ($partidosEquipo as $p): $local = $equiposPorId[$p['equipo_local']]; $visit = $equiposPorId[$p['equipo_visitante']]; $jugado = $p['estado'] === 'jugado'; $clicable = true; /* también los pendientes: la ficha muestra hora y cancha */ ?>
             <div class="col">
                 <div class="partido-card h-100 <?= $clicable ? 'fila-clicable' : '' ?>" <?= $clicable ? 'data-href="' . e(url_copa('partido.php?id=' . $p['id'])) . '"' : '' ?>>
                     <div class="d-flex justify-content-between align-items-center mb-2">

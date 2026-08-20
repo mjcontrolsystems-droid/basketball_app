@@ -51,9 +51,49 @@ function vista_render(string $plantilla, array $datos = []): string
 function vista_publica(string $plantilla, array $datos = []): void
 {
     $datos = datos_layout_publico($datos);
+
+    // Modo mantenimiento: el sitio queda cerrado al público mientras se reacomoda el
+    // calendario. Se corta aquí, en el único punto por donde pasan TODAS las páginas
+    // públicas, para que no quede ninguna colada — la tabla, el calendario, la ficha de un
+    // partido o el reporte de un equipo comparten esta puerta.
+    //
+    // El organizador sí entra: necesita revisar cómo va quedando antes de reabrir.
+    if (torneo_en_mantenimiento($datos['torneo'] ?? null) && !puede_ver_en_mantenimiento($datos['torneo'] ?? null)) {
+        vista('publico/mantenimiento', $datos);
+        exit;
+    }
+
     vista('layouts/publico_top', $datos);
     vista($plantilla, $datos);
     vista('layouts/publico_bottom', $datos);
+}
+
+/**
+ * ¿Esta copa tiene el sitio público cerrado?
+ */
+function torneo_en_mantenimiento(?array $torneo): bool
+{
+    return $torneo !== null && !empty($torneo['en_mantenimiento']);
+}
+
+/**
+ * Quién puede entrar aunque esté cerrado: el organizador dueño de la copa y los
+ * superadmins. Cualquier otro visitante ve el aviso.
+ */
+function puede_ver_en_mantenimiento(?array $torneo): bool
+{
+    if ($torneo === null || !auth_check()) {
+        return false;
+    }
+    $usuario = usuarios_obtener_por_id((int) ($_SESSION['usuario_id'] ?? 0));
+    if ($usuario === null) {
+        return false;
+    }
+    if (es_superadmin($usuario)) {
+        return true;
+    }
+
+    return (int) ($torneo['usuario_id'] ?? 0) === (int) $usuario['id'];
 }
 
 /**

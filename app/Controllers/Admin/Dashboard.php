@@ -12,6 +12,28 @@ $partidos = partidos_listar($torneo['id']);
 
 // Publicar o bajar el podio de cierre. El podio en sí no se guarda: se recalcula en vivo,
 // así que corregir el marcador de la final cambia al campeón sin tener que republicar.
+// Abrir o cerrar el sitio público. Sirve para reacomodar el calendario sin que la gente
+// vea a medias los cambios — publicar un calendario y estarlo corrigiendo en vivo genera
+// más reclamos que tenerlo cerrado un rato.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'mantenimiento') {
+    csrf_validar();
+    $cerrar = !empty($_POST['cerrar']);
+    $mensaje = trim((string) ($_POST['mensaje_mantenimiento'] ?? ''));
+
+    torneos_guardar(array_merge($torneo, [
+        'en_mantenimiento' => $cerrar,
+        'mensaje_mantenimiento' => mb_substr($mensaje, 0, 300),
+    ]));
+    bitacora_registrar($cerrar ? 'sitio_cerrado' : 'sitio_abierto', $cerrar ? 'Sitio público puesto en mantenimiento' : 'Sitio público reabierto', $torneo['id']);
+    redirigir_con_mensaje(
+        url('admin/index.php'),
+        'success',
+        $cerrar
+            ? 'Sitio público cerrado. Los visitantes ven el aviso de mantenimiento; tú puedes seguir entrando con tu sesión.'
+            : '¡Sitio público reabierto! Ya se puede ver de nuevo.'
+    );
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'publicar_podio') {
     csrf_validar();
     $publicar = !empty($_POST['publicar']);

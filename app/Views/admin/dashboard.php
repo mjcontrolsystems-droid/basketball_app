@@ -6,6 +6,45 @@
     <a href="<?= url('admin/partidos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Programar encuentro</a>
 </div>
 
+<?php // ---------- Sitio público abierto o en mantenimiento ---------- ?>
+<?php $enMantenimiento = !empty($torneo['en_mantenimiento']); ?>
+<div class="card-suave p-4 mb-4 <?= $enMantenimiento ? 'border border-warning border-2' : '' ?>">
+    <form method="post" data-confirm="<?= $enMantenimiento
+        ? 'Se va a reabrir el sitio público. ¿Continuamos?'
+        : 'El sitio público va a quedar cerrado y los visitantes verán el aviso de mantenimiento. Tú vas a poder seguir entrando. ¿Continuamos?' ?>">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="accion" value="mantenimiento">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div style="min-width:0;">
+                <h5 class="mb-1">
+                    <i class="bi <?= $enMantenimiento ? 'bi-cone-striped text-warning' : 'bi-globe2 text-success' ?> me-1"></i>
+                    <?= $enMantenimiento ? 'Sitio público cerrado' : 'Sitio público abierto' ?>
+                </h5>
+                <p class="small text-muted mb-0">
+                    <?= $enMantenimiento
+                        ? 'Los visitantes ven el aviso de mantenimiento. Tú sigues entrando normal con tu sesión abierta.'
+                        : 'Cualquiera con el enlace puede ver la tabla, el calendario y los equipos. Ciérralo mientras reacomodas el calendario, para que nadie lo vea a medias.' ?>
+                </p>
+            </div>
+            <?php if ($enMantenimiento): ?>
+            <button type="submit" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-unlock me-1"></i>Reabrir el sitio</button>
+            <?php else: ?>
+            <input type="hidden" name="cerrar" value="1">
+            <button type="submit" class="btn btn-outline-warning rounded-pill px-3"><i class="bi bi-cone-striped me-1"></i>Cerrar por mantenimiento</button>
+            <?php endif; ?>
+        </div>
+
+        <?php // El mensaje se puede editar aunque el sitio esté abierto, para dejarlo listo. ?>
+        <div class="mt-3">
+            <label class="form-label small fw-semibold" for="mensajeMantenimiento">Mensaje que verán los visitantes</label>
+            <textarea name="mensaje_mantenimiento" id="mensajeMantenimiento" class="form-control" rows="2" maxlength="300"
+                      placeholder="Estamos actualizando el calendario. Vuelve en un rato — gracias por tu comprensión."><?= e($torneo['mensaje_mantenimiento'] ?? '') ?></textarea>
+            <div class="form-text">Si lo dejas vacío se usa el mensaje de arriba. Se guarda al pulsar el botón.</div>
+        </div>
+    </form>
+</div>
+
 <?php // ---------- Cierre de temporada ----------
       // Aparece cuando ya hay un campeón identificable. El podio NO se publica solo: la
       // app lo detecta y el organizador decide cuándo sacarlo, para que un marcador mal

@@ -11,7 +11,11 @@ if (!$local || !$visit) {
     return;
 }
 $jugado = $p['estado'] === 'jugado';
-$clicable = $jugado;
+// Todos los encuentros se pueden abrir, no solo los jugados. Antes solo era clicable el
+// que ya tenía resultado, y el hincha que quería ver a qué hora y en qué cancha juega su
+// equipo el sábado se quedaba sin poder entrar. La ficha ya sabe mostrar un partido
+// pendiente: enseña fecha, hora, sede y la alineación si está cargada.
+$clicable = true;
 ?>
 <div class="col">
     <div class="partido-card h-100 <?= $clicable ? 'fila-clicable' : '' ?>" <?= $clicable ? 'data-href="' . e(url_copa('partido.php?id=' . $p['id'])) . '"' : '' ?>>
