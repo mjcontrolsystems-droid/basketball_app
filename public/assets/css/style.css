@@ -113,6 +113,39 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     padding-left: .9rem !important;
     padding-right: .9rem !important;
     position: relative;
+    /* Sin esto "Tabla de Posiciones" y "Tengo un código" se parten en tres renglones y el
+       menú se ve amontonado aunque sobre espacio a los lados. */
+    white-space: nowrap;
+}
+
+.navbar-copa .navbar-nav .btn {
+    white-space: nowrap;
+}
+
+/* Entre 992 y 1400px caben los seis enlaces más los tres botones, pero justos: se aprieta
+   un poco el espaciado en vez de dejar que envuelvan. */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .navbar-copa .nav-link {
+        font-size: .86rem;
+        padding-left: .55rem !important;
+        padding-right: .55rem !important;
+    }
+
+    .navbar-copa .nav-link.active::after {
+        left: .55rem;
+        right: .55rem;
+    }
+
+    /* El nombre de la copa puede ser largo ("Liga Exalumnos I.A.V.H.C."): se recorta con
+       puntos suspensivos antes que empujar el menú a otra línea. */
+    .navbar-copa .navbar-brand span {
+        display: inline-block;
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
 }
 
 .navbar-copa .nav-link.active,
@@ -164,6 +197,51 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 }
 
 /* ---------- Hero ---------- */
+/* ---------------------------------------------------------------------------
+   Pantallas grandes.
+   Bootstrap corta el contenedor en 1320px y de ahí no pasa, así que en un monitor
+   de 2560px quedaba una franja de contenido al centro con muchísimo aire desperdiciado
+   a los lados. Se ensancha por tramos, no de golpe.
+
+   El texto corrido NO se ensancha con el resto: una línea de 1700px de ancho es
+   incómoda de leer. Lo que gana espacio son las tablas y las tarjetas, que es donde
+   de verdad sirve.
+   --------------------------------------------------------------------------- */
+
+@media (min-width: 1600px) {
+    .container,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container-xl,
+    .container-xxl {
+        max-width: 1480px;
+    }
+}
+
+@media (min-width: 1920px) {
+    .container,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container-xl,
+    .container-xxl {
+        max-width: 1700px;
+    }
+}
+
+/* Límite de lectura: un párrafo o un título no debería cruzar toda la pantalla. */
+@media (min-width: 1600px) {
+    .hero-copa h1 {
+        max-width: 18ch;
+    }
+
+    .hero-copa p,
+    .seccion > .container > p {
+        max-width: 68ch;
+    }
+}
+
 .hero-copa {
     background: var(--degradado-noche);
     color: #fff;
