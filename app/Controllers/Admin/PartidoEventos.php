@@ -334,9 +334,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         if ($accion === 'agregar_gol') {
+            // jugador_id = 0 significa "sin identificar": el gol cuenta para el marcador
+            // aunque el equipo todavía no tenga cargada su plantilla. Es lo que pasa en la
+            // primera fecha, cuando hay promociones que aún no mandaron su nómina; obligar
+            // a elegir un jugador empujaría a inventar uno solo para poder anotar el gol.
             $jugadorId = (int) ($_POST['jugador_id'] ?? 0);
-            if (!in_array($jugadorId, $rosterEquipo, true)) {
+            if ($jugadorId !== 0 && !in_array($jugadorId, $rosterEquipo, true)) {
                 redirigir_con_mensaje($urlLista, 'error', forma_genero($torneo['genero'] ?? null, 'Selecciona un jugador válido de ese equipo.', 'Selecciona una jugadora válida de ese equipo.'));
+            }
+            if ($jugadorId === 0) {
+                $jugadorId = null;
             }
             $catalogoTipoGol = tipos_anotacion_catalogo($deporte);
             $tipoGolDefault = $catalogoTipoGol[0];
@@ -350,9 +357,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($accion === 'agregar_tarjeta') {
+            // Igual que el gol, se acepta sin identificar para que la ficha refleje lo que
+            // pasó en la cancha. Ojo: una tarjeta sin jugador NO genera multa ni cuenta
+            // para las suspensiones — no hay a quién cobrarle ni a quién suspender. La
+            // pantalla lo avisa para que nadie crea que quedó registrada la sanción.
             $jugadorId = (int) ($_POST['jugador_id'] ?? 0);
-            if (!in_array($jugadorId, $rosterEquipo, true)) {
+            if ($jugadorId !== 0 && !in_array($jugadorId, $rosterEquipo, true)) {
                 redirigir_con_mensaje($urlLista, 'error', forma_genero($torneo['genero'] ?? null, 'Selecciona un jugador válido de ese equipo.', 'Selecciona una jugadora válida de ese equipo.'));
+            }
+            if ($jugadorId === 0) {
+                $jugadorId = null;
             }
             $color = (string) ($_POST['color'] ?? 'amarilla') === 'roja' ? 'roja' : 'amarilla';
             $catalogoMotivo = motivos_falta_grave_catalogo($deporte);

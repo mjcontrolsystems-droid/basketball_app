@@ -167,8 +167,10 @@ function jugadores_por_id(array $jugadores): array
 
 function jugador_nombre(?array $jugador): string
 {
+    // Pasa cuando el evento se cargó sin identificar al jugador, porque el equipo todavía
+    // no tenía su plantilla. No es un error: el gol o la tarjeta sí ocurrieron.
     if ($jugador === null) {
-        return 'Jugador no registrado';
+        return 'Sin identificar';
     }
     return '#' . $jugador['dorsal'] . ' ' . $jugador['nombre'];
 }

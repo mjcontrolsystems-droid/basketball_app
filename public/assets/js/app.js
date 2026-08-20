@@ -178,9 +178,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     select.removeChild(select.firstChild);
                 }
                 todas.forEach(function (opcion) {
-                    // El placeholder ("Jugador que anota...", "Sin asistencia") no
-                    // pertenece a ningún equipo y siempre debe seguir disponible.
-                    if (opcion.value === '' || opcion.getAttribute('data-equipo') === equipoId) {
+                    // El placeholder ("Jugador que anota...", "Sin asistencia") y la
+                    // opción "Sin identificar" (valor 0) no pertenecen a ningún equipo y
+                    // siempre deben seguir disponibles. Sin esto, el filtro borraba la de
+                    // "Sin identificar" al elegir equipo y no había forma de usarla.
+                    if (opcion.value === '' || opcion.value === '0' || opcion.getAttribute('data-equipo') === equipoId) {
                         select.appendChild(opcion);
                     }
                 });

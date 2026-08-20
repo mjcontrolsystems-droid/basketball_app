@@ -146,12 +146,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             }
 
-            if (count($plantillaInicial) < $minimoJugadores) {
+            // El mínimo sigue vigente, pero se puede saltar a conciencia: hay equipos que
+            // se inscriben antes de mandar su nómina, y sin poder crearlos no se puede
+            // generar el calendario ni programar sus encuentros. La casilla lo deja
+            // explícito en vez de obligar a inventar jugadores para pasar la validación.
+            $sinPlantillaTodavia = !empty($_POST['sin_plantilla']);
+
+            if (!$sinPlantillaTodavia && count($plantillaInicial) < $minimoJugadores) {
                 $faltan = $minimoJugadores - count($plantillaInicial);
                 redirigir_con_mensaje(
                     $urlFormularioNuevo,
                     'error',
-                    "Esta modalidad juega con {$minimoJugadores} en cancha, así que el equipo necesita al menos {$minimoJugadores} jugadores. Te faltan {$faltan}."
+                    "Esta modalidad juega con {$minimoJugadores} en cancha, así que el equipo necesita al menos {$minimoJugadores} jugadores. Te faltan {$faltan}. Si esta promoción todavía no manda su listado, marca la casilla para crearlo sin plantilla."
                 );
             }
         }

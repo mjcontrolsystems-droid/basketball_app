@@ -303,6 +303,10 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 <div class="col-8">
                     <select name="jugador_id" class="form-select form-select-sm" data-filtra-jugador required>
                         <option value=""><?= e($etJugador) ?> que anota...</option>
+                        <?php // Para equipos que todavía no mandaron su nómina: el gol cuenta
+                              // para el marcador aunque no se sepa quién lo hizo. Sin esto
+                              // habría que inventar un jugador solo para poder anotarlo. ?>
+                        <option value="0">Sin identificar</option>
                         <?php foreach ($equiposDelPartido as $eid): foreach ($jugadoresPorEquipo[$eid] ?? [] as $j): ?>
                         <option value="<?= $j['id'] ?>" data-equipo="<?= $eid ?>">#<?= e($j['dorsal']) ?> <?= e($j['nombre']) ?></option>
                         <?php endforeach; endforeach; ?>
@@ -355,6 +359,9 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 <div class="col-8">
                     <select name="jugador_id" class="form-select form-select-sm" data-filtra-jugador required>
                         <option value=""><?= e($etJugador) ?>...</option>
+                        <?php // Una tarjeta sin identificar queda en la ficha, pero NO genera
+                              // multa ni cuenta para suspensiones: no hay a quién cobrarle. ?>
+                        <option value="0">Sin identificar</option>
                         <?php foreach ($equiposDelPartido as $eid): foreach ($jugadoresPorEquipo[$eid] ?? [] as $j): ?>
                         <option value="<?= $j['id'] ?>" data-equipo="<?= $eid ?>">#<?= e($j['dorsal']) ?> <?= e($j['nombre']) ?></option>
                         <?php endforeach; endforeach; ?>

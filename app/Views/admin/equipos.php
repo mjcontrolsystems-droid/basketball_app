@@ -77,6 +77,16 @@
                     <?= e(mb_strtolower(forma_genero($torneo['genero'] ?? null, 'jugadores', 'jugadoras'))) ?>. Las filas que dejes vacías se ignoran.
                 </p>
 
+                <?php // Salida para las promociones que se inscriben antes de mandar su
+                      // nómina: sin poder crear el equipo no se puede armar el calendario. ?>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="sin_plantilla" value="1" id="chkSinPlantilla">
+                    <label class="form-check-label small" for="chkSinPlantilla">
+                        Este equipo todavía no tiene su listado
+                        <span class="d-block text-muted">Se crea vacío y le cargas la plantilla cuando el delegado la mande. Puedes programarle encuentros mientras tanto.</span>
+                    </label>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
                         <thead>
