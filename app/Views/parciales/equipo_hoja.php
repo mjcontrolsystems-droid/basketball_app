@@ -74,17 +74,24 @@
 </table>
 <?php endif; ?>
 
-<?php // ---------- Próximos encuentros ---------- ?>
-<h3>Próximos encuentros</h3>
+<?php // ---------- Próximos encuentros ----------
+      // Se listan TODOS los que faltan, no los primeros 10.
+      //
+      // El tope de 10 venía de cuando la hoja se pensó para ligas cortas, pero en una
+      // temporada de 16 equipos cada uno juega 15 partidos: la hoja mostraba 10 y ocultaba
+      // 5 sin decirlo, y parecía que el calendario estaba incompleto. El delegado imprime
+      // esto justamente para tener el fixture entero de su equipo. ?>
+<h3>Próximos encuentros<?= count($proximos) > 0 ? ' (' . count($proximos) . ')' : '' ?></h3>
 <table class="ficha-tabla">
-    <thead><tr><th style="width:20%;">Fecha</th><th style="width:10%;">Hora</th><th>Rival</th><th style="width:14%;">Condición</th><th style="width:24%;">Cancha</th></tr></thead>
+    <thead><tr><th style="width:8%;">#</th><th style="width:20%;">Fecha</th><th style="width:10%;">Hora</th><th>Rival</th><th style="width:14%;">Condición</th><th style="width:22%;">Cancha</th></tr></thead>
     <tbody>
-        <?php foreach (array_slice($proximos, 0, 10) as $p): ?>
+        <?php foreach ($proximos as $iProximo => $p): ?>
         <?php
             $esLocal = (int) $p['equipo_local'] === (int) $equipo['id'];
             $rivalId = $esLocal ? (int) $p['equipo_visitante'] : (int) $p['equipo_local'];
         ?>
         <tr>
+            <td><?= $iProximo + 1 ?></td>
             <td><?= e(formatear_fecha_larga($p['fecha'])) ?></td>
             <td><?= e($p['hora']) ?></td>
             <td><?= e($equiposPorId[$rivalId]['nombre'] ?? '—') ?></td>
@@ -93,17 +100,19 @@
         </tr>
         <?php endforeach; ?>
         <?php if (empty($proximos)): ?>
-        <tr><td colspan="5">No hay encuentros pendientes.</td></tr>
+        <tr><td colspan="6">No hay encuentros pendientes.</td></tr>
         <?php endif; ?>
     </tbody>
 </table>
 
-<?php // ---------- Resultados ---------- ?>
-<h3>Últimos resultados</h3>
+<?php // ---------- Resultados ----------
+      // Igual que los próximos: todos, no los primeros 10. Al cerrar la temporada un
+      // equipo lleva 15 jugados y el reporte mostraba 10 sin decir que faltaban. ?>
+<h3>Resultados<?= count($jugados) > 0 ? ' (' . count($jugados) . ')' : '' ?></h3>
 <table class="ficha-tabla">
     <thead><tr><th style="width:20%;">Fecha</th><th>Rival</th><th style="width:16%;">Resultado</th><th style="width:14%;">Marcador</th></tr></thead>
     <tbody>
-        <?php foreach (array_slice($jugados, 0, 10) as $p): ?>
+        <?php foreach ($jugados as $p): ?>
         <?php
             $esLocal = (int) $p['equipo_local'] === (int) $equipo['id'];
             $rivalId = $esLocal ? (int) $p['equipo_visitante'] : (int) $p['equipo_local'];
