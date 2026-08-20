@@ -168,6 +168,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje(url('admin/partidos.php'), 'success', $aviso);
     }
 
+    // Borrar de una jornada en adelante, conservando lo anterior.
+    //
+    // Hace falta cuando hay que rehacer el calendario pero las primeras jornadas ya se
+    // publicaron a los equipos: "reemplazar" borra todo y obligaría a volver a capturar a
+    // mano lo que ya estaba avisado. Con esto se borra solo la parte generada y después se
+    // vuelve a generar con la opción de continuar.
+    if (($_POST['accion'] ?? '') === 'borrar_desde_jornada') {
+        $desde = (int) ($_POST['jornada'] ?? 0);
+        if ($desde < 1) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Indica desde qué jornada hay que borrar.');
+        }
+
+        $aBorrar = array_values(array_filter(
+            $partidos,
+            fn($p) => ($p['fase'] ?? 'grupos') === 'grupos' && (int) ($p['jornada'] ?? 0) >= $desde
+        ));
+
+        // Un encuentro jugado o con ficha cargada es historia del torneo: no se borra de
+        // un clic. Se avisa y el organizador decide qué hacer con él.
+        $jugados = array_values(array_filter($aBorrar, fn($p) => ($p['estado'] ?? '') === 'jugado'));
+        if (!empty($jugados)) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No se borró nada: hay ' . count($jugados) . ' encuentro(s) ya jugados desde la jornada ' . $desde . '. Reábrelos o bórralos uno por uno si de verdad quieres rehacer esa parte.');
+        }
+        $conFicha = [];
+        foreach ($aBorrar as $p) {
+            if (!empty(db_leer_eventos_partido($torneo['id'], (int) $p['id']))) {
+                $conFicha[] = (int) $p['id'];
+            }
+        }
+        if (!empty($conFicha)) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No se borró nada: hay ' . count($conFicha) . ' encuentro(s) con eventos cargados en su ficha desde la jornada ' . $desde . '.');
+        }
+
+        if (empty($aBorrar)) {
+            redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'No hay encuentros desde la jornada ' . $desde . '.');
+        }
+
+        $ids = array_map(fn($p) => (int) $p['id'], $aBorrar);
+        $partidos = array_values(array_filter($partidos, fn($p) => !in_array((int) $p['id'], $ids, true)));
+        partidos_guardar_todos($partidos, $torneo['id']);
+        foreach ($ids as $idBorrado) {
+            db_guardar_eventos_partido($torneo['id'], $idBorrado, []);
+        }
+
+        bitacora_registrar('calendario_borrado_parcial', count($ids) . ' encuentros borrados desde la jornada ' . $desde, $torneo['id']);
+        redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Se borraron ' . count($ids) . ' encuentros desde la jornada ' . $desde . '. Lo anterior quedó intacto: ahora puedes generar de nuevo con la opción de conservar lo que ya existe.');
+    }
+
     // Correr el calendario a partir de una jornada. Cuando un fin de semana se cae (un
     // feriado que se confirmó tarde, una cancha que no prestaron), no sirve mover ese
     // partido solo: hay que empujar esa jornada y TODAS las siguientes, o se le encima a

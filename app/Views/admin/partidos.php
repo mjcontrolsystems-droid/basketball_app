@@ -546,6 +546,15 @@
                     </select>
                     <button type="submit" class="btn btn-sm btn-outline-secondary" title="Correr esta jornada y las siguientes"><i class="bi bi-calendar-range me-1"></i>Correr</button>
                 </form>
+                <?php // Borrar de aquí en adelante conservando lo anterior. Es lo que hace
+                      // falta para rehacer solo la parte generada cuando las primeras
+                      // jornadas ya se publicaron a los equipos. ?>
+                <form method="post" class="mb-0" data-confirm="Se van a eliminar TODOS los encuentros desde la jornada <?= (int) $numJornada ?> en adelante. Las jornadas anteriores no se tocan. Si alguno ya está jugado o tiene eventos, no se borra nada. ¿Continuamos?">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="accion" value="borrar_desde_jornada">
+                    <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Borrar esta jornada y todas las siguientes"><i class="bi bi-eraser me-1"></i>Borrar desde aquí</button>
+                </form>
             </div>
             <div class="row row-cols-1 row-cols-lg-2 g-3 mb-2">
                 <?php foreach ($lista as $p): ?>
