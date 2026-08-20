@@ -136,32 +136,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje(url('admin/partidos.php'), 'error', 'Ya hay ' . count($yaExisten) . ' encuentros de ' . mb_strtolower(FASES_LABEL[$faseDestino] ?? $faseDestino) . '. Bórralos primero si quieres rearmar esa ronda.');
         }
 
-        // Se programan una semana después del último encuentro que ya existe, para que no
-        // nazcan sin fecha. El organizador después les ajusta día, hora y cancha.
+        // Arrancan el fin de semana siguiente al último encuentro que ya existe.
         $ultima = '';
         foreach ($partidos as $p) {
             $ultima = max($ultima, (string) ($p['fecha'] ?? ''));
         }
-        $tsCruces = strtotime('+7 days', (int) (strtotime($ultima ?: date('Y-m-d')) ?: time()));
+        $tsCruces = strtotime('+1 day', (int) (strtotime($ultima ?: date('Y-m-d')) ?: time()));
         $fechaCruces = date('Y-m-d', $tsCruces !== false ? $tsCruces : time());
 
+        // Se reparten con el mismo criterio que la temporada regular: por días de juego,
+        // por parejas (los dos ganadores se cruzan después, así que descansan lo mismo) y
+        // con el turno para quien menos veces le ha tocado. Antes nacían todos el mismo
+        // día, sin hora y sin cancha, y había que acomodarlos a mano.
+        $ubicados = calendario_ubicar_cruces(
+            $cruces,
+            $partidos,
+            calendario_config_del_torneo($torneo, $partidos),
+            $fechaCruces
+        );
+
+        // La jornada sigue la numeración de la copa en vez de volver a 1.
+        $jornadaCruces = 1;
+        foreach ($partidos as $p) {
+            $jornadaCruces = max($jornadaCruces, (int) ($p['jornada'] ?? 0) + 1);
+        }
+
         $siguienteId = partido_nuevo_id();
-        foreach ($cruces as $cruce) {
-            $partidos[] = eliminacion_fila_partido(
+        foreach ($ubicados as $u) {
+            $fila = eliminacion_fila_partido(
                 $siguienteId++,
-                $cruce['local'],
-                $cruce['visitante'],
+                $u['cruce']['local'],
+                $u['cruce']['visitante'],
                 $faseDestino,
-                $fechaCruces,
-                $cruce['etiqueta']
+                $u['fecha'],
+                $u['cruce']['etiqueta']
             );
+            $fila['hora'] = $u['hora'];
+            $fila['cancha'] = $u['cancha'];
+            $fila['jornada'] = $jornadaCruces;
+            $partidos[] = $fila;
         }
 
         partidos_guardar_todos($partidos, $torneo['id']);
         $nombreFase = FASES_LABEL[$faseDestino] ?? $faseDestino;
         bitacora_registrar('cruces_armados', count($cruces) . ' encuentros de ' . $nombreFase . ' armados' . ($paso['origen'] ? ' desde ' . $paso['origen'] : ' desde la tabla'), $torneo['id']);
 
-        $aviso = count($cruces) . ' encuentros de ' . mb_strtolower($nombreFase) . ' creados para el ' . formatear_fecha_corta($fechaCruces) . '. Ajústales día, hora y cancha.';
+        // Se listan las fechas de verdad: con varios días de juego una ronda se reparte
+        // entre ellos, y decir una sola fecha sería mentira.
+        $fechasUsadas = array_values(array_unique(array_map(fn($u) => $u['fecha'], $ubicados)));
+        sort($fechasUsadas);
+        $conHora = !empty($ubicados) && ($ubicados[0]['hora'] ?? '') !== '';
+
+        $aviso = count($ubicados) . ' encuentros de ' . mb_strtolower($nombreFase) . ' creados para el '
+            . implode(' y el ', array_map('formatear_fecha_corta', $fechasUsadas)) . '.'
+            . ($conHora ? ' Ya llevan día, hora y cancha; revísalos por si quieres moverlos.' : ' Ajústales día, hora y cancha.');
         if (!empty($avisos)) {
             $aviso .= ' ' . implode(' ', $avisos);
         }
@@ -493,6 +521,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             partidos_guardar_todos($partidos, $torneo['id']);
+
+            // Se recuerda cómo juega esta copa. Sin esto, al armar cuartos y semis la app
+            // ya no sabía que se juega sábado y domingo, a qué hora ni qué fechas están
+            // excluidas, y los cruces nacían todos el mismo día y sin hora.
+            torneos_guardar(array_merge($torneo, [
+                'calendario_config' => calendario_config_serializar($diasConfig, $canchas, $excluidas),
+            ]));
+
             $textoVueltas = $vueltasGenerar === 2 ? 'ida y vuelta' : 'una vuelta';
             $nombresDias = implode(' y ', array_map(fn($d) => mb_strtolower(CALENDARIO_DIAS[$d['dia']]), $diasConfig));
             bitacora_registrar(

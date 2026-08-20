@@ -570,6 +570,138 @@ function calendario_historial_previo(array $historial, array $dias, int $simulta
 }
 
 /**
+ * Guarda cómo juega la copa para poder reusarlo sin volver a preguntarlo.
+ *
+ * @param array $dias Lista de ['dia','partidos','hora','intervalo'].
+ * @param array<string> $canchas
+ * @param array<string> $excluidas Fechas Y-m-d que no se juegan.
+ */
+function calendario_config_serializar(array $dias, array $canchas, array $excluidas): string
+{
+    $limpios = [];
+    foreach ($dias as $d) {
+        $limpios[] = [
+            'dia' => (int) ($d['dia'] ?? 0),
+            'partidos' => max(0, (int) ($d['partidos'] ?? 0)),
+            'hora' => (string) ($d['hora'] ?? '09:00'),
+            'intervalo' => max(1, (int) ($d['intervalo'] ?? 90)),
+        ];
+    }
+
+    return (string) json_encode([
+        'dias' => $limpios,
+        'canchas' => array_values(array_filter(array_map('trim', $canchas), fn($c) => $c !== '')),
+        'excluidas' => array_values(array_unique(array_filter($excluidas))),
+    ], JSON_UNESCAPED_UNICODE);
+}
+
+/**
+ * Cómo juega la copa: días, cupos, hora, intervalo, canchas y fechas excluidas.
+ *
+ * Primero lo guardado. Si la copa es anterior a que esto se guardara, se deduce de los
+ * encuentros que ya existen — así una liga vieja tampoco arma sus cuartos a ciegas.
+ *
+ * @return array{dias: array, canchas: array<string>, excluidas: array<string>}
+ */
+function calendario_config_del_torneo(?array $torneo, array $partidos = []): array
+{
+    $guardado = json_decode((string) ($torneo['calendario_config'] ?? ''), true);
+    if (is_array($guardado) && !empty($guardado['dias'])) {
+        return [
+            'dias' => $guardado['dias'],
+            'canchas' => (array) ($guardado['canchas'] ?? []),
+            'excluidas' => (array) ($guardado['excluidas'] ?? []),
+        ];
+    }
+
+    return calendario_config_deducida($partidos);
+}
+
+/**
+ * Deduce el ritmo de la copa mirando los encuentros que ya se programaron.
+ *
+ * Se toma la temporada regular (las fases de eliminación son irregulares por naturaleza)
+ * y de ahí salen: qué días de la semana se juega, cuántos partidos caben en cada uno, a
+ * qué hora arranca y cada cuánto sale un partido.
+ *
+ * @return array{dias: array, canchas: array<string>, excluidas: array<string>}
+ */
+function calendario_config_deducida(array $partidos): array
+{
+    // 'grupos' es la clave con la que se guarda la temporada regular (ver FASES_LABEL).
+    $regulares = array_values(array_filter(
+        $partidos,
+        fn($p) => ($p['fase'] ?? 'grupos') === 'grupos' && !empty($p['fecha'])
+    ));
+    if (empty($regulares)) {
+        return ['dias' => [], 'canchas' => [], 'excluidas' => []];
+    }
+
+    // Agrupar por fecha para saber cuántos partidos entran en un día y a qué horas.
+    $porFecha = [];
+    $canchas = [];
+    foreach ($regulares as $p) {
+        $porFecha[(string) $p['fecha']][] = (string) ($p['hora'] ?? '');
+        $cancha = trim((string) ($p['cancha'] ?? ''));
+        if ($cancha !== '') {
+            $canchas[$cancha] = true;
+        }
+    }
+
+    $porDiaSemana = [];
+    $minutosTodos = [];
+    foreach ($porFecha as $fecha => $horas) {
+        $ts = strtotime($fecha);
+        if ($ts === false) {
+            continue;
+        }
+        $dow = (int) date('w', $ts);
+        $porDiaSemana[$dow]['cupo'] = max($porDiaSemana[$dow]['cupo'] ?? 0, count($horas));
+
+        $minutos = [];
+        foreach ($horas as $h) {
+            $partes = explode(':', trim($h));
+            if (isset($partes[0], $partes[1]) && is_numeric($partes[0]) && is_numeric($partes[1])) {
+                $minutos[] = ((int) $partes[0]) * 60 + (int) $partes[1];
+            }
+        }
+        if (empty($minutos)) {
+            continue;
+        }
+        sort($minutos);
+        $inicio = $minutos[0];
+        $porDiaSemana[$dow]['inicio'] = min($porDiaSemana[$dow]['inicio'] ?? $inicio, $inicio);
+        $minutosTodos[] = $minutos;
+    }
+
+    // El intervalo es la diferencia más chica entre dos horas consecutivas de un mismo día.
+    $intervalo = 0;
+    foreach ($minutosTodos as $minutos) {
+        for ($i = 1; $i < count($minutos); $i++) {
+            $dif = $minutos[$i] - $minutos[$i - 1];
+            if ($dif > 0) {
+                $intervalo = $intervalo === 0 ? $dif : min($intervalo, $dif);
+            }
+        }
+    }
+    $intervalo = $intervalo > 0 ? $intervalo : 90;
+
+    ksort($porDiaSemana);
+    $dias = [];
+    foreach ($porDiaSemana as $dow => $datos) {
+        $inicio = (int) ($datos['inicio'] ?? 540);
+        $dias[] = [
+            'dia' => $dow,
+            'partidos' => (int) ($datos['cupo'] ?? 1),
+            'hora' => sprintf('%02d:%02d', intdiv($inicio, 60), $inicio % 60),
+            'intervalo' => $intervalo,
+        ];
+    }
+
+    return ['dias' => $dias, 'canchas' => array_keys($canchas), 'excluidas' => []];
+}
+
+/**
  * Cuántas veces dobló cada equipo en las jornadas ya publicadas.
  *
  * Doblar es jugar dos veces la misma jornada. Sin este conteo el generador arranca de
@@ -733,6 +865,7 @@ function calendario_generar(array $equipoIds, array $opciones): array
         $dias,
         $simultaneos
     );
+    $localPublicadas = $vecesLocal; // lo ya publicado no se puede invertir
 
     foreach ($plan as $j => $jornada) {
         $repartidos = calendario_repartir_en_dias($jornada['principal'], $jornada['adelantados'], $cupos);
@@ -782,7 +915,253 @@ function calendario_generar(array $equipoIds, array $opciones): array
         $calendario[] = ['numero' => $j + 1 + (int) ($opciones['jornada_inicial'] ?? 0), 'dias' => $diasJornada];
     }
 
+    // Última pasada: emparejar las localías. Se hace al final y no sobre la marcha porque
+    // decidirlo partido a partido depende del orden y salía disparejo según el sorteo.
+    return calendario_balancear_localias($calendario, $localPublicadas);
+}
+
+/** Vueltas máximas de la pasada que empareja las localías. Corta sola mucho antes. */
+const CALENDARIO_VUELTAS_LOCALIA = 200;
+
+/**
+ * Empareja las localías dando vuelta partidos hasta que nadie tenga 2 de más.
+ *
+ * Elegir local sobre la marcha ("va el que menos veces lo ha sido") es miope: depende del
+ * orden en que salen los partidos y según el sorteo terminaba en 6-9 o en 7-8 de puro
+ * azar. Esta pasada lo arregla después, con el calendario ya armado: busca un partido
+ * donde el local ya tiene al menos 2 de más que su rival y lo invierte. Cada vuelta
+ * reduce la diferencia, así que termina sola.
+ *
+ * Los cruces que aparecen dos veces (ida y vuelta) no se tocan: ahí la localía ya está
+ * pareja por definición e invertir uno solo rompería la vuelta.
+ *
+ * @param array<int, int> $vecesLocalPrevias Localías de lo ya publicado, que no se puede tocar.
+ */
+function calendario_balancear_localias(array $calendario, array $vecesLocalPrevias = []): array
+{
+    // Índice de todos los partidos que sí se pueden invertir.
+    $refs = [];
+    $conteoPar = [];
+    foreach ($calendario as $j => $jornada) {
+        foreach ($jornada['dias'] as $d => $dia) {
+            foreach ($dia['partidos'] as $p => $partido) {
+                $a = (int) $partido['local'];
+                $b = (int) $partido['visitante'];
+                $clave = min($a, $b) . '-' . max($a, $b);
+                $conteoPar[$clave] = ($conteoPar[$clave] ?? 0) + 1;
+                $refs[] = ['j' => $j, 'd' => $d, 'p' => $p, 'clave' => $clave];
+            }
+        }
+    }
+    if (empty($refs)) {
+        return $calendario;
+    }
+
+    $local = $vecesLocalPrevias;
+    foreach ($calendario as $jornada) {
+        foreach ($jornada['dias'] as $dia) {
+            foreach ($dia['partidos'] as $partido) {
+                $local[(int) $partido['local']] = ($local[(int) $partido['local']] ?? 0) + 1;
+            }
+        }
+    }
+
+    // Cuántos partidos juega cada equipo: define cuántos DEBERÍA jugar en casa.
+    $jugados = [];
+    foreach ($calendario as $jornada) {
+        foreach ($jornada['dias'] as $dia) {
+            foreach ($dia['partidos'] as $partido) {
+                $jugados[(int) $partido['local']] = ($jugados[(int) $partido['local']] ?? 0) + 1;
+                $jugados[(int) $partido['visitante']] = ($jugados[(int) $partido['visitante']] ?? 0) + 1;
+            }
+        }
+    }
+
+    // Solo los invertibles: un cruce de ida y vuelta ya está parejo por definición.
+    $invertibles = array_values(array_filter($refs, fn($r) => ($conteoPar[$r['clave']] ?? 0) === 1));
+
+    for ($vuelta = 0; $vuelta < CALENDARIO_VUELTAS_LOCALIA; $vuelta++) {
+        // ¿Alguien tiene de más? Se atiende primero al que más se pasa.
+        $sobra = null;
+        $peor = 0;
+        foreach ($jugados as $eq => $n) {
+            $exceso = ($local[$eq] ?? 0) - (int) ceil($n / 2);
+            if ($exceso > $peor) {
+                $peor = $exceso;
+                $sobra = (int) $eq;
+            }
+        }
+        if ($sobra === null) {
+            break;
+        }
+
+        // Cadena de partidos desde el que sobra hasta alguno que le falte, siguiendo
+        // siempre "de local a visitante". Invertir toda la cadena le quita uno al primero
+        // y le da uno al último; los del medio quedan igual. Con un cruce directo no
+        // siempre alcanza: si el que sobra visita al que le falta, hay que dar la vuelta
+        // por un tercero, y eso es justo lo que encuentra esta búsqueda.
+        $previo = [$sobra => null];
+        $cola = [$sobra];
+        $destino = null;
+
+        while ($cola !== [] && $destino === null) {
+            $actual = array_shift($cola);
+            foreach ($invertibles as $i => $r) {
+                $partido = $calendario[$r['j']]['dias'][$r['d']]['partidos'][$r['p']];
+                if ((int) $partido['local'] !== $actual) {
+                    continue;
+                }
+                $siguiente = (int) $partido['visitante'];
+                if (array_key_exists($siguiente, $previo)) {
+                    continue;
+                }
+                $previo[$siguiente] = ['de' => $actual, 'ref' => $i];
+                // Sirve de destino cualquiera que todavía pueda recibir un partido de
+                // local sin pasarse de su cuota. Con 15 partidos la cuota es 7 u 8, así
+                // que quien va en 7 sí puede recibir uno más: exigir que fuera menos de 7
+                // dejaba sin arreglo el caso de un equipo con muchos de local y el resto
+                // justo en la raya.
+                if (($local[$siguiente] ?? 0) < (int) ceil(($jugados[$siguiente] ?? 0) / 2)) {
+                    $destino = $siguiente;
+                    break;
+                }
+                $cola[] = $siguiente;
+            }
+        }
+
+        if ($destino === null) {
+            break; // no hay forma de mejorarlo más
+        }
+
+        for ($nodo = $destino; $previo[$nodo] !== null; $nodo = $previo[$nodo]['de']) {
+            $r = $invertibles[$previo[$nodo]['ref']];
+            $partido = &$calendario[$r['j']]['dias'][$r['d']]['partidos'][$r['p']];
+            [$partido['local'], $partido['visitante']] = [$partido['visitante'], $partido['local']];
+            unset($partido);
+        }
+        $local[$sobra]--;
+        $local[$destino] = ($local[$destino] ?? 0) + 1;
+    }
+
     return $calendario;
+}
+
+/**
+ * Le pone fecha, día, hora y cancha a los cruces de una fase de eliminación.
+ *
+ * Antes estos partidos nacían todos el mismo día, sin hora y sin cancha, y había que
+ * acomodarlos a mano uno por uno. Eso rompía todo lo que se cuidó en la temporada
+ * regular: cuatro cuartos de final el sábado con el domingo vacío, y el primer turno
+ * cayéndole otra vez al mismo. Ahora se usa el mismo criterio:
+ *
+ *   - Los partidos se agrupan de dos en dos (esos dos ganadores se cruzan después, así
+ *     que tienen que descansar lo mismo) y las parejas se reparten entre los días.
+ *   - Dentro del día, el turno se le da a quien menos veces le ha tocado ese horario.
+ *   - Se respetan las fechas que no se juegan.
+ *
+ * @param array<int, array{local: array, visitante: array, etiqueta: string}> $cruces
+ * @param array $config Lo que devuelve calendario_config_del_torneo().
+ * @return array<int, array{cruce: array, fecha: string, hora: string, cancha: string}>
+ */
+function calendario_ubicar_cruces(array $cruces, array $partidosExistentes, array $config, string $desdeFecha): array
+{
+    $cruces = array_values($cruces);
+    if (empty($cruces)) {
+        return [];
+    }
+
+    $dias = array_values($config['dias'] ?? []);
+    $canchas = array_values(array_filter(array_map('trim', (array) ($config['canchas'] ?? [])), fn($c) => $c !== ''));
+
+    // Sin días configurados no hay nada que repartir: todos el mismo día, como antes.
+    if (empty($dias)) {
+        return array_map(fn($c) => ['cruce' => $c, 'fecha' => $desdeFecha, 'hora' => '', 'cancha' => ''], $cruces);
+    }
+
+    $bloques = calendario_fechas(
+        $desdeFecha,
+        array_map(fn($d) => (int) ($d['dia'] ?? 0), $dias),
+        max(1, (int) ceil(count($cruces) / max(1, count($dias)))) + 1,
+        (array) ($config['excluidas'] ?? [])
+    );
+    if (empty($bloques)) {
+        return array_map(fn($c) => ['cruce' => $c, 'fecha' => $desdeFecha, 'hora' => '', 'cancha' => ''], $cruces);
+    }
+
+    // Días disponibles, uno detrás de otro, con el cupo de cada uno.
+    $slots = [];
+    foreach ($bloques as $bloque) {
+        foreach ($bloque as $i => $fecha) {
+            $slots[] = [
+                'fecha' => $fecha,
+                'cupo' => max(1, (int) ($dias[$i]['partidos'] ?? 1)),
+                'hora' => (string) ($dias[$i]['hora'] ?? '09:00'),
+                'intervalo' => max(1, (int) ($dias[$i]['intervalo'] ?? 90)),
+                'cruces' => [],
+            ];
+        }
+    }
+
+    // Repartir por parejas, rotando los días antes de repetir uno.
+    $parejas = array_chunk($cruces, 2);
+    $indice = 0;
+    foreach ($parejas as $k => $pareja) {
+        $destino = $k % count($slots);
+        $vueltas = 0;
+        while ($vueltas < count($slots) && count($slots[$destino]['cruces']) + count($pareja) > $slots[$destino]['cupo']) {
+            $destino = ($destino + 1) % count($slots);
+            $vueltas++;
+        }
+        foreach ($pareja as $c) {
+            $slots[$destino]['cruces'][] = $c;
+        }
+        $indice = max($indice, $destino);
+    }
+
+    $simultaneos = max(1, count($canchas));
+    [$vecesTurno, $acumuladoTurno] = calendario_historial_previo(
+        array_map(fn($p) => [
+            'local' => (int) ($p['equipo_local'] ?? 0),
+            'visitante' => (int) ($p['equipo_visitante'] ?? 0),
+            'hora' => (string) ($p['hora'] ?? ''),
+        ], $partidosExistentes),
+        $dias,
+        $simultaneos
+    );
+
+    $salida = [];
+    foreach ($slots as $slot) {
+        if (empty($slot['cruces'])) {
+            continue;
+        }
+
+        // Se reusa el mismo ordenador de turnos de la temporada regular. Necesita pares
+        // de ids, así que se traducen los cruces y luego se vuelven a casar por posición.
+        $pares = array_map(fn($c) => [(int) $c['local']['id'], (int) $c['visitante']['id'], false], $slot['cruces']);
+        [$ordenados, $vecesTurno, $acumuladoTurno] = calendario_ordenar_turnos($pares, $vecesTurno, $acumuladoTurno, $simultaneos);
+
+        foreach ($ordenados as $k => [$a, $b]) {
+            $cruce = null;
+            foreach ($slot['cruces'] as $c) {
+                if ((int) $c['local']['id'] === (int) $a && (int) $c['visitante']['id'] === (int) $b) {
+                    $cruce = $c;
+                    break;
+                }
+            }
+            if ($cruce === null) {
+                continue;
+            }
+            $horario = calendario_hora_y_cancha($k, $slot['hora'], $slot['intervalo'], $canchas);
+            $salida[] = [
+                'cruce' => $cruce,
+                'fecha' => $slot['fecha'],
+                'hora' => $horario['hora'],
+                'cancha' => $horario['cancha'],
+            ];
+        }
+    }
+
+    return $salida;
 }
 
 /**

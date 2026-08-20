@@ -418,6 +418,13 @@ function db_migrar_automatico(): void
         $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS en_mantenimiento BOOLEAN NOT NULL DEFAULT FALSE');
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS mensaje_mantenimiento TEXT NOT NULL DEFAULT ''");
 
+        // Cómo juega esta copa: días, cupos, hora de inicio, intervalo, canchas y fechas
+        // que no se juegan. Antes esto vivía solo en el formulario del generador y se
+        // perdía al salir, así que al armar cuartos y semis la app ya no sabía que se
+        // juega sábado y domingo ni a qué hora, y los partidos nacían todos juntos y sin
+        // hora. Guardado aquí, el resto del torneo se programa con el mismo criterio.
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS calendario_config TEXT NOT NULL DEFAULT ''");
+
         // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
         // clave por cada cambio del archivo a lo largo de la vida del proyecto.
         foreach (array_keys($_SESSION) as $k) {

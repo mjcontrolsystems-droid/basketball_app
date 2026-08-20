@@ -25,6 +25,7 @@ const COLUMNAS_TORNEO = [
     'num_grupos', 'clasifican_por_grupo', 'podio_publicado',
     'facebook', 'tiktok', 'whatsapp',
     'en_mantenimiento', 'mensaje_mantenimiento',
+    'calendario_config',
 ];
 
 /**
