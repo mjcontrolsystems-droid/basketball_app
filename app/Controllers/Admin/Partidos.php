@@ -402,11 +402,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Al continuar, los cruces ya programados se sacan del fixture y la numeración de
         // jornadas arranca donde va, para no repetir partidos ni volver a la jornada 1.
+        // El historial además lleva la hora, para seguir repartiendo turnos y localías
+        // tomando en cuenta a quién ya le tocó qué en lo que está publicado.
         $yaProgramados = [];
+        $historial = [];
         $jornadaInicial = 0;
         if ($continuar) {
             foreach ($regularesExistentes as $p) {
                 $yaProgramados[] = [(int) $p['equipo_local'], (int) $p['equipo_visitante']];
+                $historial[] = [
+                    'local' => (int) $p['equipo_local'],
+                    'visitante' => (int) $p['equipo_visitante'],
+                    'hora' => (string) ($p['hora'] ?? ''),
+                ];
                 $jornadaInicial = max($jornadaInicial, (int) ($p['jornada'] ?? 0));
             }
         }
@@ -420,6 +428,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'semilla' => $semilla,
             'rondas' => $rondasPrearmadas,
             'ya_programados' => $yaProgramados,
+            'historial' => $historial,
             'jornada_inicial' => $jornadaInicial,
         ]);
 

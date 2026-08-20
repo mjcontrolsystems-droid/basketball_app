@@ -397,6 +397,137 @@ function calendario_hora_y_cancha(int $indice, string $horaInicio, int $interval
 }
 
 /**
+ * Reconstruye los contadores de turno y localía a partir de los partidos ya publicados.
+ *
+ * Al continuar un calendario, lo que ya se anunció no se puede tocar — pero sí se puede
+ * compensar de aquí en adelante. Para eso hay que saber a qué tanda equivale la hora de
+ * cada partido viejo, que se deduce de la hora de inicio y el intervalo del día.
+ *
+ * @param array<int, array{local:int, visitante:int, hora?:string, dia?:int}> $historial
+ * @return array{0: array, 1: array, 2: array, 3: array}
+ */
+function calendario_historial_previo(array $historial, array $dias, int $simultaneos): array
+{
+    $vecesTurno = [];
+    $acumulado = [];
+    $vecesLocal = [];
+    $cruceVisto = [];
+
+    // Minuto de arranque más temprano e intervalo de referencia entre los días configurados.
+    $arranque = null;
+    $intervalo = 90;
+    foreach ($dias as $d) {
+        $partes = explode(':', trim((string) ($d['hora'] ?? '')));
+        if (isset($partes[0], $partes[1]) && is_numeric($partes[0]) && is_numeric($partes[1])) {
+            $min = ((int) $partes[0]) * 60 + (int) $partes[1];
+            $arranque = $arranque === null ? $min : min($arranque, $min);
+        }
+        if ((int) ($d['intervalo'] ?? 0) > 0) {
+            $intervalo = (int) $d['intervalo'];
+        }
+    }
+
+    foreach ($historial as $p) {
+        $local = (int) ($p['local'] ?? 0);
+        $visitante = (int) ($p['visitante'] ?? 0);
+        if ($local <= 0 || $visitante <= 0) {
+            continue;
+        }
+
+        $tanda = 0;
+        $partes = explode(':', trim((string) ($p['hora'] ?? '')));
+        if ($arranque !== null && isset($partes[0], $partes[1]) && is_numeric($partes[0]) && is_numeric($partes[1])) {
+            $min = ((int) $partes[0]) * 60 + (int) $partes[1];
+            $tanda = max(0, intdiv($min - $arranque, max(1, $intervalo)));
+        }
+
+        foreach ([$local, $visitante] as $eq) {
+            $vecesTurno[$eq][$tanda] = ($vecesTurno[$eq][$tanda] ?? 0) + 1;
+            $acumulado[$eq] = ($acumulado[$eq] ?? 0) + $tanda;
+        }
+        $vecesLocal[$local] = ($vecesLocal[$local] ?? 0) + 1;
+        $cruceVisto[min($local, $visitante) . '-' . max($local, $visitante)] = $local;
+    }
+
+    return [$vecesTurno, $acumulado, $vecesLocal, $cruceVisto];
+}
+
+/**
+ * Ordena los partidos de un día para que el turno no le caiga siempre al mismo.
+ *
+ * Sin esto el orden lo decide el fixture, que no sabe nada de horas: en el primer
+ * calendario de la liga de exalumnos hubo un equipo al que le tocaron 6 veces las 3 de
+ * la tarde y otro al que le tocó una sola vez. Nadie pierde un partido por eso, pero es
+ * lo primero que reclama la gente, y con razón.
+ *
+ * El criterio: para cada tanda se toma el partido cuyos dos equipos menos veces han
+ * jugado a esa hora; si empatan, pasa primero el que más tarde ha venido jugando.
+ *
+ * @param array<int, array{0:int, 1:int, 2:bool}> $partidos
+ * @param array<int, array<int, int>> $veces  [equipo][tanda] => cuántas veces
+ * @param array<int, int> $acumulado  [equipo] => suma de tandas que le han tocado
+ * @return array<int, array{0:int, 1:int, 2:bool}>
+ */
+function calendario_ordenar_turnos(array $partidos, array $veces, array $acumulado, int $simultaneos): array
+{
+    $pendientes = array_values($partidos);
+    $simultaneos = max(1, $simultaneos);
+    $orden = [];
+
+    for ($k = 0; $pendientes !== []; $k++) {
+        $tanda = intdiv($k, $simultaneos);
+        $elegido = 0;
+        $mejor = null;
+
+        foreach ($pendientes as $i => $partido) {
+            $a = (int) $partido[0];
+            $b = (int) $partido[1];
+            $repite = ($veces[$a][$tanda] ?? 0) + ($veces[$b][$tanda] ?? 0);
+            $tarde = ($acumulado[$a] ?? 0) + ($acumulado[$b] ?? 0);
+            // Evitar la repetición pesa mucho más que compensar; el segundo término solo
+            // desempata, por eso va en una escala aparte.
+            $peso = $repite * 1000 - $tarde;
+            if ($mejor === null || $peso < $mejor) {
+                $mejor = $peso;
+                $elegido = $i;
+            }
+        }
+
+        $partido = $pendientes[$elegido];
+        unset($pendientes[$elegido]);
+        $pendientes = array_values($pendientes);
+
+        $veces[(int) $partido[0]][$tanda] = ($veces[(int) $partido[0]][$tanda] ?? 0) + 1;
+        $veces[(int) $partido[1]][$tanda] = ($veces[(int) $partido[1]][$tanda] ?? 0) + 1;
+        $acumulado[(int) $partido[0]] = ($acumulado[(int) $partido[0]] ?? 0) + $tanda;
+        $acumulado[(int) $partido[1]] = ($acumulado[(int) $partido[1]] ?? 0) + $tanda;
+
+        $orden[] = $partido;
+    }
+
+    return [$orden, $veces, $acumulado];
+}
+
+/**
+ * Decide quién va de local para que la localía quede repartida.
+ *
+ * Si el mismo cruce ya se jugó antes (torneos de ida y vuelta) se invierte sin pensarlo:
+ * ahí la localía la manda la vuelta, no el conteo. Si es la primera vez que se ven, va de
+ * local el que menos veces lo ha sido.
+ *
+ * @return array{0:int, 1:int}
+ */
+function calendario_elegir_localia(int $a, int $b, array $vecesLocal, array $cruceVisto): array
+{
+    $clave = min($a, $b) . '-' . max($a, $b);
+    if (isset($cruceVisto[$clave])) {
+        return $cruceVisto[$clave] === $a ? [$b, $a] : [$a, $b];
+    }
+
+    return ($vecesLocal[$a] ?? 0) > ($vecesLocal[$b] ?? 0) ? [$b, $a] : [$a, $b];
+}
+
+/**
  * Arma el calendario completo, listo para convertirse en encuentros.
  *
  * @param array<int> $equipoIds
@@ -442,6 +573,16 @@ function calendario_generar(array $equipoIds, array $opciones): array
     $canchas = (array) ($opciones['canchas'] ?? []);
     $calendario = [];
 
+    // Contadores para repartir horarios y localías. Arrancan con lo que ya está publicado
+    // (al continuar un calendario), porque si no se ignoraría que a alguien ya le tocó
+    // tres veces el primer turno y se le volvería a cargar la mano.
+    $simultaneos = max(1, count(array_filter(array_map('trim', $canchas), fn($c) => $c !== '')));
+    [$vecesTurno, $acumuladoTurno, $vecesLocal, $cruceVisto] = calendario_historial_previo(
+        (array) ($opciones['historial'] ?? []),
+        $dias,
+        $simultaneos
+    );
+
     foreach ($plan as $j => $jornada) {
         $repartidos = calendario_repartir_en_dias($jornada['principal'], $jornada['adelantados'], $cupos);
         $diasJornada = [];
@@ -450,8 +591,20 @@ function calendario_generar(array $equipoIds, array $opciones): array
             if (empty($partidos)) {
                 continue;
             }
+
+            [$partidos, $vecesTurno, $acumuladoTurno] = calendario_ordenar_turnos(
+                array_values($partidos),
+                $vecesTurno,
+                $acumuladoTurno,
+                $simultaneos
+            );
+
             $partidosDia = [];
-            foreach (array_values($partidos) as $k => [$local, $visitante, $adelantado]) {
+            foreach ($partidos as $k => [$unoA, $unoB, $adelantado]) {
+                [$local, $visitante] = calendario_elegir_localia((int) $unoA, (int) $unoB, $vecesLocal, $cruceVisto);
+                $vecesLocal[$local] = ($vecesLocal[$local] ?? 0) + 1;
+                $cruceVisto[min($local, $visitante) . '-' . max($local, $visitante)] = $local;
+
                 $horario = calendario_hora_y_cancha(
                     $k,
                     (string) ($dias[$i]['hora'] ?? '09:00'),
