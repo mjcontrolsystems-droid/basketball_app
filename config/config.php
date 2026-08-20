@@ -113,8 +113,47 @@ set_exception_handler(function (Throwable $e): void {
     notificar_error_webhook($e);
     if (!headers_sent()) {
         http_response_code(500);
+        header('Content-Type: text/html; charset=utf-8');
     }
-    echo 'Ocurrió un error inesperado. Por favor intenta de nuevo más tarde.';
+
+    // Al organizador que tiene sesión abierta SÍ se le muestra el detalle técnico. Antes
+    // solo veía "Ocurrió un error inesperado" y no había forma de saber qué falló sin
+    // pedirle los logs del servidor a alguien. Al visitante anónimo no se le muestra nada:
+    // la ruta de un archivo o el texto de una consulta son información que no le compete.
+    $esAdmin = session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['usuario_id']);
+    $escapar = fn($t) => htmlspecialchars((string) $t, ENT_QUOTES, 'UTF-8');
+
+    $detalle = '';
+    if ($esAdmin) {
+        $traza = array_slice(explode("\n", $e->getTraceAsString()), 0, 6);
+        $detalle = '<div style="margin-top:1.5rem;text-align:left;background:#fff;border:1px solid #e6e2f0;'
+            . 'border-radius:14px;padding:1rem 1.15rem;max-width:760px;">'
+            . '<p style="margin:0 0 .5rem;font-weight:600;font-size:.9rem;color:#b93130;">Detalle técnico</p>'
+            . '<p style="margin:0 0 .35rem;font-size:.9rem;"><strong>' . $escapar($e->getMessage()) . '</strong></p>'
+            . '<p style="margin:0 0 .75rem;font-size:.82rem;color:#6c757d;">'
+            . $escapar(basename($e->getFile())) . ' línea ' . (int) $e->getLine() . '</p>'
+            . '<pre style="margin:0;font-size:.75rem;color:#6c757d;white-space:pre-wrap;">'
+            . $escapar(implode("\n", $traza)) . '</pre>'
+            . '<p style="margin:.75rem 0 0;font-size:.8rem;color:#6c757d;">Solo tú ves esto por tener sesión abierta.</p>'
+            . '</div>';
+    }
+
+    echo '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+        . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        . '<title>Algo salió mal</title>'
+        . '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;'
+        . 'font-family:Inter,system-ui,-apple-system,sans-serif;background:#f6f4fb;color:#241a3a;padding:2rem;}'
+        . '.caja{text-align:center;max-width:760px;}'
+        . 'h1{font-size:1.4rem;margin:0 0 .5rem;}p.msg{color:#5f5e6a;margin:0 0 1.5rem;}'
+        . 'a.btn{display:inline-block;background:#7b2ff7;color:#fff;text-decoration:none;'
+        . 'padding:.6rem 1.4rem;border-radius:999px;font-weight:600;}</style></head><body>'
+        . '<div class="caja">'
+        . '<div style="font-size:3rem;line-height:1;margin-bottom:.5rem;">⚠️</div>'
+        . '<h1>Algo salió mal</h1>'
+        . '<p class="msg">No se pudo cargar esta página. Vuelve a intentarlo en un momento.</p>'
+        . '<a class="btn" href="' . $escapar($_SERVER['HTTP_REFERER'] ?? '/') . '">Volver</a>'
+        . $detalle
+        . '</div></body></html>';
     exit;
 });
 

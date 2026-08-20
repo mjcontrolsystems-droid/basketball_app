@@ -131,6 +131,17 @@ function admin_tarjeta_usuario(array $usuario): string
             <?php // El mensaje viaja en data-attributes y lo muestra SweetAlert2 desde
                   // app.js (el CSP no permite JavaScript inline). El <noscript> deja el
                   // aviso visible si el navegador tiene el JS desactivado. ?>
+            <?php // Si una migración del esquema falló, el organizador tiene que saberlo:
+                  // corren en orden, así que una que falle deja sin crear todas las de
+                  // atrás y el síntoma aparece después y en otro lado. ?>
+            <?php if (!empty($_SESSION['migraciones_error'])): ?>
+            <div class="alert alert-danger rounded-4 border-0 shadow-sm" role="alert">
+                <div class="fw-semibold mb-1"><i class="bi bi-database-exclamation me-1"></i>No se pudo actualizar la base de datos</div>
+                <div class="small mb-0"><?= e($_SESSION['migraciones_error']) ?></div>
+                <div class="small mt-2 mb-0 text-muted">Algunas funciones nuevas pueden fallar hasta resolverlo. Se reintenta en cada visita.</div>
+            </div>
+            <?php endif; ?>
+
             <?php if ($flash): ?>
             <div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>
             <noscript>

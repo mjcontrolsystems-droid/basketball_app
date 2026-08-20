@@ -402,10 +402,17 @@ function db_migrar_automatico(): void
             }
         }
         $_SESSION[$clave] = true;
+        unset($_SESSION['migraciones_error']);
     } catch (Throwable $e) {
-        // No bloquear el panel por esto: las funciones que dependen de estas tablas ya
-        // tienen sus propias redes de seguridad. Se reintentará en la próxima sesión.
+        // No se bloquea el panel: puede que lo que fallara no haga falta para lo que el
+        // organizador está haciendo ahora. Pero SÍ se deja constancia visible.
+        //
+        // Antes esto solo iba al log del servidor, y como las migraciones corren en orden,
+        // una que falle deja sin crear todas las de atrás. El síntoma llega después y en
+        // otro lado ("columna no existe" al guardar algo), sin ninguna pista de la causa
+        // real. Guardarlo en la sesión permite mostrarlo en el panel.
         error_log('db_migrar_automatico: ' . $e->getMessage());
+        $_SESSION['migraciones_error'] = $e->getMessage();
     }
 }
 
