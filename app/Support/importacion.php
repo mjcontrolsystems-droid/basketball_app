@@ -30,7 +30,9 @@ const IMPORTACION_MAX_FILAS = 500;
 const IMPORTACION_PISTAS = [
     'nombre' => ['nombre', 'nombres', 'jugador', 'jugadora', 'nombre completo', 'nombre y apellido', 'nombre del jugador'],
     'apellido' => ['apellido', 'apellidos', 'apellido paterno', 'apellidos del jugador'],
-    'dorsal' => ['dorsal', 'numero', 'num', 'no', 'n', '#', 'camisa', 'camiseta', 'playera', 'numero de camisa'],
+    // "uniforme" y "camisola" salieron de nóminas reales de papifútbol.
+    'dorsal' => ['dorsal', 'numero', 'num', 'no', 'n', '#', 'camisa', 'camiseta', 'camisola',
+        'playera', 'uniforme', 'numero de camisa', 'numero de uniforme', 'numero de camisola'],
     'posicion' => ['posicion', 'puesto', 'pos'],
 ];
 
@@ -38,10 +40,14 @@ const IMPORTACION_PISTAS = [
  * Columnas que se ignoran siempre, aunque el dato encaje: son datos personales que la app
  * no guarda ni necesita.
  */
+// "antiguedad" es el número de socio del club: se parece muchísimo a un dorsal (a veces
+// hasta coincide) pero no lo es, y aparece en casi todas las nóminas reales. "talla"
+// también engaña porque a veces trae números.
 const IMPORTACION_IGNORAR = [
     'dpi', 'cui', 'cedula', 'identificacion', 'identidad', 'nit', 'pasaporte',
     'telefono', 'celular', 'movil', 'direccion', 'correo', 'email', 'e-mail',
     'fecha de nacimiento', 'nacimiento', 'edad', 'tipo de sangre', 'sangre',
+    'antiguedad', 'numero de antiguedad', 'no. de antiguedad', 'talla',
 ];
 
 /**
@@ -351,7 +357,9 @@ function importacion_perfil_columna(array $datos, int $col): array
     foreach ($muestra as $v) {
         $largo += mb_strlen($v);
         $soloDigitos = preg_replace('/\D/', '', $v);
-        if (ctype_digit($v) && mb_strlen($v) <= 2 && (int) $v >= 0 && (int) $v <= 99) {
+        // Hasta 3 cifras: en el papifútbol de ex alumnos los dorsales van con el número de
+        // promoción y hay camisolas 105, 139 o 175. Con el tope en 2 no se detectaban.
+        if (ctype_digit($v) && mb_strlen($v) <= 3 && (int) $v >= 0 && (int) $v <= 999) {
             $dorsales++;
         }
         // El DPI guatemalteco tiene 13 dígitos; también se descartan teléfonos de 8.
@@ -366,11 +374,35 @@ function importacion_perfil_columna(array $datos, int $col): array
     $total = count($muestra);
 
     return [
-        'parece_dorsal' => $dorsales / $total >= 0.7,
+        'parece_dorsal' => $dorsales / $total >= 0.7 && !importacion_es_correlativo($muestra),
         'parece_dpi' => $dpis / $total >= 0.5,
         'parece_nombre' => $textos / $total >= 0.7,
         'largo_promedio' => $largo / $total,
     ];
+}
+
+/**
+ * ¿Esta columna es el "No." correlativo de la lista y no un dorsal?
+ *
+ * Casi todas las nóminas traen una primera columna numerada 1, 2, 3... que tiene la misma
+ * pinta que un dorsal. Sin este control, la app importaba a los jugadores con el número de
+ * renglón como camisola — un error silencioso y muy molesto de corregir después.
+ *
+ * Se pide que arranque en 1 y que suba de uno en uno: un equipo cuyos dorsales sean
+ * justamente 1, 2, 3... en ese orden es rarísimo, y aun así queda la vista previa.
+ */
+function importacion_es_correlativo(array $valores): bool
+{
+    if (count($valores) < 3) {
+        return false;
+    }
+    foreach ($valores as $i => $v) {
+        if (!ctype_digit(trim($v)) || (int) $v !== $i + 1) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function importacion_letra_columna(int $indice): string
