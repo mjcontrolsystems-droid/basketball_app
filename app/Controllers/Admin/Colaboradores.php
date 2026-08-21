@@ -76,6 +76,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     }
 
+    // Enlace de invitación para pasar por WhatsApp.
+    //
+    // Existe porque el correo no siempre es una opción: Resend (y cualquier servicio
+    // serio) solo deja enviar a terceros desde un dominio verificado, y hasta que la liga
+    // tenga dominio propio los correos rebotan. El acceso nunca dependió del correo, así
+    // que basta con poder copiar el mismo enlace que iría dentro.
+    if (($_POST['accion'] ?? '') === 'enlace') {
+        $id = (int) ($_POST['id'] ?? 0);
+
+        $destino = null;
+        foreach (colaboradores_listar($torneo['id']) as $c) {
+            if ($c['id'] === $id) {
+                $destino = $c;
+            }
+        }
+        if ($destino === null) {
+            redirigir_con_mensaje($urlLista, 'error', 'Ese colaborador ya no está en la lista.');
+        }
+
+        $token = colaborador_token_nuevo($id);
+        $_SESSION['enlace_invitacion'] = [
+            'email' => $destino['email'],
+            'url' => SITE_ORIGIN . url('invitacion.php?t=' . rawurlencode($token)),
+        ];
+        header('Location: ' . $urlLista);
+        exit;
+    }
+
     if (($_POST['accion'] ?? '') === 'quitar') {
         $id = (int) ($_POST['id'] ?? 0);
 
@@ -95,6 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// El enlace recién generado se muestra una sola vez y se saca de la sesión, para que no
+// quede colgado en pantalla la próxima vez que se entre.
+$enlaceInvitacion = $_SESSION['enlace_invitacion'] ?? null;
+unset($_SESSION['enlace_invitacion']);
+
+$correoListo = correo_configurado();
 $colaboradores = colaboradores_listar($torneo['id']);
 $seccion_activa = 'colaboradores';
 $titulo_pagina = 'Colaboradores';
@@ -102,6 +136,8 @@ $flash = obtener_flash();
 
 vista_admin('admin/colaboradores', compact(
     'colaboradores',
+    'correoListo',
+    'enlaceInvitacion',
     'flash',
     'seccion_activa',
     'titulo_pagina',

@@ -3,6 +3,46 @@
 </div>
 <p class="text-muted mb-4">Gente que te ayuda a administrar <strong><?= e($torneo['nombre']) ?></strong>. No aparecen en el sitio público y no pueden ver tus otras copas.</p>
 
+<?php // El enlace recién copiado. Se muestra grande porque es lo que la persona vino a
+      // hacer: sacarlo de aquí y pegarlo en el chat de la liga. ?>
+<?php if ($enlaceInvitacion !== null): ?>
+<div class="card-suave p-4 mb-4" style="border:2px solid var(--color-primario,#7b2ff7);">
+    <div class="d-flex align-items-start gap-3">
+        <i class="bi bi-link-45deg fs-3" style="color:var(--color-primario,#7b2ff7);"></i>
+        <div class="flex-grow-1" style="min-width:0;">
+            <h6 class="mb-1">Enlace de invitación para <?= e($enlaceInvitacion['email']) ?></h6>
+            <p class="small text-muted mb-2">
+                Pásaselo por WhatsApp. Al abrirlo entra con su Google y queda dentro.
+                Sirve <strong>una sola vez</strong> y solo funciona con ese correo.
+            </p>
+            <div class="input-group">
+                <?php // Sin onfocus inline: la política de seguridad del sitio bloquea el
+                      // JavaScript escrito dentro del HTML. Todo va en app.js. ?>
+                <input type="text" class="form-control font-monospace" style="font-size:.8rem;" readonly
+                       data-seleccionar-al-tocar
+                       value="<?= e($enlaceInvitacion['url']) ?>">
+                <button type="button" class="btn btn-degradado btn-copiar-url" data-url="<?= e($enlaceInvitacion['url']) ?>">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php // Si no hay correo configurado hay que decirlo aquí y no dejar que lo descubra
+      // cuando el envío falle: el botón del enlace es la salida y tiene que verse. ?>
+<?php if (!$correoListo): ?>
+<div class="alert alert-warning d-flex gap-3 align-items-start">
+    <i class="bi bi-envelope-slash fs-5"></i>
+    <div>
+        <strong>El envío de correos no está configurado.</strong>
+        Las invitaciones no van a salir por correo, pero puedes invitar igual:
+        usa el botón <i class="bi bi-link-45deg"></i> de cada persona para copiar su enlace y pasárselo por WhatsApp.
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row g-4">
     <div class="col-lg-5">
         <form method="post" class="card-suave p-4">
@@ -78,13 +118,22 @@
                             <td><span class="badge rounded-pill text-bg-secondary"><?= e(colaborador_nivel_nombre($c['nivel'])) ?></span></td>
                             <td class="text-end text-nowrap">
                                 <?php if (empty($c['aceptado_en'])): ?>
+                                <?php // Copiar el enlace: la vía que no depende del correo. ?>
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="accion" value="enlace">
+                                    <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill" title="Obtener enlace para pasar por WhatsApp"><i class="bi bi-link-45deg"></i></button>
+                                </form>
+                                <?php if ($correoListo): ?>
                                 <form method="post" class="d-inline"
                                       data-confirm="&iquest;Reenviar la invitaci&oacute;n a <?= e($c['email']) ?>? El enlace anterior dejar&aacute; de servir.">
                                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="accion" value="reenviar">
                                     <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill" title="Reenviar invitación"><i class="bi bi-envelope-arrow-up"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill" title="Reenviar invitación por correo"><i class="bi bi-envelope-arrow-up"></i></button>
                                 </form>
+                                <?php endif; ?>
                                 <?php endif; ?>
                                 <form method="post" class="d-inline"
                                       data-confirm="&iquest;Quitarle el acceso a <?= e($c['email']) ?>? Dejar&aacute; de ver esta copa de inmediato. Lo que ya captur&oacute; no se borra.">

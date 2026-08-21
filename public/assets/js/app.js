@@ -871,4 +871,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Campos de solo lectura que se seleccionan enteros al tocarlos (enlaces largos que
+    // uno quiere copiar a mano). Va aquí y no como onfocus en el HTML porque la política
+    // de seguridad del sitio bloquea el JavaScript escrito dentro de los atributos.
+    document.querySelectorAll('[data-seleccionar-al-tocar]').forEach(function (campo) {
+        campo.addEventListener('focus', function () { campo.select(); });
+        campo.addEventListener('click', function () { campo.select(); });
+    });
 });
