@@ -256,13 +256,28 @@ function torneos_guardar(array $datos, ?int $usuarioIdCreador = null): int
     // nativos: hay que mandar el texto 'true'/'false' para estas 3 columnas.
     $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento'];
 
+    // El UPDATE escribe TODAS las columnas, pero ningún formulario las manda todas: el de
+    // configuración de la copa no toca el mensaje de mantenimiento ni la configuración del
+    // calendario, que se guardan desde otras pantallas. Lo que no venga se rellena con lo
+    // que ya está guardado.
+    //
+    // Sin esto pasaban dos cosas, y ambas ocurrieron: si la columna admite NULL, editar la
+    // copa borraba en silencio lo que se había configurado en otra pantalla; y si es NOT
+    // NULL, Postgres rechazaba el guardado entero. O sea que agregar una columna nueva
+    // rompía el guardado de todas las demás.
+    $actual = !empty($datos['id']) ? torneos_obtener_por_id((int) $datos['id']) : null;
+
     $valores = [];
     foreach (COLUMNAS_TORNEO as $c) {
-        $v = $datos[$c] ?? null;
+        $v = array_key_exists($c, $datos) ? $datos[$c] : ($actual[$c] ?? null);
         if ($c === 'fases_playoff') {
             $v = '{' . implode(',', (array) $v) . '}';
         } elseif (in_array($c, $columnasBooleanas, true)) {
             $v = !empty($v) ? 'true' : 'false';
+        } elseif ($v === null) {
+            // Las columnas de texto del esquema son NOT NULL DEFAULT '': una copa nueva que
+            // todavía no tiene redes ni reglamento guarda cadena vacía, no NULL.
+            $v = in_array($c, ['num_equipos', 'num_grupos', 'clasifican_por_grupo'], true) ? $v : '';
         }
         $valores[$c] = $v;
     }

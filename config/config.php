@@ -120,7 +120,20 @@ set_exception_handler(function (Throwable $e): void {
     // solo veía "Ocurrió un error inesperado" y no había forma de saber qué falló sin
     // pedirle los logs del servidor a alguien. Al visitante anónimo no se le muestra nada:
     // la ruta de un archivo o el texto de una consulta son información que no le compete.
-    $esAdmin = session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['usuario_id']);
+    // Y no a cualquiera con sesión: solo al superadmin. El mensaje de un error de base de
+    // datos puede traer la fila entera que se intentaba guardar, y desde que existen los
+    // colaboradores hay gente con sesión abierta que no tiene por qué ver eso.
+    $esAdmin = false;
+    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['usuario_id'])) {
+        try {
+            // Va en try porque este es el manejador de errores: si la base es justamente lo
+            // que está fallando, consultarla aquí tumbaría también la página de error.
+            $quien = usuarios_obtener_por_id((int) $_SESSION['usuario_id']);
+            $esAdmin = es_superadmin($quien);
+        } catch (Throwable $ignorado) {
+            $esAdmin = false;
+        }
+    }
     $escapar = fn($t) => htmlspecialchars((string) $t, ENT_QUOTES, 'UTF-8');
 
     $detalle = '';
@@ -134,7 +147,7 @@ set_exception_handler(function (Throwable $e): void {
             . $escapar(basename($e->getFile())) . ' línea ' . (int) $e->getLine() . '</p>'
             . '<pre style="margin:0;font-size:.75rem;color:#6c757d;white-space:pre-wrap;">'
             . $escapar(implode("\n", $traza)) . '</pre>'
-            . '<p style="margin:.75rem 0 0;font-size:.8rem;color:#6c757d;">Solo tú ves esto por tener sesión abierta.</p>'
+            . '<p style="margin:.75rem 0 0;font-size:.8rem;color:#6c757d;">Esto solo lo ve el administrador de la plataforma. Los visitantes ven únicamente el aviso de arriba.</p>'
             . '</div>';
     }
 
