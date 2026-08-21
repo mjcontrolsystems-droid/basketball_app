@@ -23,14 +23,59 @@ function correo_configurado(): bool
 }
 
 /**
+ * Por qué falló el último envío, en cristiano.
+ *
+ * Antes el motivo solo quedaba en el log del servidor, que en un hosting administrado no
+ * está a mano. Uno veía "no se pudo enviar el correo" y se quedaba adivinando entre la
+ * llave, el remitente sin verificar y el dominio mal escrito. Ahora se puede mostrar en
+ * pantalla a quien administra.
+ */
+function correo_ultimo_error(?string $nuevo = null): string
+{
+    static $ultimo = '';
+    if ($nuevo !== null) {
+        $ultimo = $nuevo;
+    }
+    return $ultimo;
+}
+
+/**
+ * Traduce la respuesta de Resend al problema concreto que hay que arreglar.
+ */
+function correo_explicar_fallo(int $codigoHttp, string $respuesta): string
+{
+    if ($codigoHttp === 0) {
+        return 'No se pudo contactar a Resend (sin salida a internet o tiempo agotado).';
+    }
+    if ($codigoHttp === 401 || $codigoHttp === 403) {
+        return 'Resend rechazó la llave: revisa RESEND_API_KEY (debe empezar con "re_").';
+    }
+    if ($codigoHttp === 422 || str_contains($respuesta, 'domain')) {
+        return 'Resend rechazó el remitente: MAIL_FROM tiene que ser un dominio verificado en tu cuenta. '
+            . 'Si todavía no verificaste ninguno, usa onboarding@resend.dev.';
+    }
+    if ($codigoHttp === 429) {
+        return 'Se pasó el límite de correos por hoy en Resend.';
+    }
+
+    return "Resend respondió HTTP {$codigoHttp}: " . mb_substr(trim($respuesta), 0, 160);
+}
+
+/**
  * Envía un correo. Devuelve true si Resend lo aceptó. Nunca lanza excepción: un fallo
  * de correo no debe tumbar la acción principal (autorizar, ampliar cupo, etc.).
  */
 function correo_enviar(string $para, string $asunto, string $html): bool
 {
-    if (!correo_configurado() || !filter_var($para, FILTER_VALIDATE_EMAIL)) {
+    if (!correo_configurado()) {
+        correo_ultimo_error('Faltan las variables RESEND_API_KEY y MAIL_FROM en el servidor.');
         return false;
     }
+    if (!filter_var($para, FILTER_VALIDATE_EMAIL)) {
+        correo_ultimo_error("El correo \"{$para}\" no tiene un formato válido.");
+        return false;
+    }
+    correo_ultimo_error('');
 
     $ch = curl_init('https://api.resend.com/emails');
     curl_setopt_array($ch, [
@@ -55,6 +100,7 @@ function correo_enviar(string $para, string $asunto, string $html): bool
     $ok = $respuesta !== false && $codigoHttp >= 200 && $codigoHttp < 300;
     if (!$ok) {
         error_log("correo_enviar fallo (HTTP {$codigoHttp}) hacia {$para}: " . substr((string) $respuesta, 0, 300));
+        correo_ultimo_error(correo_explicar_fallo((int) $codigoHttp, (string) $respuesta));
     }
     return $ok;
 }

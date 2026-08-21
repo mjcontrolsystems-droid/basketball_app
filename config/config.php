@@ -15,7 +15,20 @@ if (getenv('DATABASE_URL') === false && file_exists($archivoEnv)) {
             continue;
         }
         [$clave, $valor] = explode('=', $linea, 2);
-        putenv(trim($clave) . '=' . trim($valor));
+        $valor = trim($valor);
+
+        // Se quitan las comillas que envuelven el valor. Hacen falta en el archivo cuando
+        // el valor lleva espacios — MAIL_FROM="MJ Control Systems <avisos@...>" — pero si
+        // se dejan pasan a formar parte del texto, y entonces el remitente que se le manda
+        // a Resend es literalmente «"MJ Control Systems <...>"» con comillas. Resend lo
+        // rechaza y el correo nunca sale, sin que nada avise por qué.
+        if (strlen($valor) >= 2
+            && (($valor[0] === '"' && $valor[-1] === '"') || ($valor[0] === "'" && $valor[-1] === "'"))
+        ) {
+            $valor = substr($valor, 1, -1);
+        }
+
+        putenv(trim($clave) . '=' . $valor);
     }
 }
 

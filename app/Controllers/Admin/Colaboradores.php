@@ -48,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $enviado ? 'success' : 'warning',
             $enviado
                 ? "Invitación enviada a {$email}. Cuando la acepte va a entrar como " . mb_strtolower(colaborador_nivel_nombre($nivel)) . '.'
-                : "{$email} quedó agregado, pero no se pudo enviar el correo. Pásale el enlace de invitación desde el botón de reenviar, o dile que entre a la plataforma con Google usando ese mismo correo."
+                : "{$email} quedó agregado, pero el correo no salió. " . correo_ultimo_error()
+                    . ' Mientras tanto puede entrar igual con su Google usando ese mismo correo.'
         );
     }
 
@@ -71,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $enviado ? 'success' : 'error',
             $enviado
                 ? "Invitación reenviada a {$destino['email']}. El enlace anterior dejó de servir."
-                : 'No se pudo enviar el correo. Revisa la configuración de correo de la plataforma.'
+                : 'No se pudo enviar el correo. ' . correo_ultimo_error()
         );
     }
 
