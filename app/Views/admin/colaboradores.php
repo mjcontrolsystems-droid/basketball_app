@@ -115,7 +115,20 @@
                                     <span class="badge rounded-pill text-bg-success mt-1">Aceptada</span>
                                 <?php endif; ?>
                             </td>
-                            <td><span class="badge rounded-pill text-bg-secondary"><?= e(colaborador_nivel_nombre($c['nivel'])) ?></span></td>
+                            <?php // Se cambia en el sitio: quitar y volver a invitar para
+                                  // subirle el nivel a alguien era un rodeo absurdo. ?>
+                            <td>
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="accion" value="nivel">
+                                    <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                                    <select name="nivel" class="form-select form-select-sm" data-enviar-al-cambiar style="min-width:120px;">
+                                        <?php foreach (COLABORADOR_NIVELES as $clave => $n): ?>
+                                        <option value="<?= e($clave) ?>" <?= $c['nivel'] === $clave ? 'selected' : '' ?>><?= e($n['nombre']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </form>
+                            </td>
                             <td class="text-end text-nowrap">
                                 <?php if (empty($c['aceptado_en'])): ?>
                                 <?php // Copiar el enlace: la vía que no depende del correo. ?>

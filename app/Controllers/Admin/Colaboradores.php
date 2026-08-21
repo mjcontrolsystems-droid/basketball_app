@@ -76,6 +76,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     }
 
+    if (($_POST['accion'] ?? '') === 'nivel') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $nivel = (string) ($_POST['nivel'] ?? '');
+
+        $destino = null;
+        foreach (colaboradores_listar($torneo['id']) as $c) {
+            if ($c['id'] === $id) {
+                $destino = $c;
+            }
+        }
+        if ($destino === null) {
+            redirigir_con_mensaje($urlLista, 'error', 'Ese colaborador ya no está en la lista.');
+        }
+
+        try {
+            colaboradores_guardar($torneo['id'], $destino['email'], $nivel, $usuarioId);
+        } catch (RuntimeException $e) {
+            redirigir_con_mensaje($urlLista, 'error', $e->getMessage());
+        }
+
+        bitacora_registrar('colaborador_nivel', "{$destino['email']} pasó a " . mb_strtolower(colaborador_nivel_nombre($nivel)) . ' en ' . $torneo['nombre'], $torneo['id']);
+        redirigir_con_mensaje($urlLista, 'success', "{$destino['email']} ahora es " . mb_strtolower(colaborador_nivel_nombre($nivel)) . '. El cambio le aplica de inmediato.');
+    }
+
     // Enlace de invitación para pasar por WhatsApp.
     //
     // Existe porque el correo no siempre es una opción: Resend (y cualquier servicio

@@ -137,8 +137,14 @@ function datos_layout_admin(array $datos): array
 
     // Copa activa, solo para mostrarla en el sidebar (las páginas que de verdad la
     // necesitan la exigen ellas mismas con admin_requerir_torneo_activo()).
+    // Se busca sin filtrar por dueño y el acceso lo decide nivel_en_copa(): filtrar aquí
+    // por usuario_id dejaba a los colaboradores con el menú de la copa vacío — entraban,
+    // veían el tablero de la liga, pero sin Equipos ni Encuentros por ningún lado.
     $torneoActivoId = $_SESSION['torneo_activo_id'] ?? null;
-    $torneoActivo = $torneoActivoId !== null ? torneos_obtener_por_id((int) $torneoActivoId, $usuarioIdSesion) : null;
+    $torneoActivo = $torneoActivoId !== null ? torneos_obtener_por_id((int) $torneoActivoId) : null;
+    if ($torneoActivo !== null && nivel_en_copa($torneoActivo) === null) {
+        $torneoActivo = null;
+    }
     $organizador = usuarios_obtener_por_id($usuarioIdSesion) ?? [];
 
     return $datos + [
@@ -146,6 +152,9 @@ function datos_layout_admin(array $datos): array
         'torneoActivo' => $torneoActivo,
         'organizador' => $organizador,
         'esSuperadmin' => es_superadmin($organizador),
+        // Quien no tiene copas propias es puro colaborador: el menú le esconde lo que solo
+        // le sirve a quien responde por una copa.
+        'tieneCopasPropias' => !empty(torneos_listar(false, $usuarioIdSesion)),
         'seccion_activa' => '',
         'titulo_pagina' => 'Panel del Organizador',
         'flash' => obtener_flash(),

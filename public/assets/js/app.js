@@ -875,6 +875,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // Campos de solo lectura que se seleccionan enteros al tocarlos (enlaces largos que
     // uno quiere copiar a mano). Va aquí y no como onfocus en el HTML porque la política
     // de seguridad del sitio bloquea el JavaScript escrito dentro de los atributos.
+    // Selectores que guardan solos al cambiarlos (no tiene sentido un botón "guardar" al
+    // lado de una lista de una sola opción). Va en app.js porque el CSP no permite
+    // onchange dentro del HTML.
+    document.querySelectorAll('select[data-enviar-al-cambiar]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            if (select.form) { select.form.submit(); }
+        });
+    });
+
     document.querySelectorAll('[data-seleccionar-al-tocar]').forEach(function (campo) {
         campo.addEventListener('focus', function () { campo.select(); });
         campo.addEventListener('click', function () { campo.select(); });
