@@ -44,15 +44,31 @@ function correo_ultimo_error(?string $nuevo = null): string
  */
 function correo_explicar_fallo(int $codigoHttp, string $respuesta): string
 {
+    $texto = mb_strtolower($respuesta);
+
     if ($codigoHttp === 0) {
         return 'No se pudo contactar a Resend (sin salida a internet o tiempo agotado).';
     }
-    if ($codigoHttp === 401 || $codigoHttp === 403) {
-        return 'Resend rechazó la llave: revisa RESEND_API_KEY (debe empezar con "re_").';
+
+    // El 403 de Resend significa dos cosas MUY distintas y hay que mirar el texto para
+    // saber cuál: llave inválida, o la restricción de cuenta sin dominio verificado.
+    // Decidirlo solo por el código mandaba a revisar la llave cuando la llave estaba bien.
+    if (str_contains($texto, 'testing emails') || str_contains($texto, 'own email address')) {
+        return 'Tu cuenta de Resend todavía no tiene un dominio verificado, así que solo te deja '
+            . 'enviarte correos a ti mismo. Para escribirle a otras personas verifica un dominio en '
+            . 'Resend → Domains. Mientras tanto usa el botón del enlace para invitar por WhatsApp.';
     }
-    if ($codigoHttp === 422 || str_contains($respuesta, 'domain')) {
-        return 'Resend rechazó el remitente: MAIL_FROM tiene que ser un dominio verificado en tu cuenta. '
-            . 'Si todavía no verificaste ninguno, usa onboarding@resend.dev.';
+    if (str_contains($texto, 'not found') && str_contains($texto, 'domain')) {
+        return 'El dominio de MAIL_FROM no está dado de alta en Resend → Domains.';
+    }
+    if ($codigoHttp === 401 || $codigoHttp === 403) {
+        return 'Resend rechazó la llave. Lo más común es haberla copiado incompleta: en la lista de '
+            . 'API keys solo se ve un pedazo (re_abc...), y la llave entera únicamente se muestra al '
+            . 'crearla. Borra esa y crea una nueva, copiándola en ese momento.';
+    }
+    if ($codigoHttp === 422 || str_contains($texto, 'domain')) {
+        return 'Resend rechazó el remitente: revisa que MAIL_FROM sea un correo válido de un dominio '
+            . 'verificado, o usa onboarding@resend.dev.';
     }
     if ($codigoHttp === 429) {
         return 'Se pasó el límite de correos por hoy en Resend.';
