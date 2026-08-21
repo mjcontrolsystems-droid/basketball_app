@@ -37,6 +37,9 @@ return [
     // --- Páginas sin copa: portada de la plataforma y utilidades ---
     'portada.php' => ['controlador' => 'Publico/Portada', 'copa' => false],
     'codigo.php' => ['controlador' => 'Publico/Codigo', 'copa' => false],
+    // Aceptar una invitación a colaborar. Pública porque quien llega casi nunca tiene
+    // sesión abierta todavía, y muchas veces ni cuenta.
+    'invitacion.php' => ['controlador' => 'Publico/Invitacion', 'copa' => false],
     'imagen.php' => ['controlador' => 'Publico/Imagen', 'copa' => false],
     'documento.php' => ['controlador' => 'Publico/Documento', 'copa' => false],
     'torneos.php' => ['controlador' => 'Publico/Torneos', 'copa' => false],

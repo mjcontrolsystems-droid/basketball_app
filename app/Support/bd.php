@@ -420,6 +420,13 @@ function db_migrar_automatico(): void
         $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_usuario_idx ON colaboradores (usuario_id)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_email_idx ON colaboradores (email)');
 
+        // Invitación por correo: el token va en el enlace que se le manda a la persona, y
+        // aceptado_en marca cuándo entró por ese enlace. El token es NULL cuando ya se usó,
+        // así que un correo reenviado a alguien que ya aceptó no revive un enlace viejo.
+        $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS token TEXT');
+        $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS aceptado_en TIMESTAMP');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_token_idx ON colaboradores (token)');
+
         // Qué se pinta en el escudo del equipo que no subió logo. Vacío = lo decide la app
         // (el número del nombre, o las iniciales). Sirve para los casos que ninguna regla
         // automática acierta: un apodo, una sigla del club, una letra.

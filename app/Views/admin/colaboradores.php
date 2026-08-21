@@ -67,19 +67,31 @@
                                 <?php if ($c['nombre'] !== null): ?>
                                     <div class="small text-muted"><?= e($c['email']) ?></div>
                                 <?php endif; ?>
-                                <?php // Sin usuario_id todavía no ha entrado ni una vez. ?>
-                                <?php if ($c['usuario_id'] === null): ?>
-                                    <span class="badge rounded-pill text-bg-warning mt-1">Aún no ha entrado</span>
+                                <?php // Aceptó = entró por el enlace del correo. Sin eso, la
+                                      // invitación está mandada pero nadie la ha usado. ?>
+                                <?php if (empty($c['aceptado_en'])): ?>
+                                    <span class="badge rounded-pill text-bg-warning mt-1">Invitación enviada</span>
+                                <?php else: ?>
+                                    <span class="badge rounded-pill text-bg-success mt-1">Aceptada</span>
                                 <?php endif; ?>
                             </td>
                             <td><span class="badge rounded-pill text-bg-secondary"><?= e(colaborador_nivel_nombre($c['nivel'])) ?></span></td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
+                                <?php if (empty($c['aceptado_en'])): ?>
+                                <form method="post" class="d-inline"
+                                      data-confirm="&iquest;Reenviar la invitaci&oacute;n a <?= e($c['email']) ?>? El enlace anterior dejar&aacute; de servir.">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="accion" value="reenviar">
+                                    <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill" title="Reenviar invitación"><i class="bi bi-envelope-arrow-up"></i></button>
+                                </form>
+                                <?php endif; ?>
                                 <form method="post" class="d-inline"
                                       data-confirm="&iquest;Quitarle el acceso a <?= e($c['email']) ?>? Dejar&aacute; de ver esta copa de inmediato. Lo que ya captur&oacute; no se borra.">
                                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="accion" value="quitar">
                                     <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="bi bi-x-lg"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" title="Quitar acceso"><i class="bi bi-x-lg"></i></button>
                                 </form>
                             </td>
                         </tr>

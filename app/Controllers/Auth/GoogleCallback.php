@@ -138,9 +138,26 @@ if ($cuenta === null) {
     ]);
     $cuenta = usuarios_obtener_por_id($id);
     auth_iniciar_sesion_usuario($cuenta);
+
+    // Quien viene de una invitación no llega a crear su propia copa (de hecho tiene cupo
+    // 0): llega a ayudar en la de alguien más. Se le devuelve a aceptar la invitación.
+    if (!empty($_SESSION['invitacion_pendiente'])) {
+        header('Location: ' . url('invitacion.php?t=' . rawurlencode((string) $_SESSION['invitacion_pendiente'])));
+        exit;
+    }
+
     redirigir_con_mensaje(url('admin/torneos.php?accion=nuevo'), 'success', '¡Bienvenido! Crea tu primera copa o liga para empezar.');
 }
 
 auth_iniciar_sesion_usuario($cuenta);
+
+// Igual para quien ya tenía cuenta y entró desde el enlace de una invitación. Se guarda
+// el token y no una URL de retorno, así que no hay forma de usar esto para mandar a
+// alguien a un sitio externo después de iniciar sesión.
+if (!empty($_SESSION['invitacion_pendiente'])) {
+    header('Location: ' . url('invitacion.php?t=' . rawurlencode((string) $_SESSION['invitacion_pendiente'])));
+    exit;
+}
+
 header('Location: ' . url('admin/index.php'));
 exit;

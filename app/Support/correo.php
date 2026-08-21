@@ -124,6 +124,36 @@ function correo_avisar_cupo(string $email, int $cupoNuevo): bool
 }
 
 /**
+ * Invitación a ayudar a administrar una copa.
+ *
+ * Dice tres cosas concretas —quién invita, a qué copa y con qué nivel— porque quien lo
+ * recibe muchas veces no sabe que la plataforma existe, y un correo genérico con un botón
+ * parece intento de estafa. También aclara con qué correo tiene que entrar: si usa otro
+ * de Google, no lo va a dejar pasar y no va a entender por qué.
+ */
+function correo_invitar_colaborador(string $email, string $quienInvita, string $copa, string $nivel, string $resumenNivel, string $urlAceptar): bool
+{
+    $copaSegura = htmlspecialchars($copa, ENT_QUOTES, 'UTF-8');
+    $quienSeguro = htmlspecialchars($quienInvita, ENT_QUOTES, 'UTF-8');
+    $emailSeguro = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+    $nivelSeguro = htmlspecialchars($nivel, ENT_QUOTES, 'UTF-8');
+    $resumenSeguro = htmlspecialchars($resumenNivel, ENT_QUOTES, 'UTF-8');
+
+    $cuerpo = "<p><strong>{$quienSeguro}</strong> te invitó a ayudar a administrar <strong>{$copaSegura}</strong>.</p>"
+        . "<p>Tu rol sería <strong>{$nivelSeguro}</strong>: {$resumenSeguro}</p>"
+        . '<p>Al aceptar entras con tu cuenta de Google — no tienes que crear una contraseña nueva. '
+        . "Usa el correo <strong>{$emailSeguro}</strong>, que es al que llegó esta invitación.</p>"
+        . '<p style="color:#6c757d;font-size:.9rem;">Si no esperabas esto, puedes ignorar el correo: '
+        . 'sin aceptar no se crea ningún acceso.</p>';
+
+    return correo_enviar(
+        $email,
+        "Te invitaron a ayudar en {$copa}",
+        correo_plantilla('Invitación a colaborar', $cuerpo, 'Aceptar invitación', $urlAceptar)
+    );
+}
+
+/**
  * Correo de recuperación de contraseña con el enlace de restablecimiento.
  */
 function correo_recuperar_password(string $email, string $urlRestablecer): bool

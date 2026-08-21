@@ -27,6 +27,7 @@ const BITACORA_ETIQUETAS = [
     'correo_autorizado' => ['Correo autorizado', 'bi-person-plus', 'success'],
     'colaborador_invitado' => ['Colaborador agregado', 'bi-person-plus', 'success'],
     'colaborador_quitado' => ['Colaborador quitado', 'bi-person-dash', 'danger'],
+    'colaborador_acepto' => ['Invitación aceptada', 'bi-person-check', 'success'],
     'correo_desautorizado' => ['Correo quitado', 'bi-person-dash', 'danger'],
     'cupo_actualizado' => ['Cupo actualizado', 'bi-ticket-perforated', 'secondary'],
 ];

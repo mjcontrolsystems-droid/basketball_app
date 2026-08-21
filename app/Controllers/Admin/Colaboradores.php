@@ -41,11 +41,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $torneo['id']
         );
 
+        $enviado = colaborador_enviar_invitacion($torneo, $email, $usuarioId);
+
         redirigir_con_mensaje(
             $urlLista,
-            'success',
-            "Listo. {$email} ya puede entrar con su cuenta de Google y ayudarte como " . mb_strtolower(colaborador_nivel_nombre($nivel)) . '.'
-            . ($yaAutorizado ? '' : ' Avísale que entre por el botón de Google, no por usuario y contraseña.')
+            $enviado ? 'success' : 'warning',
+            $enviado
+                ? "Invitación enviada a {$email}. Cuando la acepte va a entrar como " . mb_strtolower(colaborador_nivel_nombre($nivel)) . '.'
+                : "{$email} quedó agregado, pero no se pudo enviar el correo. Pásale el enlace de invitación desde el botón de reenviar, o dile que entre a la plataforma con Google usando ese mismo correo."
+        );
+    }
+
+    if (($_POST['accion'] ?? '') === 'reenviar') {
+        $id = (int) ($_POST['id'] ?? 0);
+
+        $destino = null;
+        foreach (colaboradores_listar($torneo['id']) as $c) {
+            if ($c['id'] === $id) {
+                $destino = $c;
+            }
+        }
+        if ($destino === null) {
+            redirigir_con_mensaje($urlLista, 'error', 'Ese colaborador ya no está en la lista.');
+        }
+
+        $enviado = colaborador_enviar_invitacion($torneo, $destino['email'], $usuarioId);
+        redirigir_con_mensaje(
+            $urlLista,
+            $enviado ? 'success' : 'error',
+            $enviado
+                ? "Invitación reenviada a {$destino['email']}. El enlace anterior dejó de servir."
+                : 'No se pudo enviar el correo. Revisa la configuración de correo de la plataforma.'
         );
     }
 

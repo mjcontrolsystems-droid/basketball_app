@@ -68,7 +68,73 @@ function colaboradores_listar(int $torneoId): array
         'usuario_id' => $f['usuario_id'] !== null ? (int) $f['usuario_id'] : null,
         'nombre' => $f['nombre'] !== null ? (string) $f['nombre'] : null,
         'foto' => $f['foto'] !== null ? (string) $f['foto'] : null,
+        'aceptado_en' => $f['aceptado_en'] ?? null,
     ], $stmt->fetchAll());
+}
+
+/**
+ * Genera (o regenera) el token de invitación y lo devuelve para armar el enlace.
+ *
+ * Se regenera en cada envío: si el organizador reenvía la invitación, el enlace viejo
+ * deja de servir. 32 bytes al azar en hexadecimal — no se puede adivinar.
+ */
+function colaborador_token_nuevo(int $id): string
+{
+    $token = bin2hex(random_bytes(32));
+
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare('UPDATE colaboradores SET token = :token WHERE id = :id');
+    $stmt->bindValue(':token', $token);
+    $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $token;
+}
+
+/**
+ * Busca la invitación de un token, con el nombre de la copa para poder mostrarla.
+ *
+ * @return array|null
+ */
+function colaborador_por_token(string $token): ?array
+{
+    $token = trim($token);
+    if ($token === '') {
+        return null;
+    }
+
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare(
+        'SELECT c.*, t.nombre AS torneo_nombre, t.slug AS torneo_slug, t.logo AS torneo_logo
+           FROM colaboradores c
+           JOIN torneos t ON t.id = c.torneo_id
+          WHERE c.token = :token
+          LIMIT 1'
+    );
+    $stmt->bindValue(':token', $token);
+    $stmt->execute();
+    $fila = $stmt->fetch();
+
+    return $fila ?: null;
+}
+
+/**
+ * Marca la invitación como aceptada y la amarra a la cuenta que entró.
+ *
+ * El token se borra al aceptar: el enlace sirve una sola vez. El acceso a partir de aquí
+ * ya no depende de él, sino de que la cuenta esté en la lista de colaboradores.
+ */
+function colaborador_aceptar(int $id, int $usuarioId): void
+{
+    $pdo = db_conexion();
+    $stmt = $pdo->prepare(
+        'UPDATE colaboradores
+            SET usuario_id = :usuario, aceptado_en = NOW(), token = NULL
+          WHERE id = :id'
+    );
+    $stmt->bindValue(':usuario', $usuarioId, PDO::PARAM_INT);
+    $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
 }
 
 /**
@@ -165,6 +231,46 @@ function colaboradores_guardar(int $torneoId, string $email, string $nivel, int 
     $stmt->bindValue(':nivel', $nivel);
     $stmt->bindValue(':usuario', $usuario['id'] ?? null, $usuario !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
     $stmt->execute();
+}
+
+/**
+ * Genera un token nuevo y manda (o remanda) el correo de invitación.
+ *
+ * Devuelve false si el correo no salió — la invitación igual queda creada, porque el
+ * acceso no depende del correo sino de estar en la lista. El correo es el aviso, no la
+ * llave: si no llega, la persona entra igual con su Google y el organizador puede
+ * pasarle el enlace por WhatsApp.
+ */
+function colaborador_enviar_invitacion(array $torneo, string $email, int $usuarioIdQueInvita): bool
+{
+    $email = colaborador_normalizar_email($email);
+
+    $id = null;
+    $nivel = 'mesa';
+    foreach (colaboradores_listar((int) $torneo['id']) as $c) {
+        if ($c['email'] === $email) {
+            $id = $c['id'];
+            $nivel = $c['nivel'];
+        }
+    }
+    if ($id === null) {
+        return false;
+    }
+
+    $token = colaborador_token_nuevo($id);
+    $quien = usuarios_obtener_por_id($usuarioIdQueInvita);
+    $nombreQuien = trim((string) ($quien['nombre'] ?? '')) !== ''
+        ? (string) $quien['nombre']
+        : (string) ($quien['usuario'] ?? 'El organizador');
+
+    return correo_invitar_colaborador(
+        $email,
+        $nombreQuien,
+        (string) $torneo['nombre'],
+        colaborador_nivel_nombre($nivel),
+        COLABORADOR_NIVELES[$nivel]['resumen'] ?? '',
+        SITE_ORIGIN . url('invitacion.php?t=' . rawurlencode($token))
+    );
 }
 
 function colaboradores_eliminar(int $id, int $torneoId): void
