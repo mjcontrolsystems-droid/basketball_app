@@ -470,6 +470,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // --- Que la temporada aterrice en la fecha de la final ---
+        //
+        // La fecha_fin de la copa es el día de la final. Antes de generar se comprueba
+        // con números si los partidos caben en los fines de semana que quedan hasta ahí
+        // (descontando los que ocupan los playoffs). Si no caben se corta AQUÍ, diciendo
+        // cuántos hacen falta, en vez de generar un calendario que se pasa de la fecha y
+        // que el organizador descubriría partido por partido.
+        $fechaFinLiga = trim((string) ($torneo['fecha_fin'] ?? ''));
+        $bloquesPlayoffs = 0;
+        if ($fechaFinLiga !== '') {
+            $bloquesPlayoffs = calendario_bloques_playoffs($torneo, $diasConfig, $excluidas);
+            $totalPartidos = calendario_contar_partidos($equipoIds, $vueltasGenerar, $rondasPrearmadas, $yaProgramados);
+            $cupoFinDeSemana = array_sum(array_map(fn($d) => max(0, (int) ($d['partidos'] ?? 0)), $diasConfig));
+            $bloquesHastaFinal = calendario_bloques_hasta(
+                $fechaInicio,
+                array_map(fn($d) => (int) ($d['dia'] ?? 0), $diasConfig),
+                $fechaFinLiga,
+                $excluidas
+            );
+            $jornadasDisponibles = $bloquesHastaFinal - $bloquesPlayoffs;
+
+            if ($totalPartidos > 0 && ($jornadasDisponibles < 1 || $totalPartidos > $jornadasDisponibles * max(1, $cupoFinDeSemana))) {
+                $necesarios = $jornadasDisponibles >= 1 ? (int) ceil($totalPartidos / $jornadasDisponibles) : 0;
+                redirigir_con_mensaje($urlGenerar, 'error',
+                    "No alcanzan los fines de semana: hay {$totalPartidos} partidos por programar y solo "
+                    . max(0, $jornadasDisponibles) . " fines de semana antes de los playoffs, que terminan el "
+                    . formatear_fecha_corta($fechaFinLiga) . '.'
+                    . ($necesarios > 0
+                        ? " Harían falta {$necesarios} partidos por fin de semana (ahora caben {$cupoFinDeSemana})."
+                        : ' Mueve la fecha de cierre de la liga o la fecha de inicio.')
+                );
+            }
+        }
+
         $calendarioGenerado = calendario_generar($equipoIds, [
             'vueltas' => $vueltasGenerar,
             'dias' => $diasConfig,
@@ -481,6 +515,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'ya_programados' => $yaProgramados,
             'historial' => $historial,
             'jornada_inicial' => $jornadaInicial,
+            'fecha_fin' => $fechaFinLiga,
+            'bloques_playoffs' => $bloquesPlayoffs,
         ]);
 
         if (empty($calendarioGenerado)) {

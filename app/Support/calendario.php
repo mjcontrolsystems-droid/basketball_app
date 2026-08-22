@@ -73,7 +73,7 @@ const CALENDARIO_PLANES_A_PROBAR = 6;
  * @param array<int> $equipoIds
  * @param array<int, array{0:int, 1:int}> $yaProgramados Cruces que no hay que volver a crear.
  */
-function calendario_plan_jornadas(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = [], array $doblesPrevios = []): array
+function calendario_plan_jornadas(array $equipoIds, int $vueltas, int|array $cupoPorJornada, ?int $semilla = null, ?array $rondasPrearmadas = null, array $yaProgramados = [], array $doblesPrevios = []): array
 {
     $mejor = null;
     $mejorPunt = null;
@@ -150,7 +150,7 @@ function calendario_puntuar_plan(array $plan, array $equipoIds, array $doblesPre
     return sprintf('%04d|%04d|%04d|%04d', count($plan), $huecos, $spread, $tope);
 }
 
-function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJornada, ?int $semilla, ?array $rondasPrearmadas, array $yaProgramados, bool $balancearDobles, array $doblesPrevios = []): array
+function calendario_plan_intento(array $equipoIds, int $vueltas, int|array $cupoPorJornada, ?int $semilla, ?array $rondasPrearmadas, array $yaProgramados, bool $balancearDobles, array $doblesPrevios = []): array
 {
     // La fase de grupos manda sus propias rondas ya armadas (el todos contra todos de cada
     // grupo, mezclados para que una jornada tenga partidos de todos los grupos). El resto
@@ -214,6 +214,14 @@ function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJor
     }
 
     while (!empty($bolsa)) {
+        // El cupo puede venir como lista, uno por jornada: es lo que permite estirar la
+        // temporada para que termine justo en la fecha de la final, jugando por ejemplo
+        // 9-9-8-8... en vez de 9 siempre y sobrar un fin de semana. Si la lista se queda
+        // corta, se sigue con su último valor.
+        $cupoJornada = is_array($cupoPorJornada)
+            ? (int) ($cupoPorJornada[count($jornadas)] ?? end($cupoPorJornada))
+            : $cupoPorJornada;
+
         // --- Fase 1: que juegue la MAYOR cantidad posible de equipos, sin repetir ---
         //
         // Antes esto recorría las rondas en orden y tomaba lo que cupiera. Funcionaba
@@ -234,7 +242,7 @@ function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJor
             $disponibles[$item['cruce'][0]] = true;
             $disponibles[$item['cruce'][1]] = true;
         }
-        $tope = min($cupoPorJornada, intdiv(count($disponibles), 2));
+        $tope = min($cupoJornada, intdiv(count($disponibles), 2));
 
         $mejor = [];
         for ($intento = 0; $intento < CALENDARIO_INTENTOS_EMPAREJAR; $intento++) {
@@ -293,7 +301,7 @@ function calendario_plan_intento(array $equipoIds, int $vueltas, int $cupoPorJor
         // adelantados para repartir entre 16 equipos: a unos les tocaba 3 veces y a otros
         // 1. Doblar es inevitable, pero que siempre le toque al mismo no.
         $adelantados = [];
-        while (count($principal) + count($adelantados) < $cupoPorJornada) {
+        while (count($principal) + count($adelantados) < $cupoJornada) {
             $elegido = null;
             $mejorPeso = null;
             foreach ($resto as $k => $item) {
@@ -702,6 +710,167 @@ function calendario_config_deducida(array $partidos): array
 }
 
 /**
+ * Cuántos partidos quedan por programar (sin contar los ya publicados).
+ */
+function calendario_contar_partidos(array $equipoIds, int $vueltas, ?array $rondasPrearmadas, array $yaProgramados): int
+{
+    $rondas = $rondasPrearmadas !== null
+        ? array_values(array_filter($rondasPrearmadas))
+        : generar_fixture_round_robin($equipoIds, $vueltas);
+
+    $fuera = [];
+    foreach ($yaProgramados as [$a, $b]) {
+        $par = [(int) $a, (int) $b];
+        sort($par);
+        $fuera[$par[0] . '-' . $par[1]] = true;
+    }
+
+    $total = 0;
+    foreach ($rondas as $ronda) {
+        foreach ($ronda as $cruce) {
+            $par = [(int) $cruce[0], (int) $cruce[1]];
+            sort($par);
+            if (!isset($fuera[$par[0] . '-' . $par[1]])) {
+                $total++;
+            }
+        }
+    }
+
+    return $total;
+}
+
+/**
+ * Cuántos fines de semana de juego caben entre el inicio y una fecha tope, inclusive.
+ *
+ * Reusa el mismo cálculo de fechas del calendario, así respeta las fechas excluidas y el
+ * corrimiento de semanas exactamente igual que el resultado final.
+ */
+function calendario_bloques_hasta(string $fechaInicio, array $diasSemana, string $fechaFin, array $excluidas): int
+{
+    $tsFin = strtotime($fechaFin);
+    if ($tsFin === false) {
+        return 0;
+    }
+
+    $bloques = calendario_fechas($fechaInicio, $diasSemana, CALENDARIO_MAX_SALTOS, $excluidas);
+    $n = 0;
+    foreach ($bloques as $bloque) {
+        $ultima = 0;
+        foreach ($bloque as $fecha) {
+            $ts = strtotime((string) $fecha);
+            $ultima = max($ultima, $ts === false ? 0 : $ts);
+        }
+        if ($ultima === 0 || $ultima > $tsFin) {
+            break;
+        }
+        $n++;
+    }
+
+    return $n;
+}
+
+/**
+ * Reparte un total de partidos en una cantidad fija de jornadas, lo más parejo posible.
+ *
+ * 120 partidos en 14 jornadas no da exacto (8.57): salen jornadas de 9 y de 8. Las más
+ * cargadas van PRIMERO, para que el cierre de temporada —cuando la tabla se aprieta y
+ * cada punto pesa— sea el tramo más liviano y no el más caótico.
+ *
+ * @return array<int, int> Cupo de cada jornada.
+ */
+function calendario_cupos_repartidos(int $totalPartidos, int $jornadas, int $cupoMax): array
+{
+    $jornadas = max(1, $jornadas);
+    $base = intdiv($totalPartidos, $jornadas);
+    $extra = $totalPartidos % $jornadas;
+
+    $out = [];
+    for ($i = 0; $i < $jornadas; $i++) {
+        $out[] = max(1, min($cupoMax, $base + ($i < $extra ? 1 : 0)));
+    }
+
+    return $out;
+}
+
+/**
+ * Achica los cupos por día de una jornada que trae menos partidos que el máximo.
+ *
+ * Sin esto, una jornada de 7 con cupos sábado 4 / domingo 5 llenaba el sábado y dejaba
+ * el domingo a medias siempre; repartir proporcional (3 y 4) mantiene los dos días vivos.
+ *
+ * @param array<int> $cupos Cupos configurados por día.
+ * @return array<int> Cupos ajustados; suman exactamente $cuantos (o los cupos, si no alcanza).
+ */
+function calendario_escalar_cupos(int $cuantos, array $cupos): array
+{
+    $total = array_sum($cupos);
+    if ($total <= 0 || $cuantos >= $total) {
+        return $cupos;
+    }
+
+    $out = [];
+    $acumulado = 0;
+    foreach ($cupos as $i => $c) {
+        $out[$i] = (int) floor($cuantos * $c / $total);
+        $acumulado += $out[$i];
+    }
+    // Los que faltan por el redondeo se agregan donde quede espacio, de atrás hacia
+    // adelante: el último día es el que cierra la jornada y conviene que quede completo.
+    $indices = array_reverse(array_keys($cupos));
+    while ($acumulado < $cuantos) {
+        foreach ($indices as $i) {
+            if ($acumulado >= $cuantos) {
+                break;
+            }
+            if ($out[$i] < $cupos[$i]) {
+                $out[$i]++;
+                $acumulado++;
+            }
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Cuántos fines de semana ocupan los playoffs con esta configuración de días.
+ *
+ * No es "una fase = un fin de semana": con sábado y domingo, las semis caben el sábado y
+ * la final (con su tercer lugar) el domingo del MISMO fin de semana. Para no duplicar esa
+ * lógica se corre la previa real sobre una fecha de arranque ficticia y se cuentan las
+ * semanas distintas que usó.
+ */
+function calendario_bloques_playoffs(array $torneo, array $diasConfig, array $excluidas = []): int
+{
+    $fases = torneo_fases_playoff($torneo);
+    if (empty($fases) || empty($diasConfig)) {
+        return 0;
+    }
+
+    // Calendario ficticio de una sola jornada; la previa arranca 7 días después de su
+    // última fecha, así que las fases quedan contadas desde una base limpia sin
+    // exclusiones. Se le quita la fecha_fin para que no intente anclarse: aquí solo
+    // interesa CUÁNTOS fines de semana ocupa, no dónde caen.
+    $falso = [['numero' => 1, 'dias' => [['fecha' => '2024-01-06', 'nombre' => '', 'partidos' => []]]]];
+    $previa = calendario_previa_playoffs(array_merge($torneo, ['fecha_fin' => '']), $falso, $diasConfig, []);
+    if (empty($previa)) {
+        return 0;
+    }
+
+    $semanas = [];
+    foreach ($previa as $fase) {
+        foreach ($fase['dias'] ?? [] as $dia) {
+            $ts = strtotime((string) ($dia['fecha'] ?? ''));
+            if ($ts !== false) {
+                $semanas[date('o-W', $ts)] = true;
+            }
+        }
+    }
+
+    return max(1, count($semanas));
+}
+
+/**
  * Cuántas veces dobló cada equipo en las jornadas ya publicadas.
  *
  * Doblar es jugar dos veces la misma jornada. Sin este conteo el generador arranca de
@@ -830,10 +999,43 @@ function calendario_generar(array $equipoIds, array $opciones): array
         return [];
     }
 
+    // --- Anclar el final de la temporada a la fecha de cierre de la liga ---
+    //
+    // La fecha_fin configurada ES el día de la final: la temporada tiene que llenar los
+    // fines de semana disponibles hasta ahí, ni terminar antes dejando semanas muertas ni
+    // pasarse. Antes el generador jugaba siempre al cupo máximo y terminaba cuando se
+    // acababan los partidos, donde cayera. Ahora, si hay fecha de cierre y los partidos
+    // caben, el cupo se convierte en una lista por jornada (9,9,...,8,8) calculada para
+    // aterrizar exacto: las jornadas cargadas van primero y el cierre queda liviano, que
+    // es cuando la tabla se aprieta. Si no caben, se genera igual al máximo — el aviso de
+    // que no alcanza lo da el controlador ANTES, con números.
+    $cupoPlan = $cupoTotal;
+    $fechaFin = (string) ($opciones['fecha_fin'] ?? '');
+    if ($fechaFin !== '') {
+        $totalPartidos = calendario_contar_partidos(
+            $equipoIds,
+            (int) ($opciones['vueltas'] ?? 1),
+            isset($opciones['rondas']) ? (array) $opciones['rondas'] : null,
+            (array) ($opciones['ya_programados'] ?? [])
+        );
+        $bloquesTotales = calendario_bloques_hasta(
+            (string) ($opciones['fecha_inicio'] ?? ''),
+            array_map(fn($d) => (int) ($d['dia'] ?? 0), $dias),
+            $fechaFin,
+            (array) ($opciones['excluidas'] ?? [])
+        );
+        $bloquesPlayoffs = (int) ($opciones['bloques_playoffs'] ?? 0);
+        $jornadasDisponibles = $bloquesTotales - $bloquesPlayoffs;
+
+        if ($jornadasDisponibles >= 1 && $totalPartidos > 0 && $totalPartidos <= $jornadasDisponibles * $cupoTotal) {
+            $cupoPlan = calendario_cupos_repartidos($totalPartidos, $jornadasDisponibles, $cupoTotal);
+        }
+    }
+
     $plan = calendario_plan_jornadas(
         $equipoIds,
         (int) ($opciones['vueltas'] ?? 1),
-        $cupoTotal,
+        $cupoPlan,
         isset($opciones['semilla']) ? (int) $opciones['semilla'] : null,
         isset($opciones['rondas']) ? (array) $opciones['rondas'] : null,
         (array) ($opciones['ya_programados'] ?? []),
@@ -868,7 +1070,14 @@ function calendario_generar(array $equipoIds, array $opciones): array
     $localPublicadas = $vecesLocal; // lo ya publicado no se puede invertir
 
     foreach ($plan as $j => $jornada) {
-        $repartidos = calendario_repartir_en_dias($jornada['principal'], $jornada['adelantados'], $cupos);
+        // Una jornada más liviana que el máximo reparte proporcional entre los días: 7
+        // partidos con cupos 4/5 quedan 3 y 4, no 4 el sábado y el domingo a medias.
+        $cuantosHoy = count($jornada['principal']) + count($jornada['adelantados']);
+        $repartidos = calendario_repartir_en_dias(
+            $jornada['principal'],
+            $jornada['adelantados'],
+            calendario_escalar_cupos($cuantosHoy, $cupos)
+        );
         $diasJornada = [];
 
         foreach ($repartidos as $i => $partidos) {
@@ -1216,11 +1425,16 @@ function calendario_previa_playoffs(array $torneo, array $calendario, array $dia
         $partidosPorFase[$f] = $cuenta = max(2, $cuenta * 2);
     }
 
+    // El armado real vive en esta función interna para poder correrlo más de una vez con
+    // distintas fechas de arranque: es lo que permite ANCLAR la final a la fecha de cierre
+    // de la liga (ver más abajo) sin duplicar toda la lógica de parejas y cupos.
+    $armar = function (int $tsArranque) use ($ordenadas, $partidosPorFase, $diasConfig, $excluidas): array {
+
     // Todos los días de playoffs disponibles, uno detrás de otro. Se piden fines de semana
     // de sobra (uno por fase más dos) y se reutiliza el mismo cálculo de fechas de la
     // temporada regular, para que también respete las fechas excluidas.
     $bloques = calendario_fechas(
-        date('Y-m-d', $tsSiguiente),
+        date('Y-m-d', $tsArranque),
         array_map(fn($d) => (int) $d['dia'], $diasConfig),
         count($ordenadas) + 2,
         $excluidas
@@ -1315,6 +1529,46 @@ function calendario_previa_playoffs(array $torneo, array $calendario, array $dia
         // La fase siguiente arranca el día DESPUÉS del último que usó esta, salvo el
         // tercer lugar, que le deja el mismo día a la final.
         $desde = $comparteConLaFinal ? $ultimoUsado : $ultimoUsado + 1;
+    }
+
+    return $salida;
+    }; // fin de $armar
+
+    $salida = $armar($tsSiguiente);
+
+    // --- Anclar la final a la fecha de cierre de la liga ---
+    //
+    // La fecha_fin de la copa ES el día de la final. Si los playoffs pegados a la última
+    // jornada terminan antes, se corren fines de semana hacia adelante hasta que la final
+    // caiga en el bloque de esa fecha. Se prueba bajando de a una semana porque las
+    // fechas excluidas pueden hacer que un corrimiento "exacto" se pase.
+    $fechaFin = trim((string) ($torneo['fecha_fin'] ?? ''));
+    $tsFin = $fechaFin !== '' ? strtotime($fechaFin) : false;
+
+    $ultimaDe = function (array $fases): int {
+        $max = 0;
+        foreach ($fases as $fase) {
+            foreach ($fase['dias'] ?? [] as $dia) {
+                $ts = strtotime((string) ($dia['fecha'] ?? ''));
+                $max = max($max, $ts === false ? 0 : $ts);
+            }
+        }
+        return $max;
+    };
+
+    if ($tsFin !== false && !empty($salida)) {
+        $ultimo = $ultimaDe($salida);
+        if ($ultimo > 0 && $ultimo < $tsFin) {
+            $saltos = (int) intdiv($tsFin - $ultimo, 7 * 86400);
+            for (; $saltos > 0; $saltos--) {
+                $candidato = $armar((int) strtotime("+{$saltos} week", $tsSiguiente));
+                $ultimoCand = $ultimaDe($candidato);
+                if (!empty($candidato) && $ultimoCand > 0 && $ultimoCand <= $tsFin) {
+                    $salida = $candidato;
+                    break;
+                }
+            }
+        }
     }
 
     return $salida;
