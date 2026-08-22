@@ -23,28 +23,32 @@ Write-Host ''
 Write-Host '=== Respaldo de la base de datos ===' -ForegroundColor Cyan
 
 # --- 1. pg_dump instalado? ---
-$pgDump = Get-Command pg_dump -ErrorAction SilentlyContinue
-if (-not $pgDump) {
-    # Buscarlo en las rutas típicas del instalador de PostgreSQL en Windows,
-    # porque el instalador no siempre lo agrega al PATH.
-    $candidatos = Get-ChildItem 'C:\Program Files\PostgreSQL\*\bin\pg_dump.exe' -ErrorAction SilentlyContinue |
-        Sort-Object FullName -Descending
-    if ($candidatos) {
-        $pgDump = $candidatos[0].FullName
+#
+# Se busca primero en Program Files y se toma la versión MÁS NUEVA instalada, no la del
+# PATH: pg_dump se niega a respaldar un servidor más nuevo que él ("server version
+# mismatch"), y el PATH suele apuntar a la versión vieja aunque ya esté instalada la
+# nueva. El número de carpeta se compara como número (18 > 9) y no como texto.
+$candidatos = Get-ChildItem 'C:\Program Files\PostgreSQL\*\bin\pg_dump.exe' -ErrorAction SilentlyContinue |
+    Sort-Object { [int]($_.FullName -replace '.*PostgreSQL\\(\d+).*', '$1') } -Descending
+if ($candidatos) {
+    $pgDump = $candidatos[0].FullName
+} else {
+    $enPath = Get-Command pg_dump -ErrorAction SilentlyContinue
+    if ($enPath) {
+        $pgDump = $enPath.Source
     } else {
         Write-Host ''
         Write-Host 'No se encontró pg_dump.' -ForegroundColor Red
         Write-Host 'Instálalo así (una sola vez):'
         Write-Host '  1. Entra a https://www.enterprisedb.com/downloads/postgres-postgresql-downloads'
-        Write-Host '  2. Descarga el instalador de Windows de la versión 17.'
+        Write-Host '  2. Descarga el instalador de Windows de la versión 18 (o la más nueva que aparezca).'
         Write-Host '  3. Al instalar, deja marcado SOLO "Command Line Tools" (lo demás no hace falta).'
         Write-Host '  4. Vuelve a correr este script.'
         Read-Host 'Presiona Enter para cerrar'
         exit 1
     }
-} else {
-    $pgDump = $pgDump.Source
 }
+Write-Host "Usando: $pgDump"
 
 # --- 2. Leer DATABASE_URL del .env ---
 if (-not (Test-Path $archivoEnv)) {
@@ -77,7 +81,9 @@ Write-Host 'Esto tarda unos segundos...'
 if ($LASTEXITCODE -ne 0) {
     Write-Host ''
     Write-Host 'El respaldo FALLÓ. Revisa el mensaje de arriba.' -ForegroundColor Red
-    Write-Host 'Causas comunes: sin internet, o la URL del .env cambió.'
+    Write-Host 'Causas comunes: sin internet, la URL del .env cambió, o "server version'
+    Write-Host 'mismatch" — eso significa que hay que instalar la versión de PostgreSQL'
+    Write-Host 'que diga "server version" en el mensaje (solo Command Line Tools).'
     Read-Host 'Presiona Enter para cerrar'
     exit 1
 }
