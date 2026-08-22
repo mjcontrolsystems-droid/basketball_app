@@ -524,6 +524,9 @@
             <div class="col-md-6 col-xl-3">
                 <div class="border rounded-4 p-3 h-100">
                     <div class="fw-semibold small text-uppercase text-muted mb-2">Grupo <?= e($letra) ?></div>
+                    <?php // El wrapper le da scroll lateral en el teléfono: era la única
+                          // tabla del panel sin él, y en pantallas chicas se aplastaba. ?>
+                    <div class="table-responsive">
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr class="small text-muted">
@@ -547,6 +550,7 @@
                             <?php endif; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
             <?php endforeach; ?>

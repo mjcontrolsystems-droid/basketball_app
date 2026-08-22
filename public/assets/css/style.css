@@ -843,6 +843,14 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     .card-suave { overflow-wrap: anywhere; }
     .card-suave img { max-width: 100%; }
 
+    /* PERO las tablas no: con 'anywhere' el navegador puede partir el texto letra por
+       letra, así que en vez de desbordar, aplastaba la columna del nombre a un carácter
+       por línea ("K-e-r-w-i-n" en vertical, ilegible). Dentro de una tabla el texto solo
+       se parte por palabras, y el ancho sobrante se resuelve con el scroll lateral de
+       .table-responsive, que para eso está. */
+    .card-suave .table,
+    .table-responsive .table { overflow-wrap: normal; word-break: normal; }
+
     /* Las pestañas de fases (Grupos, Cuartos, Semifinal...) y cualquier fila de
        pills se acomodan en varias líneas en vez de salirse a la derecha. */
     .nav-pills { flex-wrap: wrap; gap: .35rem; }
@@ -861,6 +869,11 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
    (Bootstrap ya lo hace con .table-responsive) en vez de estirar toda la página. */
 @media (max-width: 575.98px) {
     .table-responsive { -webkit-overflow-scrolling: touch; }
+
+    /* Un ancho mínimo de verdad: sin esto, el navegador prefiere APLASTAR las columnas
+       hasta lo ilegible antes que activar el scroll lateral. Con el mínimo, la tabla
+       conserva un ancho donde los nombres se leen y lo que no cabe se desliza. */
+    .table-responsive > .table { min-width: 560px; }
 }
 
 /* Ficha de partido descargable en PDF (partido.php): usa window.print() del
