@@ -527,10 +527,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($soloPrevia) {
             $previa = calendario_resumen($calendarioGenerado, $equiposPorId);
             $previa['semilla'] = $semilla;
-            // '' = la copa no tiene fecha de cierre (la vista lo advierte); con valor, la
-            // vista confirma que la final aterriza ese día.
+            // '' = la copa no tiene fecha de cierre (la vista lo advierte). Con valor, la
+            // vista COMPRUEBA contra la última fecha real de la previa — el letrero verde
+            // llegó a decir "cierra el 13" con la final pintada el 19 dos renglones más
+            // arriba, porque afirmaba la intención sin mirar el resultado.
             $previa['fecha_final'] = $fechaFinLiga;
             $previa['playoffs'] = calendario_previa_playoffs($torneo, $calendarioGenerado, $diasConfig, $excluidas);
+
+            // La última fecha REAL de todo lo que se ve en la previa: la final si hay
+            // playoffs, o la última jornada si es liga pura.
+            $ultimaReal = '';
+            foreach ($calendarioGenerado as $jor) {
+                foreach ($jor['dias'] as $d) {
+                    $ultimaReal = max($ultimaReal, (string) $d['fecha']);
+                }
+            }
+            foreach ($previa['playoffs'] as $pf) {
+                $ultimaReal = max($ultimaReal, (string) ($pf['hasta'] ?? ''));
+            }
+            $previa['fecha_final_real'] = $ultimaReal;
+
             $accion = 'generar';
             $datosPrevios = $_POST;
         } else {

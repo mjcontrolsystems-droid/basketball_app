@@ -263,11 +263,24 @@
         <?php endif; ?>
 
         <?php // El organizador tiene que ver ANTES de confirmar si esto aterriza en la
-              // fecha de la final o si está generando al aire. ?>
-        <?php if (!empty($previa['fecha_final'])): ?>
+              // fecha de la final o si está generando al aire. El letrero COMPRUEBA la
+              // última fecha real de la tabla de arriba, no repite la intención: llegó a
+              // decir "cierra el 13" con la final pintada el 19 dos renglones antes. ?>
+        <?php $cierreOk = !empty($previa['fecha_final'])
+            && !empty($previa['fecha_final_real'])
+            && $previa['fecha_final_real'] <= $previa['fecha_final']; ?>
+        <?php if ($cierreOk): ?>
         <p class="small mt-3 mb-0" style="color:var(--bs-success,#198754);">
-            <i class="bi bi-flag-fill me-1"></i>La temporada está repartida para cerrar con la final el
-            <strong><?= e(formatear_fecha_corta($previa['fecha_final'])) ?></strong>, la fecha de cierre configurada en la copa.
+            <i class="bi bi-flag-fill me-1"></i>Comprobado: todo termina el
+            <strong><?= e(formatear_fecha_corta($previa['fecha_final_real'])) ?></strong>,
+            dentro de la fecha de cierre de la copa (<?= e(formatear_fecha_corta($previa['fecha_final'])) ?>).
+        </p>
+        <?php elseif (!empty($previa['fecha_final'])): ?>
+        <p class="small text-danger mt-3 mb-0">
+            <i class="bi bi-exclamation-octagon me-1"></i><strong>Ojo:</strong> la última fecha de esta previa es el
+            <strong><?= e(formatear_fecha_corta($previa['fecha_final_real'] ?? '')) ?></strong>,
+            DESPUÉS de la fecha de cierre de la copa (<?= e(formatear_fecha_corta($previa['fecha_final'])) ?>).
+            Revisa los cupos por día o la fecha de fin antes de confirmar.
         </p>
         <?php elseif (isset($previa['fecha_final'])): ?>
         <p class="small text-warning mt-3 mb-0">

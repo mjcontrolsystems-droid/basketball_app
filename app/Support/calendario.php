@@ -1408,7 +1408,13 @@ function calendario_previa_playoffs(array $torneo, array $calendario, array $dia
         return [];
     }
 
-    $tsSiguiente = strtotime('+7 days', (int) strtotime($ultimaFecha));
+    // Un día después de la última jornada, no siete. Sumar una semana entera desde el
+    // DOMINGO de cierre caía en el domingo siguiente, y el cálculo de bloques ya no veía
+    // el sábado de ese fin de semana (quedaba "en el pasado"): el sábado se corría una
+    // semana más y la final se salía de la fecha de cierre. Con +1 día el bloque que
+    // sigue es el fin de semana entrante completo — que de todos modos es una semana
+    // después de la jornada, porque la jornada ocupa su bloque completo.
+    $tsSiguiente = strtotime('+1 day', (int) strtotime($ultimaFecha));
     if ($tsSiguiente === false) {
         return [];
     }
