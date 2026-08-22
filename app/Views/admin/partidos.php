@@ -261,6 +261,20 @@
             todavía no se sabe quién clasifica. Los programas cuando termine la temporada regular.
         </p>
         <?php endif; ?>
+
+        <?php // El organizador tiene que ver ANTES de confirmar si esto aterriza en la
+              // fecha de la final o si está generando al aire. ?>
+        <?php if (!empty($previa['fecha_final'])): ?>
+        <p class="small mt-3 mb-0" style="color:var(--bs-success,#198754);">
+            <i class="bi bi-flag-fill me-1"></i>La temporada está repartida para cerrar con la final el
+            <strong><?= e(formatear_fecha_corta($previa['fecha_final'])) ?></strong>, la fecha de cierre configurada en la copa.
+        </p>
+        <?php elseif (isset($previa['fecha_final'])): ?>
+        <p class="small text-warning mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle me-1"></i>Esta copa no tiene fecha de cierre: el calendario termina
+            cuando se acaban los partidos. Ponle fecha de fin en la configuración para que la final caiga en un día exacto.
+        </p>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 

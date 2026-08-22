@@ -527,6 +527,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($soloPrevia) {
             $previa = calendario_resumen($calendarioGenerado, $equiposPorId);
             $previa['semilla'] = $semilla;
+            // '' = la copa no tiene fecha de cierre (la vista lo advierte); con valor, la
+            // vista confirma que la final aterriza ese día.
+            $previa['fecha_final'] = $fechaFinLiga;
             $previa['playoffs'] = calendario_previa_playoffs($torneo, $calendarioGenerado, $diasConfig, $excluidas);
             $accion = 'generar';
             $datosPrevios = $_POST;
@@ -601,6 +604,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (!empty($excluidas)) {
                 $aviso .= ' Se saltaron ' . count($excluidas) . ' fecha(s) excluida(s).';
+            }
+            // Que quede claro si el calendario aterrizó en la fecha de la final o si
+            // generó "al aire". Sin este aviso, una copa sin fecha de cierre configurada
+            // generaba sin ancla y el organizador no tenía forma de saberlo.
+            if ($fechaFinLiga !== '') {
+                $aviso .= ' La temporada está repartida para cerrar con la final el ' . formatear_fecha_corta($fechaFinLiga) . '.';
+            } else {
+                $aviso .= ' Ojo: esta copa no tiene fecha de cierre configurada, así que el calendario termina cuando se acaban los partidos. Ponle fecha de fin en la configuración de la copa para que la final aterrice en un día exacto.';
             }
             redirigir_con_mensaje(url('admin/partidos.php'), 'success', $aviso);
         }
