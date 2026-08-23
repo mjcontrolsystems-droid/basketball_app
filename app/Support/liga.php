@@ -718,3 +718,69 @@ function calcular_goleadores(array $eventos, array $jugadores, array $equiposPor
     usort($goleadores, fn($a, $b) => $b['goles'] <=> $a['goles']);
     return $goleadores;
 }
+
+/**
+ * Ranking de portería menos vencida: qué equipo recibe menos goles por partido.
+ *
+ * Se calcula POR EQUIPO y no por portero individual, a propósito: saber qué portero
+ * atajó cada partido exigiría capturar la alineación de todos los encuentros, y en la
+ * práctica de estas ligas eso casi nunca se llena. Los goles en contra del equipo, en
+ * cambio, salen del marcador y siempre están. El nombre del portero registrado en la
+ * plantilla se muestra junto al equipo, que es como se entrega este premio en las ligas
+ * amateur: a la portería, y la portería tiene nombre.
+ *
+ * Ordena por promedio de goles en contra por partido (no por total: un equipo con 10 GC
+ * en 12 jugados está mejor que uno con 9 en 6). Desempata por menos GC totales y luego
+ * por más partidos jugados. Los equipos sin partidos jugados no aparecen.
+ *
+ * @param array<int, array> $equiposPorId
+ * @return array<int, array{equipo: array, porteros: array<int, array>, jugados: int, goles_contra: int, promedio: float}>
+ */
+function calcular_porteria_menos_vencida(array $equiposPorId, array $partidos, array $jugadores): array
+{
+    $stats = [];
+    foreach ($partidos as $p) {
+        if (($p['estado'] ?? '') !== 'jugado') {
+            continue;
+        }
+        $gl = (int) ($p['marcador_local'] ?? 0);
+        $gv = (int) ($p['marcador_visitante'] ?? 0);
+        foreach ([
+            [(int) $p['equipo_local'], $gv],
+            [(int) $p['equipo_visitante'], $gl],
+        ] as [$equipoId, $recibidos]) {
+            if (!isset($stats[$equipoId])) {
+                $stats[$equipoId] = ['jugados' => 0, 'goles_contra' => 0];
+            }
+            $stats[$equipoId]['jugados']++;
+            $stats[$equipoId]['goles_contra'] += $recibidos;
+        }
+    }
+
+    // Porteros registrados por equipo (activos): son la cara del premio.
+    $porterosPorEquipo = [];
+    foreach ($jugadores as $j) {
+        if (($j['posicion'] ?? '') === 'portero' && !empty($j['activo'])) {
+            $porterosPorEquipo[(int) $j['equipo_id']][] = $j;
+        }
+    }
+
+    $ranking = [];
+    foreach ($stats as $equipoId => $s) {
+        if ($s['jugados'] < 1 || !isset($equiposPorId[$equipoId])) {
+            continue;
+        }
+        $ranking[] = [
+            'equipo' => $equiposPorId[$equipoId],
+            'porteros' => $porterosPorEquipo[$equipoId] ?? [],
+            'jugados' => $s['jugados'],
+            'goles_contra' => $s['goles_contra'],
+            'promedio' => round($s['goles_contra'] / $s['jugados'], 2),
+        ];
+    }
+
+    usort($ranking, fn($a, $b) => [$a['promedio'], $a['goles_contra'], -$a['jugados']]
+        <=> [$b['promedio'], $b['goles_contra'], -$b['jugados']]);
+
+    return $ranking;
+}

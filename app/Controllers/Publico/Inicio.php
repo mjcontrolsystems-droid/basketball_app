@@ -28,6 +28,9 @@ $esLiga = torneo_es_liga($torneo);
 $jugadores = jugadores_listar($torneo['id']);
 $eventos = eventos_de_torneo($torneo['id']);
 $topGoleadores = array_slice(calcular_goleadores($eventos, $jugadores, $equiposPorId, $deporte), 0, 5);
+// El premio defensivo: en fútbol la portería menos vencida, en basketball la mejor
+// defensa (misma cuenta: menos puntos recibidos por partido).
+$topPorterias = array_slice(calcular_porteria_menos_vencida($equiposPorId, $partidos, $jugadores), 0, 5);
 
 // Podio de cierre: solo si el organizador ya lo publicó. Se recalcula en vivo, así que si
 // corrige el marcador de la final el campeón cambia sin tener que volver a publicar.
@@ -60,6 +63,7 @@ vista_publica('publico/inicio', compact(
     'titulo_pagina',
     'top5',
     'topGoleadores',
+    'topPorterias',
     'torneo',
     'totalJugados'
 ));

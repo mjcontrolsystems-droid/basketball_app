@@ -160,6 +160,65 @@
 </section>
 <?php endif; ?>
 
+<?php // El premio defensivo, espejo de la tabla de goleadores. Se calcula por equipo
+      // (goles en contra del marcador, que siempre existen) y se muestra el nombre del
+      // portero registrado en la plantilla: así se entrega este premio en las ligas
+      // amateur — a la portería, y la portería tiene nombre. ?>
+<?php if (!empty($topPorterias)): ?>
+<section class="seccion pt-0" id="porterias">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 seccion-titulo">
+            <div>
+                <p class="eyebrow mb-1"><?= e($basketball ? 'Los que menos reciben' : 'Los menos vencidos') ?></p>
+                <h2 class="mb-0"><?= e($basketball ? 'Mejor defensa' : 'Portería menos vencida') ?></h2>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table tabla-posiciones align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th><?= e($basketball ? 'Defensa' : forma_genero($torneo['genero'] ?? null, 'Portero', 'Portera')) ?></th>
+                        <th class="text-center">PJ</th>
+                        <th class="text-center"><?= e($basketball ? 'PC' : 'GC') ?></th>
+                        <th class="text-center">Prom.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($topPorterias as $i => $pv): ?>
+                    <tr>
+                        <td data-label="#">
+                            <span class="pos-num <?= $i === 0 ? 'oro' : ($i === 1 ? 'plata' : ($i === 2 ? 'bronce' : '')) ?>"><?= $i + 1 ?></span>
+                        </td>
+                        <td class="td-equipo" data-label="Equipo">
+                            <div class="d-flex align-items-center gap-2">
+                                <?= logo_equipo($pv['equipo'], 28) ?>
+                                <span class="fw-semibold"><?= e($pv['equipo']['nombre']) ?></span>
+                            </div>
+                        </td>
+                        <td data-label="<?= e($basketball ? 'Defensa' : 'Portero') ?>">
+                            <?php if (!empty($pv['porteros'])): ?>
+                                <span class="small"><?= e(implode(' / ', array_map(fn($po) => '#' . $po['dorsal'] . ' ' . $po['nombre'], $pv['porteros']))) ?></span>
+                            <?php else: ?>
+                                <span class="small text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center" data-label="PJ"><?= $pv['jugados'] ?></td>
+                        <td class="text-center" data-label="<?= e($basketball ? 'PC' : 'GC') ?>"><?= $pv['goles_contra'] ?></td>
+                        <td class="text-center fw-bold" data-label="Prom."><?= number_format($pv['promedio'], 2) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-2 mb-0">
+            <?= e($basketball ? 'PC = puntos en contra' : 'GC = goles en contra') ?> · Prom. = por partido jugado. Ordenado por promedio, para no castigar a quien ha jugado más.
+        </p>
+    </div>
+</section>
+<?php endif; ?>
+
 <!-- PARTIDOS -->
 <section class="seccion bg-white bg-opacity-50" style="background:#f4f0fb;">
     <div class="container">
