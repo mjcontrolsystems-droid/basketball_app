@@ -316,11 +316,22 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                     <input type="number" min="0" name="minuto" class="form-control form-control-sm" placeholder="Min.">
                 </div>
                 <div class="col-8">
-                    <select name="tipo_gol" class="form-select form-select-sm">
+                    <select name="tipo_gol" class="form-select form-select-sm" data-aviso-autogol="avisoAutogol">
                         <?php foreach (tipos_anotacion_catalogo($deporte) as $tg): ?>
                         <option value="<?= e($tg) ?>"><?= e(tipos_anotacion_label($deporte)[$tg]) ?></option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <?php // Guía que aparece SOLO al elegir "Autogol". Sin ella, el error
+                      // clásico de mesa es elegir al equipo beneficiado: el gol quedaría
+                      // acreditado al revés. La regla de captura es una sola: se registra
+                      // a quien la metió en propia, y la app se lo suma al rival. ?>
+                <div class="col-12 d-none" id="avisoAutogol">
+                    <div class="alert alert-warning py-2 px-3 small mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Autogol:</strong> elige el equipo y <?= e(mb_strtolower($etJugador)) ?> que la metió
+                        <em>en su propia</em> portería. El gol se le suma al rival automáticamente — no elijas al equipo beneficiado.
+                    </div>
                 </div>
                 <div class="col-12">
                     <select name="asistencia_jugador_id" class="form-select form-select-sm" data-filtra-jugador>

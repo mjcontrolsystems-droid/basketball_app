@@ -875,6 +875,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // Campos de solo lectura que se seleccionan enteros al tocarlos (enlaces largos que
     // uno quiere copiar a mano). Va aquí y no como onfocus en el HTML porque la política
     // de seguridad del sitio bloquea el JavaScript escrito dentro de los atributos.
+    // Aviso de autogol en la ficha de eventos: aparece solo cuando el tipo elegido es
+    // "autogol", que es el único caso con regla de captura no obvia (se registra al que
+    // la metió en propia y el gol se suma al rival). Mostrarlo siempre sería ruido.
+    document.querySelectorAll('select[data-aviso-autogol]').forEach(function (select) {
+        var aviso = document.getElementById(select.getAttribute('data-aviso-autogol'));
+        if (!aviso) { return; }
+        var alternar = function () { aviso.classList.toggle('d-none', select.value !== 'autogol'); };
+        select.addEventListener('change', alternar);
+        alternar();
+    });
+
     // Selectores que guardan solos al cambiarlos (no tiene sentido un botón "guardar" al
     // lado de una lista de una sola opción). Va en app.js porque el CSP no permite
     // onchange dentro del HTML.

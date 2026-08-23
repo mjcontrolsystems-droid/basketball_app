@@ -216,6 +216,11 @@ function evento_descripcion(array $evento, array $jugadoresPorId, ?string $depor
                 // El label del tipo de canasta ya se lee bien solo ("Triple (3 pts)"), a
                 // diferencia de fútbol donde "Gol" es el sustantivo y el tipo es un extra.
                 $texto = $minuto . ($tipoLabel !== '' ? $tipoLabel : 'Punto') . ' - ' . $nombreJugador;
+            } elseif (($evento['tipo_gol'] ?? '') === 'autogol') {
+                // Sin ambigüedad: "Gol (Autogol) - Fulano" dejaba la duda de a quién
+                // sumó. El evento queda registrado en el equipo del jugador que la metió
+                // en propia, pero el marcador se lo lleva el rival, y eso hay que decirlo.
+                $texto = $minuto . 'Autogol de ' . $nombreJugador . ' (el gol cuenta para el rival)';
             } else {
                 // "Jugada" es el caso por defecto en fútbol y no aporta nada al texto.
                 $mostrarTipo = $tipoLabel !== '' && $tipoLabel !== 'Jugada';
