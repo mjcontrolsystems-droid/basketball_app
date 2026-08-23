@@ -872,8 +872,13 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 
     /* Un ancho mínimo de verdad: sin esto, el navegador prefiere APLASTAR las columnas
        hasta lo ilegible antes que activar el scroll lateral. Con el mínimo, la tabla
-       conserva un ancho donde los nombres se leen y lo que no cabe se desliza. */
-    .table-responsive > .table { min-width: 560px; }
+       conserva un ancho donde los nombres se leen y lo que no cabe se desliza.
+
+       Se excluye .tabla-posiciones: esa NO es una tabla en el teléfono — sus filas se
+       convierten en tarjetas apiladas a lo ancho de la pantalla (ver reglas de arriba).
+       Forzarle 560px empujaba los valores (PJ, PTS...) fuera de la pantalla y la tabla
+       pública se veía con las etiquetas vacías. */
+    .table-responsive > .table:not(.tabla-posiciones) { min-width: 560px; }
 }
 
 /* Ficha de partido descargable en PDF (partido.php): usa window.print() del
