@@ -150,6 +150,16 @@ function jugadores_por_equipo(array $jugadores): array
     foreach ($jugadores as $j) {
         $porEquipo[(int) $j['equipo_id']][] = $j;
     }
+
+    // Cada plantilla ordenada por dorsal, del más chico al más grande. Sin esto salían en
+    // el orden en que se cargaron a la base, y quien captura un gol en la cancha busca al
+    // "#7" con la vista, no el orden en que el delegado mandó su Excel. La comparación es
+    // numérica a propósito: como texto, "113" quedaría antes que "9".
+    foreach ($porEquipo as &$lista) {
+        usort($lista, fn($a, $b) => (int) ($a['dorsal'] ?? 0) <=> (int) ($b['dorsal'] ?? 0));
+    }
+    unset($lista);
+
     return $porEquipo;
 }
 
