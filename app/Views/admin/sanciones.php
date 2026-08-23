@@ -70,8 +70,12 @@
         <?php endif; ?>
     </div>
 
+    <?php // Con .tabla-posiciones la tabla se apila en el teléfono (cada multa es una
+          // tarjeta con sus botones visibles). Sin la clase, la columna de acciones
+          // quedaba fuera de la pantalla a la derecha y el "Pagó" individual parecía
+          // no existir: solo se llegaba a él deslizando de lado, sin ninguna pista. ?>
     <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table tabla-posiciones align-middle mb-0">
             <thead>
                 <tr class="small text-muted">
                     <th>Jugador</th>
@@ -90,7 +94,7 @@
                     $etiquetaEstado = ['pendiente' => 'Por cobrar', 'pagada' => 'Pagada', 'condonada' => 'Condonada'][$s['estado']] ?? $s['estado'];
                 ?>
                 <tr>
-                    <td data-label="Jugador"><span class="fw-semibold"><?= e(jugador_nombre($jug)) ?></span></td>
+                    <td class="td-equipo" data-label="Jugador"><span class="fw-semibold"><?= e(jugador_nombre($jug)) ?></span></td>
                     <td data-label="Motivo">
                         <i class="bi bi-square-fill <?= $esRoja ? 'text-danger' : 'text-warning' ?> me-1"></i>
                         <?= $esRoja ? 'Roja' : 'Amarilla' ?>

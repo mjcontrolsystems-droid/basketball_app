@@ -523,6 +523,14 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
            al borde de toda la tarjeta más abajo. */
         border-radius: 0;
     }
+    /* En tablas donde la PRIMERA celda es la principal (sanciones: el jugador), esa
+       celda es a la vez first-child y .td-equipo; sin esto ganaba la regla de arriba y
+       el encabezado de la tarjeta quedaba pegado a la derecha. */
+    .tabla-posiciones tbody tr td.td-equipo:first-child {
+        justify-content: flex-start;
+        order: 0;
+        padding-bottom: .6rem;
+    }
     /* Mismo selector que la regla original de escritorio (.zona-playoff td:first-child)
        para igualar su especificidad y realmente ganar el box-shadow, en vez de perder
        el empate por estar definida antes en el archivo. */
