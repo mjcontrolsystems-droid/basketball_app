@@ -84,8 +84,8 @@
                         <?php if ($torneo['permite_empates']): ?><th class="text-center">PE</th><?php endif; ?>
                         <th class="text-center">PP</th>
                         <th class="text-center">%G</th>
-                        <th class="text-center">PF</th>
-                        <th class="text-center">PC</th>
+                        <th class="text-center"><?= e(etiqueta_gf($deporte)) ?></th>
+                        <th class="text-center"><?= e(etiqueta_gc($deporte)) ?></th>
                         <th class="text-center">DIF</th>
                         <th class="text-center" title="<?= e(etiqueta_faltas_leves($deporte)) ?>"><?= e(etiqueta_ta($deporte)) ?></th><th class="text-center" title="<?= e(etiqueta_faltas_graves($deporte)) ?>"><?= e(etiqueta_tr($deporte)) ?></th>
                         <th class="text-center">PTS</th>
@@ -151,8 +151,8 @@
                 <?php endif; ?>
                 <div class="small text-muted"><strong class="text-dark">PP</strong> Partidos perdidos</div>
                 <div class="small text-muted"><strong class="text-dark">%G</strong> Porcentaje de victorias</div>
-                <div class="small text-muted"><strong class="text-dark">PF</strong> Puntos a favor</div>
-                <div class="small text-muted"><strong class="text-dark">PC</strong> Puntos en contra</div>
+                <div class="small text-muted"><strong class="text-dark"><?= e(etiqueta_gf($deporte)) ?></strong> <?= e(etiqueta_anotaciones($deporte)) ?> a favor</div>
+                <div class="small text-muted"><strong class="text-dark"><?= e(etiqueta_gc($deporte)) ?></strong> <?= e(etiqueta_anotaciones($deporte)) ?> en contra</div>
                 <div class="small text-muted"><strong class="text-dark">DIF</strong> Diferencia</div>
                 <div class="small text-muted"><strong class="text-dark"><?= e(etiqueta_ta($deporte)) ?></strong> <?= e(etiqueta_faltas_leves($deporte)) ?></div>
                 <div class="small text-muted"><strong class="text-dark"><?= e(etiqueta_tr($deporte)) ?></strong> <?= e(etiqueta_faltas_graves($deporte)) ?></div>

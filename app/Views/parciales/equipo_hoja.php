@@ -31,7 +31,7 @@
         <tr>
             <th>Puesto</th><th>PJ</th><th>PG</th>
             <?php if (!empty($torneo['permite_empates'])): ?><th>PE</th><?php endif; ?>
-            <th>PP</th><th>PF</th><th>PC</th><th>DIF</th><th>PTS</th>
+            <th>PP</th><th><?= e(etiqueta_gf($deporte)) ?></th><th><?= e(etiqueta_gc($deporte)) ?></th><th>DIF</th><th>PTS</th>
         </tr>
     </thead>
     <tbody>

@@ -110,6 +110,21 @@ function etiqueta_anotaciones(?string $deporte): string
     return es_basketball($deporte) ? 'Puntos' : 'Goles';
 }
 
+/**
+ * Siglas de las columnas a favor / en contra según el deporte: en fútbol lo estándar es
+ * GF/GC (goles), en basketball PF/PC (puntos). Antes decía PF/PC y "Puntos a favor" en
+ * todas las copas, y en una liga de fútbol eso chirría.
+ */
+function etiqueta_gf(?string $deporte): string
+{
+    return es_basketball($deporte) ? 'PF' : 'GF';
+}
+
+function etiqueta_gc(?string $deporte): string
+{
+    return es_basketball($deporte) ? 'PC' : 'GC';
+}
+
 function etiqueta_falta_leve(?string $deporte): string
 {
     return es_basketball($deporte) ? 'Falta personal' : 'Tarjeta amarilla';
