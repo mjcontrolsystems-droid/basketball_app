@@ -859,6 +859,16 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     .card-suave .table,
     .table-responsive .table { overflow-wrap: normal; word-break: normal; }
 
+    /* Las hojas imprimibles (reporte del equipo, ficha del partido) son un DOCUMENTO,
+       no una página adaptable: en el teléfono se leen como tal, con su ancho de hoja y
+       deslizándose de lado si hace falta. Aplastarlas partía los encabezados letra por
+       letra (GO-LE-S, RESU-LTAD-O) y volvía ilegible justo lo que la gente descarga
+       para compartir. */
+    .hoja-previa { overflow-x: auto; }
+    .hoja-previa .ficha-tabla,
+    .hoja-previa .ficha-datos { min-width: 620px; overflow-wrap: normal; word-break: normal; }
+    .hoja-previa .ficha-tabla th { white-space: nowrap; }
+
     /* Las pestañas de fases (Grupos, Cuartos, Semifinal...) y cualquier fila de
        pills se acomodan en varias líneas en vez de salirse a la derecha. */
     .nav-pills { flex-wrap: wrap; gap: .35rem; }
