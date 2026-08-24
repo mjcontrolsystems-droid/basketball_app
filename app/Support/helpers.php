@@ -223,8 +223,11 @@ HTML;
     // así que aquí solo se muestra. Un guion cuando todavía no hay goles / no está jugado.
     $valorLocal = $p['marcador_local'] !== null ? (int) $p['marcador_local'] : '–';
     $valorVisit = $p['marcador_visitante'] !== null ? (int) $p['marcador_visitante'] : '–';
+    // flex-nowrap: la regla de móvil que deja envolver los d-flex de las tarjetas (para
+    // que los BOTONES bajen de línea) alcanzaba también esta fila y la del marcador, y un
+    // equipo terminaba dibujado DEBAJO del otro. Estas dos filas jamás deben partirse.
     $marcadorDisplay = <<<HTML
-<div class="d-flex align-items-center gap-2" title="El marcador se calcula desde los {$txtAnotaciones} registrados en Eventos">
+<div class="d-flex flex-nowrap align-items-center gap-2" title="El marcador se calcula desde los {$txtAnotaciones} registrados en Eventos">
     <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorLocal}</span>
     <span class="text-muted">-</span>
     <span class="fs-3 fw-bold" style="min-width:34px;text-align:center;">{$valorVisit}</span>
@@ -241,7 +244,7 @@ HTML;
                 {$badgeEstado}
             </div>
         </div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex flex-nowrap align-items-center justify-content-between mb-2">
             <div class="equipo-col">{$logoLocal}<span class="nombre">{$nombreLocal}</span></div>
             {$marcadorDisplay}
             <div class="equipo-col">{$logoVisit}<span class="nombre">{$nombreVisit}</span></div>
