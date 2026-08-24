@@ -168,6 +168,15 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
 // el tope también se valida en el servidor al guardar.
 // ---------------------------------------------------------------------------
 ?>
+<?php
+// Se calcula ANTES de pintar el encabezado porque el botón de desplegar lo necesita.
+$equiposConPlantilla = 0;
+foreach ($equiposDelPartido as $eid) {
+    if (!empty($jugadoresPorEquipo[$eid])) {
+        $equiposConPlantilla++;
+    }
+}
+?>
 <div class="card-suave p-3 p-md-4 mb-4" id="tarjetaAlineacion">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
         <div>
@@ -178,19 +187,23 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
                 Esta modalidad juega con <strong><?= $jugadoresEnCancha ?></strong> por equipo.
             </p>
         </div>
-        <?php if (!$hayAlineacion): ?>
-        <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis"><i class="bi bi-exclamation-circle me-1"></i>Sin definir</span>
-        <?php endif; ?>
+        <div class="d-flex align-items-center gap-2">
+            <?php if (!$hayAlineacion): ?>
+            <span class="badge rounded-pill text-bg-warning-subtle text-warning-emphasis"><i class="bi bi-exclamation-circle me-1"></i>Sin definir</span>
+            <?php endif; ?>
+            <?php // El listado completo (dos plantillas de ~20 cada una) vive plegado
+                  // detrás de este botón: abierto siempre, empujaba la captura de goles y
+                  // tarjetas dos pantallas hacia abajo, que es lo urgente en cancha. ?>
+            <?php if (!($resultadoBloqueado && !$hayAlineacion) && $equiposConPlantilla > 0): ?>
+            <button class="btn btn-sm btn-degradado rounded-pill px-3" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#cuerpoAlineacion"
+                    aria-expanded="false" aria-controls="cuerpoAlineacion">
+                <i class="bi bi-people me-1"></i><?= $hayAlineacion ? 'Ver / editar alineación' : 'Agregar alineación' ?>
+            </button>
+            <?php endif; ?>
+        </div>
     </div>
 
-    <?php
-    $equiposConPlantilla = 0;
-    foreach ($equiposDelPartido as $eid) {
-        if (!empty($jugadoresPorEquipo[$eid])) {
-            $equiposConPlantilla++;
-        }
-    }
-    ?>
     <?php if ($resultadoBloqueado && !$hayAlineacion): ?>
         <p class="text-muted small mb-0">No se registró alineación para este encuentro.</p>
     <?php elseif ($equiposConPlantilla === 0): ?>
@@ -199,6 +212,8 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
             <a href="<?= url('admin/equipos.php') ?>">Agrega <?= e(mb_strtolower(forma_genero($torneo['genero'] ?? null, 'jugadores', 'jugadoras'))) ?></a> para poder armar la alineación.
         </p>
     <?php else: ?>
+    <?php // Plegado por defecto; el botón del encabezado lo abre. ?>
+    <div class="collapse" id="cuerpoAlineacion">
     <form method="post" data-alineacion data-max-titulares="<?= $jugadoresEnCancha ?>">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="accion" value="guardar_alineacion">
@@ -281,6 +296,7 @@ $cronometroPeriodoMaximo = partido_periodo_maximo($deporte);
         </div>
         <?php endif; ?>
     </form>
+    </div><?php // fin del collapse ?>
     <?php endif; ?>
 </div>
 
