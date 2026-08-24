@@ -56,9 +56,11 @@
             <p class="text-muted small mb-5">Todavía no hay <?= e(mb_strtolower(forma_genero($torneo['genero'] ?? null, 'jugadores', 'jugadoras'))) ?> <?= e(forma_genero($torneo['genero'] ?? null, 'registrados', 'registradas')) ?> para este equipo.</p>
         <?php else: ?>
         <div class="row row-cols-2 row-cols-md-4 g-3 mb-5">
+            <?php // Cada tarjeta abre el perfil del jugador: goles, tarjetas, suspensión
+                  // y estado de multas. Mismo patrón clicable que las tarjetas de partido. ?>
             <?php foreach ($jugadoresEquipo as $j): ?>
             <div class="col">
-                <div class="stat-tile text-center">
+                <div class="stat-tile text-center fila-clicable h-100" data-href="<?= e(url_copa('jugador.php?id=' . (int) $j['id'])) ?>">
                     <div class="fs-4 fw-bold">#<?= e($j['dorsal']) ?></div>
                     <div class="small text-muted"><?= e($j['nombre']) ?></div>
                     <?php if (!empty($j['posicion'])): ?>

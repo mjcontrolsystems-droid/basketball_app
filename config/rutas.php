@@ -25,6 +25,8 @@ return [
     'reglamento.php' => ['controlador' => 'Publico/Reglamento', 'copa' => true],
     'equipos.php' => ['controlador' => 'Publico/Equipos', 'copa' => true],
     'equipo.php' => ['controlador' => 'Publico/Equipo', 'copa' => true],
+    // Perfil público del jugador: goles, tarjetas, suspensión y estado de multas.
+    'jugador.php' => ['controlador' => 'Publico/Jugador', 'copa' => true],
     'equipo_reporte.php' => ['controlador' => 'Publico/EquipoReporte', 'copa' => true],
     'partido.php' => ['controlador' => 'Publico/Partido', 'copa' => true],
     'partido_vivo.php' => ['controlador' => 'Publico/PartidoVivo', 'copa' => true],
