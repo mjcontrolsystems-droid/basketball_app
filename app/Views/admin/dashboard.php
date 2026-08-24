@@ -125,16 +125,35 @@
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg">
+        <?php // Cada resumen lleva a su pantalla. El enlace se omite para el colaborador
+              // que no puede abrir esa sección — un mosaico que rebota con "no tienes
+              // permiso" es peor que uno que no se mueve. ?>
+        <?php if (puede('equipos', $torneo)): ?>
+        <a href="<?= url('admin/equipos.php') ?>" class="text-decoration-none text-dark">
+            <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-people me-1"></i>Equipos</div><div class="fs-3 fw-bold"><?= count($equipos) ?></div></div>
+        </a>
+        <?php else: ?>
         <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-people me-1"></i>Equipos</div><div class="fs-3 fw-bold"><?= count($equipos) ?></div></div>
+        <?php endif; ?>
     </div>
     <div class="col-6 col-lg">
-        <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-check2-circle me-1"></i>Jugados</div><div class="fs-3 fw-bold"><?= count($jugados) ?></div></div>
+        <a href="<?= url('admin/partidos.php') ?>" class="text-decoration-none text-dark">
+            <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-check2-circle me-1"></i>Jugados</div><div class="fs-3 fw-bold"><?= count($jugados) ?></div></div>
+        </a>
     </div>
     <div class="col-6 col-lg">
-        <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-clock-history me-1"></i>Por jugar</div><div class="fs-3 fw-bold"><?= count($programados) ?></div></div>
+        <a href="<?= url('admin/partidos.php') ?>" class="text-decoration-none text-dark">
+            <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-clock-history me-1"></i>Por jugar</div><div class="fs-3 fw-bold"><?= count($programados) ?></div></div>
+        </a>
     </div>
     <div class="col-6 col-lg">
+        <?php if (puede('patrocinadores', $torneo)): ?>
+        <a href="<?= url('admin/patrocinadores.php') ?>" class="text-decoration-none text-dark">
+            <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-award me-1"></i>Patrocinadores</div><div class="fs-3 fw-bold"><?= count($patrocinadores) ?></div></div>
+        </a>
+        <?php else: ?>
         <div class="stat-tile"><div class="text-muted small mb-1"><i class="bi bi-award me-1"></i>Patrocinadores</div><div class="fs-3 fw-bold"><?= count($patrocinadores) ?></div></div>
+        <?php endif; ?>
     </div>
     <div class="col-6 col-lg">
         <a href="<?= url('admin/comentarios.php') ?>" class="text-decoration-none text-dark">
@@ -184,8 +203,10 @@
                 <table class="table align-middle mb-0">
                     <thead><tr class="small text-muted"><th>#</th><th>Equipo</th><th class="text-center">PJ</th><th class="text-center">PG-PP</th><th class="text-center">PTS</th></tr></thead>
                     <tbody>
+                        <?php // Cada fila abre la plantilla de ese equipo (si el nivel lo permite). ?>
+                        <?php $filaVaAJugadores = puede('jugadores', $torneo); ?>
                         <?php foreach (array_slice($tabla, 0, 8) as $fila): ?>
-                        <tr>
+                        <tr class="<?= $filaVaAJugadores ? 'fila-clicable' : '' ?>" <?= $filaVaAJugadores ? 'data-href="' . e(url('admin/jugadores.php?equipo_id=' . (int) $fila['equipo']['id'])) . '"' : '' ?>>
                             <td class="fw-bold"><?= $fila['posicion'] ?></td>
                             <td class="d-flex align-items-center gap-2"><?= logo_equipo($fila['equipo'], 28) ?><?= e($fila['equipo']['nombre']) ?></td>
                             <td class="text-center"><?= $fila['pj'] ?></td>
@@ -201,17 +222,38 @@
     <div class="col-lg-5">
         <div class="card-suave p-4 mb-4">
             <h5 class="mb-3">Próximo encuentro</h5>
+            <?php // La tarjeta entera abre la ficha de eventos: es a donde se va corriendo
+                  // el día del partido para capturar goles y tarjetas. ?>
             <?php if ($proximo): $local = $equiposPorId[$proximo['equipo_local']]; $visit = $equiposPorId[$proximo['equipo_visitante']]; ?>
-                <p class="small text-muted mb-3"><i class="bi bi-calendar3 me-1"></i><?= formatear_fecha_larga($proximo['fecha']) ?> · <?= e($proximo['hora']) ?> · <?= e($proximo['cancha']) ?></p>
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="equipo-col"><?= logo_equipo($local, 48) ?><span class="nombre"><?= e($local['nombre']) ?></span></div>
-                    <span class="fw-bold text-muted">VS</span>
-                    <div class="equipo-col"><?= logo_equipo($visit, 48) ?><span class="nombre"><?= e($visit['nombre']) ?></span></div>
+                <div class="fila-clicable" data-href="<?= e(url('admin/partido_eventos.php?partido_id=' . (int) $proximo['id'])) ?>">
+                    <p class="small text-muted mb-3"><i class="bi bi-calendar3 me-1"></i><?= formatear_fecha_larga($proximo['fecha']) ?> · <?= e($proximo['hora']) ?> · <?= e($proximo['cancha']) ?></p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="equipo-col"><?= logo_equipo($local, 48) ?><span class="nombre"><?= e($local['nombre']) ?></span></div>
+                        <span class="fw-bold text-muted">VS</span>
+                        <div class="equipo-col"><?= logo_equipo($visit, 48) ?><span class="nombre"><?= e($visit['nombre']) ?></span></div>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0"><i class="bi bi-clipboard-data me-1"></i>Toca para capturar los eventos</p>
                 </div>
             <?php else: ?>
                 <p class="text-muted mb-0">No hay encuentros programados.</p>
             <?php endif; ?>
         </div>
+
+        <?php // Lo recién jugado, directo a sus eventos: el camino de "termino el partido,
+              // reviso o corrijo la ficha" era dar tres saltos por el menú. ?>
+        <?php if (!empty($ultimosJugados)): ?>
+        <div class="card-suave p-4 mb-4">
+            <h5 class="mb-3">Últimos jugados</h5>
+            <div class="d-flex flex-column gap-2">
+                <?php foreach ($ultimosJugados as $uj): $l = $equiposPorId[$uj['equipo_local']] ?? null; $v = $equiposPorId[$uj['equipo_visitante']] ?? null; ?>
+                <div class="d-flex align-items-center justify-content-between gap-2 fila-clicable rounded-3 px-2 py-1" data-href="<?= e(url('admin/partido_eventos.php?partido_id=' . (int) $uj['id'])) ?>">
+                    <span class="small text-truncate"><?= e($l['nombre'] ?? '') ?> <strong><?= (int) $uj['marcador_local'] ?>-<?= (int) $uj['marcador_visitante'] ?></strong> <?= e($v['nombre'] ?? '') ?></span>
+                    <span class="small text-muted text-nowrap"><?= e(formatear_fecha_corta((string) $uj['fecha'])) ?> <i class="bi bi-arrow-right ms-1"></i></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="card-suave p-4">
             <h5 class="mb-3">Accesos rápidos</h5>
             <div class="d-grid gap-2">

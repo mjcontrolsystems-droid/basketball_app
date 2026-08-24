@@ -65,6 +65,12 @@ $lider = $tabla[0] ?? null;
 $jugados = array_filter($partidos, fn($p) => $p['estado'] === 'jugado');
 $programados = array_filter($partidos, fn($p) => $p['estado'] === 'programado');
 $proximo = proximos_partidos($partidos, 1)[0] ?? null;
+
+// Los últimos jugados, del más reciente hacia atrás: cada uno enlaza a su ficha de
+// eventos para revisar o corregir sin dar vueltas por el menú.
+$ultimosJugados = array_values($jugados);
+usort($ultimosJugados, fn($a, $b) => strcmp((string) $b['fecha'] . $b['hora'], (string) $a['fecha'] . $a['hora']));
+$ultimosJugados = array_slice($ultimosJugados, 0, 5);
 $equiposPorId = [];
 foreach ($equipos as $eq) { $equiposPorId[$eq['id']] = $eq; }
 
@@ -86,5 +92,6 @@ vista_admin('admin/dashboard', compact(
     'tabla',
     'temporadaTerminada',
     'titulo_pagina',
-    'torneo'
+    'torneo',
+    'ultimosJugados'
 ));
