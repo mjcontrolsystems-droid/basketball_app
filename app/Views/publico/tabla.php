@@ -39,7 +39,7 @@
                             </thead>
                             <tbody>
                                 <?php foreach ($datosGrupo['tabla'] as $iFila => $filaGrupo): ?>
-                                <tr class="<?= $iFila < (int) $datosGrupo['clasifican'] ? 'table-success' : '' ?>">
+                                <tr class="fila-clicable <?= $iFila < (int) $datosGrupo['clasifican'] ? 'table-success' : '' ?>" data-href="<?= e(url_copa('equipo.php?id=' . (int) $filaGrupo['equipo']['id'])) ?>">
                                     <td class="small text-muted"><?= $iFila + 1 ?></td>
                                     <td class="small">
                                         <div class="d-flex align-items-center gap-2">

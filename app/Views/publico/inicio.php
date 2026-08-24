@@ -141,15 +141,21 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <?php // La fila entera abre el perfil del jugador; el nombre del equipo
+                          // tiene su propio enlace, que gana al clic de la fila. ?>
                     <?php foreach ($topGoleadores as $i => $g): ?>
-                    <tr>
+                    <tr class="fila-clicable" data-href="<?= e(url_copa('jugador.php?id=' . (int) $g['jugador']['id'])) ?>">
                         <td data-label="#">
                             <span class="pos-num <?= $i === 0 ? 'oro' : ($i === 1 ? 'plata' : ($i === 2 ? 'bronce' : '')) ?>"><?= $i + 1 ?></span>
                         </td>
                         <td class="td-equipo" data-label="<?= e(forma_genero($torneo['genero'] ?? null, 'Jugador', 'Jugadora')) ?>">
                             <span class="fw-semibold">#<?= e($g['jugador']['dorsal']) ?> <?= e($g['jugador']['nombre']) ?></span>
                         </td>
-                        <td data-label="Equipo"><span class="small text-muted"><?= e($g['equipo']['nombre'] ?? '') ?></span></td>
+                        <td data-label="Equipo">
+                            <?php if (!empty($g['equipo'])): ?>
+                            <a href="<?= url_copa('equipo.php?id=' . (int) $g['equipo']['id']) ?>" class="small text-muted text-decoration-none"><?= e($g['equipo']['nombre']) ?></a>
+                            <?php endif; ?>
+                        </td>
                         <td class="text-center fw-bold" data-label="<?= e(etiqueta_anotaciones($deporte)) ?>"><?= $g['goles'] ?></td>
                     </tr>
                     <?php endforeach; ?>
@@ -186,8 +192,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <?php // Fila -> página del equipo; cada portero con enlace a su perfil. ?>
                     <?php foreach ($topPorterias as $i => $pv): ?>
-                    <tr>
+                    <tr class="fila-clicable" data-href="<?= e(url_copa('equipo.php?id=' . (int) $pv['equipo']['id'])) ?>">
                         <td data-label="#">
                             <span class="pos-num <?= $i === 0 ? 'oro' : ($i === 1 ? 'plata' : ($i === 2 ? 'bronce' : '')) ?>"><?= $i + 1 ?></span>
                         </td>
@@ -199,7 +206,7 @@
                         </td>
                         <td data-label="<?= e($basketball ? 'Defensa' : 'Portero') ?>">
                             <?php if (!empty($pv['porteros'])): ?>
-                                <span class="small"><?= e(implode(' / ', array_map(fn($po) => '#' . $po['dorsal'] . ' ' . $po['nombre'], $pv['porteros']))) ?></span>
+                                <span class="small"><?php foreach ($pv['porteros'] as $k => $po): ?><?= $k > 0 ? ' / ' : '' ?><a href="<?= url_copa('jugador.php?id=' . (int) $po['id']) ?>" class="text-decoration-none">#<?= e($po['dorsal']) ?> <?= e($po['nombre']) ?></a><?php endforeach; ?></span>
                             <?php else: ?>
                                 <span class="small text-muted">—</span>
                             <?php endif; ?>

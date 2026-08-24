@@ -1,3 +1,27 @@
+<?php
+// Enlaces de la ficha hacia los perfiles. En pantalla, cada nombre lleva a su página;
+// al imprimir, el CSS de la hoja los deja como texto plano — un PDF con subrayados
+// azules parece borrador. El guion largo se conserva cuando no hay a quién enlazar.
+if (!function_exists('ficha_enlace_jugador')) {
+    function ficha_enlace_jugador(array $jugadoresPorId, $jugadorId): string
+    {
+        $j = $jugadoresPorId[(int) ($jugadorId ?? 0)] ?? null;
+        if ($j === null) {
+            return e(jugador_nombre(null)); // "Sin identificar" o el guion que corresponda
+        }
+        return '<a href="' . e(url_copa('jugador.php?id=' . (int) $j['id'])) . '" class="text-decoration-none">' . e(jugador_nombre($j)) . '</a>';
+    }
+
+    function ficha_enlace_equipo(array $equiposPorId, $equipoId): string
+    {
+        $eq = $equiposPorId[(int) ($equipoId ?? 0)] ?? null;
+        if ($eq === null) {
+            return '—';
+        }
+        return '<a href="' . e(url_copa('equipo.php?id=' . (int) $eq['id'])) . '" class="text-decoration-none">' . e($eq['nombre']) . '</a>';
+    }
+}
+?>
 <div class="solo-pantalla">
 <header class="hero-copa" style="padding-bottom:3rem;">
     <div class="container">
@@ -173,10 +197,10 @@
             <?php foreach ($goles as $ev): ?>
             <tr>
                 <td><?= $ev['minuto'] !== null ? e((string) $ev['minuto']) . "'" : '—' ?></td>
-                <td><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '—') ?></td>
-                <td><?= e(jugador_nombre($jugadoresPorId[(int) ($ev['jugador_id'] ?? 0)] ?? null)) ?></td>
+                <td><?= ficha_enlace_equipo($equiposPorId, $ev['equipo_id']) ?></td>
+                <td><?= ficha_enlace_jugador($jugadoresPorId, $ev['jugador_id'] ?? 0) ?></td>
                 <td><?= e(tipos_anotacion_label($deporte)[$ev['tipo_gol'] ?? ''] ?? '—') ?></td>
-                <td><?= !empty($ev['asistencia_jugador_id']) ? e(jugador_nombre($jugadoresPorId[(int) $ev['asistencia_jugador_id']] ?? null)) : '—' ?></td>
+                <td><?= !empty($ev['asistencia_jugador_id']) ? ficha_enlace_jugador($jugadoresPorId, $ev['asistencia_jugador_id']) : '—' ?></td>
             </tr>
             <?php endforeach; ?>
             <?php if (empty($goles)): ?><tr><td colspan="5">Sin <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> registrados.</td></tr><?php endif; ?>
@@ -190,8 +214,8 @@
             <?php foreach ($amarillas as $ev): ?>
             <tr>
                 <td><?= $ev['minuto'] !== null ? e((string) $ev['minuto']) . "'" : '—' ?></td>
-                <td><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '—') ?></td>
-                <td><?= e(jugador_nombre($jugadoresPorId[(int) ($ev['jugador_id'] ?? 0)] ?? null)) ?></td>
+                <td><?= ficha_enlace_equipo($equiposPorId, $ev['equipo_id']) ?></td>
+                <td><?= ficha_enlace_jugador($jugadoresPorId, $ev['jugador_id'] ?? 0) ?></td>
             </tr>
             <?php endforeach; ?>
             <?php if (empty($amarillas)): ?><tr><td colspan="3">Sin <?= e(mb_strtolower(etiqueta_faltas_leves($deporte))) ?> registradas.</td></tr><?php endif; ?>
@@ -205,8 +229,8 @@
             <?php foreach ($rojas as $ev): ?>
             <tr>
                 <td><?= $ev['minuto'] !== null ? e((string) $ev['minuto']) . "'" : '—' ?></td>
-                <td><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '—') ?></td>
-                <td><?= e(jugador_nombre($jugadoresPorId[(int) ($ev['jugador_id'] ?? 0)] ?? null)) ?></td>
+                <td><?= ficha_enlace_equipo($equiposPorId, $ev['equipo_id']) ?></td>
+                <td><?= ficha_enlace_jugador($jugadoresPorId, $ev['jugador_id'] ?? 0) ?></td>
                 <td><?= e(motivos_falta_grave_label($deporte)[$ev['motivo'] ?? ''] ?? '—') ?></td>
             </tr>
             <?php endforeach; ?>
@@ -221,8 +245,8 @@
             <?php foreach ($cambios as $ev): ?>
             <tr>
                 <td><?= $ev['minuto'] !== null ? e((string) $ev['minuto']) . "'" : '—' ?></td>
-                <td><?= e($equiposPorId[$ev['equipo_id']]['nombre'] ?? '—') ?></td>
-                <td><?= e(jugador_nombre($jugadoresPorId[(int) ($ev['jugador_id'] ?? 0)] ?? null)) ?></td>
+                <td><?= ficha_enlace_equipo($equiposPorId, $ev['equipo_id']) ?></td>
+                <td><?= ficha_enlace_jugador($jugadoresPorId, $ev['jugador_id'] ?? 0) ?></td>
                 <td><?= e(jugador_nombre($jugadoresPorId[(int) ($ev['jugador_entra_id'] ?? 0)] ?? null)) ?></td>
             </tr>
             <?php endforeach; ?>

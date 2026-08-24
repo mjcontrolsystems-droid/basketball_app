@@ -949,6 +949,10 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 .hoja-previa .ficha-pie p { margin: 0; }
 
 @media print {
+    /* Los enlaces de la ficha (nombres de jugador y equipo que en pantalla llevan a su
+       perfil) se imprimen como texto plano: un PDF con subrayados azules parece borrador. */
+    .ficha-imprimir a { color: inherit; text-decoration: none; }
+
     /* Cortes de página en las tablas.
        Antes era "break-inside: avoid" sobre la TABLA entera, pensando en la hoja del
        calendario, donde cada jornada es una tabla corta. Pero en el reporte de un equipo
