@@ -13,29 +13,37 @@ declare(strict_types=1);
 /**
  * Pinta una plantilla de app/Views.
  *
- * @param string $plantilla Ruta relativa sin .php, ej. 'publico/tabla' o 'admin/partidos'.
- * @param array<string,mixed> $datos Variables disponibles dentro de la plantilla.
+ * Los parámetros llevan prefijo __ a propósito: extract() con EXTR_SKIP NO pisa las
+ * variables que ya existen en la función, así que un dato de la vista que se llamara
+ * igual que un parámetro quedaba silenciosamente descartado. Pasó de verdad: el reporte
+ * del equipo mandaba su lista de jugadores como 'plantilla', chocaba con el antiguo
+ * parámetro $plantilla (la ruta de la vista), y la tabla salía vacía — sin filas y sin
+ * el aviso de "sin plantilla", porque dentro de la vista $plantilla era el TEXTO
+ * 'publico/equipo_reporte'. Con el prefijo, ningún nombre razonable puede chocar.
+ *
+ * @param string $__plantilla Ruta relativa sin .php, ej. 'publico/tabla' o 'admin/partidos'.
+ * @param array<string,mixed> $__datos Variables disponibles dentro de la plantilla.
  */
-function vista(string $plantilla, array $datos = []): void
+function vista(string $__plantilla, array $__datos = []): void
 {
-    $rutaVista = dirname(__DIR__) . '/Views/' . $plantilla . '.php';
-    if (!is_file($rutaVista)) {
-        throw new RuntimeException("No existe la vista '{$plantilla}'.");
+    $__rutaVista = dirname(__DIR__) . '/Views/' . $__plantilla . '.php';
+    if (!is_file($__rutaVista)) {
+        throw new RuntimeException("No existe la vista '{$__plantilla}'.");
     }
     // extract() en una función (y no en el ámbito global) mantiene las variables de la
     // vista aisladas: una plantilla no puede pisar por accidente algo del controlador.
-    extract($datos, EXTR_SKIP);
-    require $rutaVista;
+    extract($__datos, EXTR_SKIP);
+    require $__rutaVista;
 }
 
 /**
  * Igual que vista(), pero devuelve el HTML en vez de imprimirlo. Se usa donde antes había
  * funciones que construían HTML a mano dentro de helpers.php (tarjetas de encuentro, etc.).
  */
-function vista_render(string $plantilla, array $datos = []): string
+function vista_render(string $__plantilla, array $__datos = []): string
 {
     ob_start();
-    vista($plantilla, $datos);
+    vista($__plantilla, $__datos);
     return (string) ob_get_clean();
 }
 
