@@ -43,6 +43,7 @@
         <?php endif; ?>
 
         <form method="post" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="token" value="<?= e($token) ?>">
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Contraseña nueva</label>

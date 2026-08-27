@@ -42,6 +42,7 @@
                     <h5 class="mb-1"><i class="bi bi-chat-heart me-2"></i>Déjale un comentario anónimo</h5>
                     <p class="text-muted small mb-4">No pedimos tu nombre ni tu correo: tu comentario es 100% anónimo. Solo te pedimos mantener el respeto — los mensajes con lenguaje inapropiado no se publican.</p>
                     <form method="post" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <div class="d-none" aria-hidden="true">
                             <label>No llenar este campo<input type="text" name="sitio_web" tabindex="-1" autocomplete="off"></label>
                         </div>

@@ -32,6 +32,7 @@
         <?php endif; ?>
 
         <form method="post" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Usuario</label>
                 <input type="text" name="usuario" class="form-control form-control-lg" value="<?= e($_POST['usuario'] ?? '') ?>" autofocus required>

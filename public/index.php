@@ -46,6 +46,21 @@ if (!isset($rutas[$ruta])) {
 }
 $destino = $rutas[$ruta];
 
+// --- Middleware global anti-CSRF ---
+//
+// TODO envío de formulario del sitio valida el token AQUÍ, antes de llegar a cualquier
+// controlador. Cada controlador seguía llamando csrf_validar() por su cuenta — y así se
+// quedaron cuatro formularios sin protección (login, recuperar contraseña y el
+// comentario público) porque alguien tenía que acordarse en cada archivo nuevo. La
+// seguridad que depende de la memoria falla; la que vive en el único punto de entrada,
+// no: un POST sin token válido muere aquí sin importar qué controlador venga después.
+//
+// El callback de Google queda exento: su protección es el 'state' de OAuth (Google no
+// puede mandar nuestro token de sesión) y de todos modos llega por GET.
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    csrf_validar();
+}
+
 // --- 4. Resolver la copa cuando la página vive dentro de una ---
 if ($destino['copa']) {
     if ($slugCopa === null) {

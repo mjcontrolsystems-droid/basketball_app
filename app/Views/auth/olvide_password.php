@@ -34,6 +34,7 @@
         <?php endif; ?>
 
         <form method="post" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <div class="mb-4">
                 <label class="form-label small fw-semibold">Correo de tu cuenta</label>
                 <input type="email" name="email" class="form-control form-control-lg" value="<?= e($_POST['email'] ?? '') ?>" autofocus required>

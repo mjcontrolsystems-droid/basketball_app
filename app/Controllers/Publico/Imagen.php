@@ -20,7 +20,17 @@ if (!$fila) {
 
 $datos = is_resource($fila['datos']) ? stream_get_contents($fila['datos']) : $fila['datos'];
 
-header('Content-Type: ' . $fila['mime']);
+// Defensa en profundidad: aunque la subida ya valida el tipo real del archivo, aquí se
+// vuelve a exigir que el mime guardado sea una imagen conocida. Si algún día un registro
+// trajera otro tipo (una migración manual, un bug futuro), se sirve como descarga
+// genérica en vez de dejar que el navegador lo interprete — nunca como HTML ejecutable.
+$mimesImagen = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+$mime = in_array($fila['mime'], $mimesImagen, true) ? $fila['mime'] : 'application/octet-stream';
+if ($mime === 'application/octet-stream') {
+    header('Content-Disposition: attachment; filename="archivo.bin"');
+}
+
+header('Content-Type: ' . $mime);
 header('Cache-Control: public, max-age=31536000, immutable');
 header('Content-Length: ' . strlen($datos));
 echo $datos;

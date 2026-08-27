@@ -81,6 +81,9 @@ if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+    // El sitio no usa cámara, micrófono ni ubicación: se declaran apagados para que
+    // ningún script (propio o de un CDN comprometido) pueda siquiera pedirlos.
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
     // object-src y frame-src se declaran explícitamente (aunque heredarían de default-src)
     // porque el visor del reglamento incrusta un PDF propio con <object>: dejarlo implícito
     // hace que algunos navegadores lo bloqueen. Ambos siguen limitados al propio sitio.
