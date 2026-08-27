@@ -68,6 +68,12 @@ function nav_activa(string $clave, string $activa): string
                 <li class="nav-item"><a class="nav-link <?= nav_activa('calendario', $pagina_activa) ?>" href="<?= url_copa('calendario.php') ?>"><i class="bi bi-calendar2-week me-1"></i>Calendario</a></li>
                 <li class="nav-item"><a class="nav-link <?= nav_activa('equipos', $pagina_activa) ?>" href="<?= url_copa('equipos.php') ?>"><i class="bi bi-people me-1"></i>Equipos</a></li>
                 <li class="nav-item"><a class="nav-link <?= nav_activa('patrocinadores', $pagina_activa) ?>" href="<?= url_copa('patrocinadores.php') ?>"><i class="bi bi-award me-1"></i>Patrocinadores</a></li>
+                <?php // Solvencia: solo si la copa cobra multas o aplica suspensiones. La
+                      // hoja existía pero no había forma de llegarle desde el sitio: el
+                      // capitán tenía que pedirle el enlace al organizador cada semana. ?>
+                <?php if (torneo_cobra_multas($torneo ?? []) || torneo_aplica_suspensiones($torneo ?? [])): ?>
+                <li class="nav-item"><a class="nav-link <?= nav_activa('solvencia', $pagina_activa) ?>" href="<?= url_copa('solvencia.php') ?>"><i class="bi bi-clipboard-check me-1"></i>Solvencia</a></li>
+                <?php endif; ?>
                 <?php // El reglamento solo aparece en el menú si la copa lo publicó ?>
                 <?php if (torneo_tiene_reglamento($torneo)): ?>
                 <li class="nav-item"><a class="nav-link <?= nav_activa('reglamento', $pagina_activa) ?>" href="<?= url_copa('reglamento.php') ?>"><i class="bi bi-journal-text me-1"></i>Reglamento</a></li>

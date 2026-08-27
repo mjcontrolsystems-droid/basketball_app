@@ -106,7 +106,7 @@ foreach ($encuentros as $en) {
 }
 
 $titulo_pagina = 'Solvencia de jugadores — ' . $torneo['nombre'];
-$pagina_activa = 'calendario';
+$pagina_activa = 'solvencia'; // ya tiene entrada propia en el menú público
 
 vista_publica('publico/solvencia', compact(
     'aplicaSuspensiones',
