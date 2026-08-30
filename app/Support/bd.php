@@ -8,7 +8,7 @@ const TABLAS_SINGLETON = ['organizador'];
 
 const COLUMNAS_POR_TABLA = [
     'equipos' => ['id', 'torneo_id', 'nombre', 'ciudad', 'sede', 'entrenador', 'fundacion', 'color_primario', 'color_secundario', 'logo', 'descripcion', 'grupo', 'cabeza_serie', 'siglas'],
-    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo', 'cronometro_extra_min'],
+    'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'por_default', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo', 'cronometro_extra_min'],
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
     'jugadores' => ['id', 'torneo_id', 'equipo_id', 'dorsal', 'nombre', 'activo', 'posicion'],
@@ -30,6 +30,7 @@ const COLUMNAS_ENTERAS_POR_TABLA = [
 const COLUMNAS_BOOLEANAS_POR_TABLA = [
     'jugadores' => ['activo'],
     'equipos' => ['cabeza_serie'],
+    'partidos' => ['por_default'],
 ];
 
 /**
@@ -402,6 +403,11 @@ function db_migrar_automatico(): void
         // dice todo el mundo en la cancha y así se imprime en el calendario.
         $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
         $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
+
+        // Partido ganado por default (W.O.): el marcador es reglamentario (3-0 en fútbol,
+        // 20-0 en basketball), no sale de goles, y el encuentro queda excluido de las
+        // estadísticas individuales — nadie anotó y la portería no fue "vencida" jugando.
+        $pdo->exec('ALTER TABLE partidos ADD COLUMN IF NOT EXISTS por_default BOOLEAN NOT NULL DEFAULT FALSE');
 
         // Colaboradores: gente que ayuda a administrar una copa sin ser su dueño. Se
         // guardan por correo porque casi siempre se invita a quien todavía no tiene

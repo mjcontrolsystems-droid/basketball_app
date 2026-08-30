@@ -326,11 +326,29 @@ function marcador_desde_eventos(array $eventos, int $equipoLocalId, int $equipoV
  * @param array<int,array> $partidos Colección completa de partidos de la copa (por referencia).
  * @return array{0:int,1:int}
  */
+/**
+ * Marcador reglamentario de un triunfo por default: 3-0 en fútbol, 20-0 en basketball
+ * (regla FIBA). Es el que se fija automáticamente al marcar el W.O.
+ *
+ * @return array{0:int,1:int} [puntos del ganador, puntos del perdedor]
+ */
+function marcador_por_default(?string $deporte): array
+{
+    return es_basketball($deporte) ? [20, 0] : [3, 0];
+}
+
 function partido_recalcular_marcador(int $torneoId, int $partidoId, array &$partidos, ?string $deporte): array
 {
     $partido = db_buscar_por_id($partidos, $partidoId);
     if ($partido === null) {
         return [0, 0];
+    }
+
+    // Un triunfo por default tiene marcador reglamentario, no de goles: si un evento
+    // suelto disparara el recálculo, el 3-0 se perdería. El W.O. es intocable hasta que
+    // el organizador lo quite del propio encuentro.
+    if (!empty($partido['por_default'])) {
+        return [(int) $partido['marcador_local'], (int) $partido['marcador_visitante']];
     }
 
     $eventos = db_leer_eventos_partido($torneoId, $partidoId);
@@ -683,6 +701,11 @@ function partido_periodo_etiqueta(?string $deporte, int $periodo): string
  */
 function marcador_jugado_desde_eventos(int $torneoId, array $partido, ?string $deporte): array
 {
+    // Un W.O. no se deriva de goles: su marcador es reglamentario y no se toca.
+    if (!empty($partido['por_default'])) {
+        return [(int) $partido['marcador_local'], (int) $partido['marcador_visitante']];
+    }
+
     $eventos = db_leer_eventos_partido($torneoId, (int) $partido['id']);
     [$local, $visitante] = marcador_desde_eventos(
         $eventos,
@@ -766,6 +789,12 @@ function calcular_porteria_menos_vencida(array $equiposPorId, array $partidos, a
     $stats = [];
     foreach ($partidos as $p) {
         if (($p['estado'] ?? '') !== 'jugado') {
+            continue;
+        }
+        // Un triunfo por default no cuenta aquí: el 3-0 es reglamentario, la portería no
+        // fue "vencida" jugando ni el rival la defendió. Cuenta en la tabla, no en este
+        // premio — ni a favor del que ganó sin sudar ni en contra del que no se presentó.
+        if (!empty($p['por_default'])) {
             continue;
         }
         $gl = (int) ($p['marcador_local'] ?? 0);

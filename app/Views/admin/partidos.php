@@ -391,6 +391,23 @@
                 </select>
             </div>
             <div class="col-md-8">
+                <label class="form-label small fw-semibold">Ganado por default (W.O.)</label>
+                <?php
+                // Quién ganó ya, si el partido está marcado por default: se deduce del marcador.
+                $defaultActual = '';
+                if (!empty($partidoEditar['por_default'])) {
+                    $defaultActual = ((int) ($partidoEditar['marcador_local'] ?? 0)) > ((int) ($partidoEditar['marcador_visitante'] ?? 0)) ? 'local' : 'visitante';
+                }
+                [$ptsDefault] = marcador_por_default($torneo['deporte'] ?? null);
+                ?>
+                <select name="por_default" class="form-select">
+                    <option value="">No — se jugó normal</option>
+                    <option value="local" <?= $defaultActual === 'local' ? 'selected' : '' ?>>Gana el LOCAL <?= $ptsDefault ?>-0 (el visitante no se presentó)</option>
+                    <option value="visitante" <?= $defaultActual === 'visitante' ? 'selected' : '' ?>>Gana el VISITANTE <?= $ptsDefault ?>-0 (el local no se presentó)</option>
+                </select>
+                <div class="form-text">El marcador se fija solo, no se le asignan <?= e(mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null))) ?> a nadie, y el encuentro no cuenta para la portería menos vencida.</div>
+            </div>
+            <div class="col-md-8">
                 <label class="form-label small fw-semibold">Marcador</label>
                 <div class="form-control d-flex align-items-center justify-content-between bg-light">
                     <span class="fw-bold fs-5">

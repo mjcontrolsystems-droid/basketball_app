@@ -651,18 +651,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errores[] = 'Selecciona equipos válidos.';
         }
 
+        // --- Triunfo por default (W.O.) ---
+        // El organizador elige quién gana y la app fija el marcador reglamentario (3-0 en
+        // fútbol, 20-0 en basketball). No se asignan goles a nadie: el resultado no salió
+        // de jugar. El encuentro queda jugado y el recálculo desde eventos lo respeta.
+        $porDefault = (string) ($_POST['por_default'] ?? '');
+        if (!in_array($porDefault, ['', 'local', 'visitante'], true)) {
+            $porDefault = '';
+        }
+
         // El marcador ya no se captura en este formulario: se calcula desde los goles
         // registrados en Eventos. Para un encuentro existente se deriva de sus goles
         // (conservando un marcador histórico si aún no hay goles); uno nuevo empieza 0-0.
         $partidoExistente = $id > 0 ? db_buscar_por_id($partidos, $id) : null;
-        if ($partidoExistente !== null) {
-            [$marcadorLocal, $marcadorVisitante] = marcador_jugado_desde_eventos($torneo['id'], $partidoExistente, $torneo['deporte'] ?? null);
+        if ($porDefault !== '') {
+            [$ganador, $perdedor] = marcador_por_default($torneo['deporte'] ?? null);
+            $marcadorLocal = $porDefault === 'local' ? $ganador : $perdedor;
+            $marcadorVisitante = $porDefault === 'visitante' ? $ganador : $perdedor;
+            $estado = 'jugado'; // un default ES un resultado en firme
+        } elseif ($partidoExistente !== null) {
+            // Si el W.O. se está QUITANDO, el marcador vuelve a salir de los goles reales.
+            $sinDefault = array_merge($partidoExistente, ['por_default' => false]);
+            [$marcadorLocal, $marcadorVisitante] = marcador_jugado_desde_eventos($torneo['id'], $sinDefault, $torneo['deporte'] ?? null);
         } else {
             $marcadorLocal = 0;
             $marcadorVisitante = 0;
         }
 
-        if ($estado === 'jugado' && $marcadorLocal === $marcadorVisitante && empty($torneo['permite_empates'])) {
+        if ($porDefault === '' && $estado === 'jugado' && $marcadorLocal === $marcadorVisitante && empty($torneo['permite_empates'])) {
             $txtAnot = mb_strtolower(etiqueta_anotaciones($torneo['deporte'] ?? null));
             if ($partidoExistente !== null) {
                 $errores[] = "Esta copa no permite empates: registra los {$txtAnot} en la ficha de Eventos para definir un ganador antes de marcar el encuentro como jugado.";
@@ -707,7 +723,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'fase' => $fase,
                 'arbitro' => trim((string) ($_POST['arbitro'] ?? '')),
                 'observaciones' => trim((string) ($_POST['observaciones'] ?? '')),
+                'por_default' => $porDefault !== '',
             ];
+
+            if ($porDefault !== '') {
+                bitacora_registrar('partido_default', 'Encuentro #' . ($id ?: 'nuevo') . ' marcado ganado por default (' . $porDefault . ')', $torneo['id']);
+            }
 
             if ($id > 0) {
                 foreach ($partidos as &$p) {

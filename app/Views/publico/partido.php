@@ -47,6 +47,11 @@ if (!function_exists('ficha_enlace_jugador')) {
                 <span class="fw-bold"><?= e($visit['nombre']) ?></span>
             </a>
         </div>
+        <?php if (!empty($partido['por_default'])): ?>
+        <p class="text-center mt-2 mb-0">
+            <span class="badge rounded-pill text-bg-warning"><i class="bi bi-flag me-1"></i>Ganado por default (W.O.)</span>
+        </p>
+        <?php endif; ?>
         <p class="text-center mt-3 mb-0" style="color:rgba(255,255,255,.75);">
             <i class="bi bi-geo-alt me-1"></i><?= e($partido['cancha']) ?>
             <?php if (!empty($partido['arbitro'])): ?> · <i class="bi bi-person-badge me-1"></i>Árbitro: <?= e($partido['arbitro']) ?><?php endif; ?>
@@ -192,6 +197,12 @@ if (!function_exists('ficha_enlace_jugador')) {
             <td><strong>Cancha</strong></td><td><?= ficha_valor($partido['cancha']) ?></td>
             <td><strong>Árbitro</strong></td><td><?= empty($partido['arbitro']) ? '<span class="ficha-linea-blanco"></span>' : e($partido['arbitro']) ?></td>
         </tr>
+        <?php if (!empty($partido['por_default'])): ?>
+        <tr>
+            <td><strong>Resultado</strong></td>
+            <td colspan="3"><strong>Ganado por default (W.O.)</strong> — marcador reglamentario; no se registran <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> individuales.</td>
+        </tr>
+        <?php endif; ?>
     </table>
 
     <h3><?= $basketball ? '🏀' : '⚽' ?> <?= e(etiqueta_anotaciones($deporte)) ?></h3>
