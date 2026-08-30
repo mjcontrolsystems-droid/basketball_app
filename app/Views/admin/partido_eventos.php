@@ -28,6 +28,33 @@
         </div>
     </div>
     <p class="text-center small text-muted mb-0 mt-2">El marcador se calcula automáticamente con los <?= e(mb_strtolower(etiqueta_anotaciones($deporte))) ?> que registres abajo.</p>
+
+    <?php // Triunfo por default, aquí porque es AQUÍ donde se descubre que un equipo no
+          // llegó. Fija el marcador reglamentario, no asigna goles a nadie y excluye el
+          // encuentro de la portería menos vencida. Solo asistente/dueño lo ven. ?>
+    <?php if (!empty($partido['por_default'])): ?>
+    <p class="text-center mb-0 mt-2">
+        <span class="badge rounded-pill text-bg-warning"><i class="bi bi-flag me-1"></i>Ganado por default (W.O.) — marcador reglamentario, sin goles individuales</span>
+    </p>
+    <?php elseif (!$resultadoBloqueado && puede('partidos_editar', $torneo)): ?>
+    <?php [$ptsWo] = marcador_por_default($deporte); ?>
+    <div class="d-flex justify-content-center gap-2 mt-2 flex-wrap">
+        <form method="post" class="mb-0" data-confirm="¿El rival no se presentó? Se registrará <?= $ptsWo ?>-0 a favor de <?= e($equipoLocal['nombre'] ?? 'local') ?>, sin goles para nadie, y el encuentro quedará jugado.">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="marcar_default">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <input type="hidden" name="lado" value="local">
+            <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3"><i class="bi bi-flag me-1"></i>W.O. a favor de <?= e($equipoLocal['nombre'] ?? 'Local') ?></button>
+        </form>
+        <form method="post" class="mb-0" data-confirm="¿El rival no se presentó? Se registrará <?= $ptsWo ?>-0 a favor de <?= e($equipoVisitante['nombre'] ?? 'visitante') ?>, sin goles para nadie, y el encuentro quedará jugado.">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="accion" value="marcar_default">
+            <input type="hidden" name="partido_id" value="<?= $partidoId ?>">
+            <input type="hidden" name="lado" value="visitante">
+            <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3"><i class="bi bi-flag me-1"></i>W.O. a favor de <?= e($equipoVisitante['nombre'] ?? 'Visitante') ?></button>
+        </form>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php if ($resultadoBloqueado): ?>

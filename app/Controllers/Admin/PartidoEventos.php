@@ -57,6 +57,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir_con_mensaje($urlLista, 'success', 'Encuentro reabierto para corrección. Cuando termines, márcalo como jugado de nuevo para que vuelva a contar en la tabla.');
     }
 
+    // Triunfo por default (W.O.), desde la misma ficha: es aquí donde se descubre que un
+    // equipo no llegó, no en el formulario de edición. Fija el marcador reglamentario
+    // (3-0 fútbol, 20-0 basketball), marca jugado y no asigna goles a nadie. Decidir un
+    // W.O. es de asistente para arriba, no de mesa.
+    if ($accion === 'marcar_default') {
+        requerir_permiso('partidos_editar');
+        $lado = (string) ($_POST['lado'] ?? '');
+        if (!in_array($lado, ['local', 'visitante'], true)) {
+            redirigir_con_mensaje($urlLista,'error', 'Indica qué equipo gana por default.');
+        }
+
+        [$ganador, $perdedor] = marcador_por_default($torneo['deporte'] ?? null);
+        foreach ($partidos as &$p) {
+            if ((int) $p['id'] === $partidoId) {
+                $p['por_default'] = true;
+                $p['estado'] = 'jugado';
+                $p['marcador_local'] = $lado === 'local' ? $ganador : $perdedor;
+                $p['marcador_visitante'] = $lado === 'visitante' ? $ganador : $perdedor;
+            }
+        }
+        unset($p);
+        partidos_guardar_todos($partidos, $torneo['id']);
+        bitacora_registrar('partido_default', 'Encuentro #' . $partidoId . ' ganado por default (' . $lado . ')', $torneo['id']);
+        redirigir_con_mensaje($urlLista,'success', "Triunfo por default registrado: {$ganador}-{$perdedor}. No se asignan goles a nadie y el encuentro no cuenta para la portería menos vencida.");
+    }
+
     // Cualquier otra acción de escritura sobre un encuentro con resultado en firme se
     // rechaza (protege contra pestañas viejas o envíos directos del formulario).
     if ($resultadoBloqueado) {
