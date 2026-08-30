@@ -27,6 +27,8 @@ return [
     'equipo.php' => ['controlador' => 'Publico/Equipo', 'copa' => true],
     // Perfil público del jugador: goles, tarjetas, suspensión y estado de multas.
     'jugador.php' => ['controlador' => 'Publico/Jugador', 'copa' => true],
+    // Nómina imprimible para el árbitro: el capitán marca titulares a mano y firma.
+    'nomina.php' => ['controlador' => 'Publico/Nomina', 'copa' => true],
     'equipo_reporte.php' => ['controlador' => 'Publico/EquipoReporte', 'copa' => true],
     'partido.php' => ['controlador' => 'Publico/Partido', 'copa' => true],
     'partido_vivo.php' => ['controlador' => 'Publico/PartidoVivo', 'copa' => true],
