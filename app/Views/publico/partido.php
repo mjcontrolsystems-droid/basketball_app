@@ -26,19 +26,23 @@ if (!function_exists('ficha_enlace_jugador')) {
 <header class="hero-copa" style="padding-bottom:3rem;">
     <div class="container">
         <p class="kicker mb-2"><i class="bi bi-calendar3 me-1"></i><?= e(formatear_fecha_larga($partido['fecha'])) ?> · <?= e($partido['hora']) ?></p>
-        <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap text-center">
-            <a href="<?= url_copa('equipo.php?id=' . $local['id']) ?>" class="d-flex flex-column align-items-center gap-2 text-decoration-none text-white" style="width:40%;">
+        <?php // flex-nowrap + flex:1 en cada equipo: con anchos fijos del 40% más el VS y
+              // el espacio entre columnas, en un teléfono la suma pasaba del 100% y el
+              // visitante se dibujaba DEBAJO del local. Ahora cada equipo toma el espacio
+              // que hay, los nombres se encogen, y los tres bloques siempre van en línea. ?>
+        <div class="d-flex flex-nowrap align-items-center justify-content-center gap-3 text-center partido-hero">
+            <a href="<?= url_copa('equipo.php?id=' . $local['id']) ?>" class="d-flex flex-column align-items-center gap-2 text-decoration-none text-white partido-hero-equipo">
                 <?= logo_equipo($local, 72) ?>
                 <span class="fw-bold"><?= e($local['nombre']) ?></span>
             </a>
-            <div class="fs-1 fw-bold text-white">
+            <div class="fs-1 fw-bold text-white flex-shrink-0">
                 <?php if ($jugado): ?>
                     <?= (int) $partido['marcador_local'] ?> - <?= (int) $partido['marcador_visitante'] ?>
                 <?php else: ?>
                     VS
                 <?php endif; ?>
             </div>
-            <a href="<?= url_copa('equipo.php?id=' . $visit['id']) ?>" class="d-flex flex-column align-items-center gap-2 text-decoration-none text-white" style="width:40%;">
+            <a href="<?= url_copa('equipo.php?id=' . $visit['id']) ?>" class="d-flex flex-column align-items-center gap-2 text-decoration-none text-white partido-hero-equipo">
                 <?= logo_equipo($visit, 72) ?>
                 <span class="fw-bold"><?= e($visit['nombre']) ?></span>
             </a>

@@ -588,6 +588,21 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     font-size: 1.6rem;
 }
 
+/* Encabezado de la ficha de partido: local — VS/marcador — visitante, SIEMPRE en línea.
+   Cada equipo toma el espacio disponible y su nombre se parte por palabras si hace falta;
+   el ancho máximo evita que en escritorio los dos equipos queden pegados a los bordes. */
+.partido-hero-equipo {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 260px;
+}
+.partido-hero-equipo .fw-bold { overflow-wrap: break-word; max-width: 100%; }
+
+@media (max-width: 575.98px) {
+    /* En el teléfono el "VS"/marcador baja de tamaño para regalarles espacio a los nombres */
+    .partido-hero .fs-1 { font-size: 1.5rem !important; }
+}
+
 .badge-jornada {
     background: #f1ecfb;
     color: var(--color-primario-oscuro);
