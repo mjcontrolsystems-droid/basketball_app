@@ -26,23 +26,6 @@ $jugadoresPorId = jugadores_por_id($jugadores);
 $partidos = partidos_listar($torneo['id']);
 $jornadas = partidos_por_jornada($partidos);
 
-// Deuda vigente de cada jugador (solo sanciones pendientes).
-$deudaPorJugador = sanciones_deuda_por_jugador($torneo['id']);
-
-// Jugadores en deuda agrupados por equipo, ya listos para pintar.
-$morososPorEquipo = [];
-foreach ($deudaPorJugador as $jugadorId => $info) {
-    $jug = $jugadoresPorId[$jugadorId] ?? null;
-    if ($jug === null) {
-        continue;
-    }
-    $morososPorEquipo[(int) $jug['equipo_id']][] = [
-        'jugador' => $jug,
-        'total' => $info['total'],
-        'cantidad' => $info['cantidad'],
-    ];
-}
-
 // Jornada a mostrar: la elegida, o la próxima con partidos programados.
 $jornadaElegida = isset($_GET['jornada']) ? (int) $_GET['jornada'] : 0;
 if ($jornadaElegida === 0 || !isset($jornadas[$jornadaElegida])) {
@@ -56,6 +39,25 @@ if ($jornadaElegida === 0 || !isset($jornadas[$jornadaElegida])) {
     if ($jornadaElegida === null && !empty($jornadas)) {
         $jornadaElegida = max(array_keys($jornadas));
     }
+}
+
+// Deuda EXIGIBLE en esta jornada: solo multas de jornadas anteriores. La multa de la
+// jornada 2 se paga antes de la 3 — en la hoja de la 2 ese jugador todavía está limpio,
+// y marcarlo moroso retroactivamente en jornadas ya jugadas era falso.
+$deudaPorJugador = sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, (int) $jornadaElegida);
+
+// Jugadores en deuda agrupados por equipo, ya listos para pintar.
+$morososPorEquipo = [];
+foreach ($deudaPorJugador as $jugadorId => $info) {
+    $jug = $jugadoresPorId[$jugadorId] ?? null;
+    if ($jug === null) {
+        continue;
+    }
+    $morososPorEquipo[(int) $jug['equipo_id']][] = [
+        'jugador' => $jug,
+        'total' => $info['total'],
+        'cantidad' => $info['cantidad'],
+    ];
 }
 
 // Encuentros de esa jornada, cada uno con los morosos de ambos equipos: es lo que se

@@ -70,7 +70,11 @@ if ($partidoHoja !== null && torneo_aplica_suspensiones($torneo)) {
 }
 $deudores = [];
 if (torneo_cobra_multas($torneo) && torneo_bloquea_morosos($torneo)) {
-    $deudores = sanciones_deuda_por_jugador($torneo['id']);
+    // Solo la deuda exigible PARA este encuentro: multas de jornadas anteriores. Una
+    // tarjeta de esta misma jornada se paga antes de la siguiente, no bloquea hoy.
+    $deudores = $partidoHoja !== null
+        ? sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, (int) ($partidoHoja['jornada'] ?? 0))
+        : sanciones_deuda_por_jugador($torneo['id']);
 }
 
 $rival = null;

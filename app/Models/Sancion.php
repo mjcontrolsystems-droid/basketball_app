@@ -140,6 +140,44 @@ function sanciones_deuda_por_jugador(int $torneoId): array
 }
 
 /**
+ * Deuda VIGENTE para una jornada: solo las multas nacidas en jornadas ANTERIORES.
+ *
+ * La regla de la liga: la multa de la jornada 2 se paga antes de la jornada 3. En la
+ * hoja de solvencia de la jornada 2 ese jugador todavía está limpio — la tarjeta ocurrió
+ * jugando esa misma fecha y nadie puede exigir un pago que aún no vence. Sin este corte,
+ * la hoja lo marcaba moroso retroactivamente en la propia jornada de la falta (y en las
+ * ya jugadas), que era falso.
+ *
+ * @param array<int,array> $partidos Para resolver en qué jornada nació cada multa.
+ * @return array<int, array{total: float, cantidad: int}> jugador_id => deuda exigible.
+ */
+function sanciones_deuda_vigente_para_jornada(int $torneoId, array $partidos, int $jornadaTope): array
+{
+    $jornadaDePartido = [];
+    foreach ($partidos as $p) {
+        $jornadaDePartido[(int) $p['id']] = (int) ($p['jornada'] ?? 0);
+    }
+
+    $deuda = [];
+    foreach (sanciones_listar($torneoId, SANCION_PENDIENTE) as $s) {
+        $jornadaSancion = $jornadaDePartido[(int) ($s['partido_id'] ?? 0)] ?? 0;
+        // Solo es exigible la multa de una jornada estrictamente anterior. Una sanción
+        // cuyo partido no se encuentra (0) se cobra siempre: mejor exigir de más un caso
+        // raro que dejar pasar a un moroso por un dato roto.
+        if ($jornadaSancion !== 0 && $jornadaSancion >= $jornadaTope) {
+            continue;
+        }
+        $jid = $s['jugador_id'];
+        if (!isset($deuda[$jid])) {
+            $deuda[$jid] = ['total' => 0.0, 'cantidad' => 0];
+        }
+        $deuda[$jid]['total'] += $s['monto'];
+        $deuda[$jid]['cantidad']++;
+    }
+    return $deuda;
+}
+
+/**
  * Marca una sanción como pagada o condonada, dejando constancia de cuándo y quién la
  * registró (para poder responder un "yo sí pagué" semanas después).
  */

@@ -204,8 +204,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Segunda barrera del bloqueo por multa: la casilla ya viene deshabilitada en la
         // pantalla, pero un envío directo del formulario podría colar a un moroso.
+        // Solo cuenta la deuda EXIGIBLE para este encuentro (multas de jornadas
+        // anteriores): la tarjeta de hoy se paga antes de la próxima jornada, no bloquea ya.
         if (torneo_bloquea_morosos($torneo)) {
-            $deudas = sanciones_deuda_por_jugador($torneo['id']);
+            $deudas = sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, (int) ($partido['jornada'] ?? 0));
             foreach ($filas as $fila) {
                 $jid = (int) $fila['jugador_id'];
                 if (isset($deudas[$jid])) {
@@ -486,9 +488,12 @@ foreach ($alineacion as $filaAlineacion) {
 $hoy = date('Y-m-d');
 $fechaEsFutura = ($partido['fecha'] ?? '') > $hoy && ($partido['estado'] ?? '') !== 'jugado';
 
-// Multas pendientes por jugador: la alineación marca (y según la copa, bloquea) a los
-// que deben. Se consulta una sola vez y se reutiliza en toda la pantalla.
-$deudaPorJugador = torneo_cobra_multas($torneo) ? sanciones_deuda_por_jugador($torneo['id']) : [];
+// Multas EXIGIBLES para este encuentro (nacidas en jornadas anteriores): la alineación
+// marca (y según la copa, bloquea) a los que deben. La tarjeta de esta misma jornada se
+// paga antes de la próxima — no marca moroso ya. Se consulta una vez para toda la pantalla.
+$deudaPorJugador = torneo_cobra_multas($torneo)
+    ? sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, (int) ($partido['jornada'] ?? 0))
+    : [];
 
 // Suspendidos para ESTE partido por roja o por acumulación de amarillas. A diferencia de
 // la multa, una suspensión no se puede "pagar": el jugador simplemente no puede alinearse.
