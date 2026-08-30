@@ -29,15 +29,18 @@ $linea = '<span style="display:inline-block;border-bottom:1px solid #000;min-wid
     </tr>
 </table>
 
+<?php // Se marca a los PRESENTES que jugarán, no a los titulares: en estas ligas hay
+      // cambios libres y al final participan todos los que llegaron. Lo que el árbitro
+      // necesita verificar es quiénes están habilitados para entrar en algún momento. ?>
 <p style="font-size:12px;margin:10px 0 6px;">
-    Marque con <strong>X</strong> la casilla <strong>T</strong> de quienes inician
-    (<?= (int) $jugadoresEnCancha ?> titulares en esta modalidad). Los demás presentes quedan en banca.
+    Marque con <strong>X</strong> la casilla de los jugadores <strong>presentes que participarán
+    en este encuentro</strong>. Quien no esté marcado no podrá ingresar al terreno de juego.
 </p>
 
 <table class="ficha-tabla">
     <thead>
         <tr>
-            <th style="width:7%;">T</th>
+            <th style="width:9%;">Juega</th>
             <th style="width:10%;">#</th>
             <th>Jugador</th>
             <th style="width:24%;">Observación</th>

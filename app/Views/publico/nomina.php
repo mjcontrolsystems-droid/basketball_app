@@ -15,7 +15,7 @@ $casilla = '<span style="display:inline-block;width:14px;height:14px;border:1.5p
             <div>
                 <h1 class="text-white mb-1"><?= e($equipo['nombre']) ?></h1>
                 <p style="color:rgba(255,255,255,.75);" class="mb-0">
-                    Se imprime, el capitán marca a los titulares con lapicero, firma y la entrega a la mesa.
+                    Se imprime, el capitán marca con lapicero a los presentes que jugarán, firma y la entrega a la mesa.
                 </p>
             </div>
         </div>
