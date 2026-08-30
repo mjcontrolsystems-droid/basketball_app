@@ -340,10 +340,27 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 .balon-hero-solo {
     top: 50%;
     left: 50%;
-    width: clamp(170px, 32vw, 280px);
-    height: clamp(170px, 32vw, 280px);
-    margin: calc(clamp(170px, 32vw, 280px) / -2) 0 0 calc(clamp(170px, 32vw, 280px) / -2);
+    /* Más grande que antes (280px de tope): el escudo de una copa necesita presencia y
+       el hero tenía demasiado azul vacío alrededor del disco. */
+    width: clamp(200px, 36vw, 330px);
+    height: clamp(200px, 36vw, 330px);
+    margin: calc(clamp(200px, 36vw, 330px) / -2) 0 0 calc(clamp(200px, 36vw, 330px) / -2);
 }
+
+/* El balón del deporte asomando por DETRÁS del disco del logo: arriba a la derecha,
+   girado y translúcido, con su propia animación desfasada para que "respire" distinto.
+   Decora el espacio vacío sin competir con el escudo, que va encima (z-index). */
+.balones-3d .balon-detras-logo {
+    top: 2%;
+    right: -4%;
+    left: auto;
+    width: clamp(110px, 17vw, 165px);
+    height: clamp(110px, 17vw, 165px);
+    opacity: .55;
+    transform: rotate(-16deg);
+    z-index: 0;
+}
+.balones-3d .logo-hero-solo { z-index: 1; }
 
 /* Logo de la copa/liga presidiendo el hero, en el lugar donde iría el balón. A
    diferencia del balón (una foto redonda que llena el círculo), un logo puede tener

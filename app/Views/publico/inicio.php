@@ -49,18 +49,17 @@
             <div class="col-lg-5">
                 <div class="balones-3d">
                     <?php
-                    // Si la copa/liga subió su logo, es ÉL el que preside el hero (flotando
-                    // igual que el balón); el balón del deporte queda solo como respaldo
-                    // para las copas que todavía no cargaron logo.
-                    if (!empty($torneo['logo'])):
-                        $heroImg = url_imagen((string) $torneo['logo']);
-                        $heroClase = 'logo-hero-solo';
-                    else:
-                        $heroImg = url('assets/img/' . (($torneo['deporte'] ?? 'basketball') === 'futbol' ? 'balon-futbol.png' : 'balon-basketball.png'));
-                        $heroClase = 'balon-real';
-                    endif;
+                    // Si la copa subió su logo, ÉL preside el hero sobre su disco blanco,
+                    // con el balón del deporte asomando detrás para que el fondo no se
+                    // sienta vacío. Sin logo, el balón solo, como siempre.
+                    $balonHero = url('assets/img/' . (($torneo['deporte'] ?? 'basketball') === 'futbol' ? 'balon-futbol.png' : 'balon-basketball.png'));
                     ?>
-                    <img src="<?= e($heroImg) ?>" alt="<?= e($torneo['nombre']) ?>" class="<?= $heroClase ?> balon-flotante-1 balon-hero-solo">
+                    <?php if (!empty($torneo['logo'])): ?>
+                    <img src="<?= e($balonHero) ?>" alt="" class="balon-real balon-flotante-2 balon-detras-logo">
+                    <img src="<?= e(url_imagen((string) $torneo['logo'])) ?>" alt="<?= e($torneo['nombre']) ?>" class="logo-hero-solo balon-flotante-1 balon-hero-solo">
+                    <?php else: ?>
+                    <img src="<?= e($balonHero) ?>" alt="<?= e($torneo['nombre']) ?>" class="balon-real balon-flotante-1 balon-hero-solo">
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
