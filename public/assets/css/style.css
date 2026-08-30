@@ -351,12 +351,18 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
    girado y translúcido, con su propia animación desfasada para que "respire" distinto.
    Decora el espacio vacío sin competir con el escudo, que va encima (z-index). */
 .balones-3d .balon-detras-logo {
-    top: 2%;
-    right: -4%;
+    /* Abajo y bien salido a la derecha: asoma por la orilla del disco como un balón
+       apoyado detrás del escudo, no montado encima. El tamaño va con tope duro para que
+       nunca compita con el logo. */
+    top: auto;
+    bottom: -6%;
+    right: -18%;
     left: auto;
-    width: clamp(110px, 17vw, 165px);
-    height: clamp(110px, 17vw, 165px);
-    opacity: .55;
+    width: clamp(110px, 14vw, 150px);
+    height: clamp(110px, 14vw, 150px);
+    max-width: 150px;
+    max-height: 150px;
+    opacity: .6;
     transform: rotate(-16deg);
     z-index: 0;
 }
@@ -369,10 +375,10 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
 .balones-3d .logo-hero-solo {
     position: absolute;
     object-fit: contain;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .94);
-    padding: clamp(14px, 3vw, 26px);
-    box-shadow: 0 22px 46px -18px rgba(0, 0, 0, .55), 0 0 0 6px rgba(255, 255, 255, .12);
+    /* Sin disco blanco: el escudo puro flotando sobre el hero. El disco recortaba la
+       sensación de tamaño y nunca dejaba respirar las puntas del escudo; con contain y
+       una sombra proyectada, el logo se ve completo, grande y con profundidad. */
+    filter: drop-shadow(0 26px 34px rgba(0, 0, 0, .55));
 }
 
 /* Logo de la copa en el navbar/footer/sidebar (ver logo_torneo() en helpers.php). */
