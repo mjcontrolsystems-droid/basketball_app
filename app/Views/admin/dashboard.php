@@ -121,6 +121,52 @@
 </div>
 <?php endif; ?>
 
+<?php // ---------- Aviso al público ---------- ?>
+<?php $avisoActivo = !empty($torneo['aviso_activo']); ?>
+<div class="card-suave p-4 mb-4 <?= $avisoActivo ? 'border border-info border-2' : '' ?>">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div style="max-width:520px;">
+            <h5 class="mb-1"><i class="bi bi-megaphone me-2"></i>Aviso al público</h5>
+            <p class="text-muted small mb-0">
+                Un mensaje que cada visitante ve <strong>una vez al entrar</strong> al sitio: condolencias,
+                un cumpleaños, un recordatorio de la jornada. Lo quitas cuando quieras.
+            </p>
+        </div>
+        <?php if ($avisoActivo): ?>
+        <span class="badge rounded-pill text-bg-info"><i class="bi bi-broadcast me-1"></i>Publicado: <?= e($torneo['aviso_titulo'] ?? '') ?></span>
+        <?php endif; ?>
+    </div>
+    <form method="post" class="row g-2 mt-2">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="accion" value="aviso">
+        <div class="col-md-3">
+            <select name="aviso_tipo" class="form-select form-select-sm">
+                <option value="informativo" <?= ($torneo['aviso_tipo'] ?? '') === 'informativo' ? 'selected' : '' ?>>📢 Informativo</option>
+                <option value="luto" <?= ($torneo['aviso_tipo'] ?? '') === 'luto' ? 'selected' : '' ?>>🕊️ Condolencias</option>
+                <option value="celebracion" <?= ($torneo['aviso_tipo'] ?? '') === 'celebracion' ? 'selected' : '' ?>>🎉 Celebración</option>
+            </select>
+        </div>
+        <div class="col-md-9">
+            <input type="text" name="aviso_titulo" class="form-control form-control-sm" maxlength="120"
+                   placeholder="Título — ej. Nuestras condolencias a la familia de..." value="<?= e($torneo['aviso_titulo'] ?? '') ?>">
+        </div>
+        <div class="col-12">
+            <textarea name="aviso_mensaje" class="form-control form-control-sm" rows="2" maxlength="600"
+                      placeholder="El mensaje completo que verá la gente."><?= e($torneo['aviso_mensaje'] ?? '') ?></textarea>
+        </div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" name="activar" value="1" class="btn btn-sm btn-degradado rounded-pill px-3">
+                <i class="bi bi-megaphone me-1"></i><?= $avisoActivo ? 'Actualizar aviso' : 'Publicar aviso' ?>
+            </button>
+            <?php if ($avisoActivo): ?>
+            <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-x-lg me-1"></i>Quitar del sitio
+            </button>
+            <?php endif; ?>
+        </div>
+    </form>
+</div>
+
 <?php endif; // fin del bloque solo para el dueño de la copa ?>
 
 <div class="row g-3 mb-4">

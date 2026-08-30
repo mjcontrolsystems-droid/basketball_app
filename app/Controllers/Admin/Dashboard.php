@@ -17,7 +17,7 @@ $partidos = partidos_listar($torneo['id']);
 // más reclamos que tenerlo cerrado un rato.
 // Cerrar el sitio y publicar el podio son decisiones de quien organiza, no de quien
 // ayuda: una apaga la copa para todo el público y la otra la da por terminada.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['accion'] ?? '', ['mantenimiento', 'publicar_podio'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['accion'] ?? '', ['mantenimiento', 'publicar_podio', 'aviso'], true)) {
     requerir_permiso('configuracion');
 }
 
@@ -37,6 +37,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'mante
         $cerrar
             ? 'Sitio público cerrado. Los visitantes ven el aviso de mantenimiento; tú puedes seguir entrando con tu sesión.'
             : '¡Sitio público reabierto! Ya se puede ver de nuevo.'
+    );
+}
+
+// Aviso al público: condolencias, cumpleaños, un recordatorio. Se publica y se quita
+// desde aquí; el sitio lo muestra como mensaje emergente una vez por visita.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'aviso') {
+    csrf_validar();
+    $activar = !empty($_POST['activar']);
+    $tipo = (string) ($_POST['aviso_tipo'] ?? 'informativo');
+    if (!in_array($tipo, ['luto', 'celebracion', 'informativo'], true)) {
+        $tipo = 'informativo';
+    }
+    $titulo = mb_substr(trim((string) ($_POST['aviso_titulo'] ?? '')), 0, 120);
+    $mensaje = mb_substr(trim((string) ($_POST['aviso_mensaje'] ?? '')), 0, 600);
+
+    if ($activar && ($titulo === '' || $mensaje === '')) {
+        redirigir_con_mensaje(url('admin/index.php'), 'error', 'El aviso necesita un título y un mensaje.');
+    }
+
+    torneos_guardar(array_merge($torneo, [
+        'aviso_activo' => $activar,
+        'aviso_tipo' => $tipo,
+        'aviso_titulo' => $titulo,
+        'aviso_mensaje' => $mensaje,
+    ]));
+    bitacora_registrar($activar ? 'aviso_publicado' : 'aviso_retirado', $activar ? "Aviso al público: {$titulo}" : 'Aviso al público retirado', $torneo['id']);
+    redirigir_con_mensaje(
+        url('admin/index.php'),
+        'success',
+        $activar
+            ? 'Aviso publicado. Cada visitante lo verá una vez al entrar al sitio.'
+            : 'Aviso retirado del sitio.'
     );
 }
 

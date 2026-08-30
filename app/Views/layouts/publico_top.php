@@ -130,6 +130,17 @@ function nav_activa(string $clave, string $activa): string
 </div>
 <?php endif; ?>
 
+<?php // Aviso al público de la copa (condolencias, cumpleaños, recordatorio). Lo pinta
+      // app.js como emergente UNA vez por visita: el hash cambia si el organizador edita
+      // el texto, y así el mensaje nuevo vuelve a mostrarse aunque ya se haya visto otro. ?>
+<?php if (!empty($torneo['aviso_activo']) && trim((string) ($torneo['aviso_mensaje'] ?? '')) !== ''): ?>
+<div id="avisoCopa" class="d-none"
+     data-tipo="<?= e($torneo['aviso_tipo'] ?? 'informativo') ?>"
+     data-titulo="<?= e($torneo['aviso_titulo'] ?? '') ?>"
+     data-mensaje="<?= e($torneo['aviso_mensaje'] ?? '') ?>"
+     data-hash="<?= e(substr(md5(($torneo['aviso_titulo'] ?? '') . '|' . ($torneo['aviso_mensaje'] ?? '')), 0, 10)) ?>"></div>
+<?php endif; ?>
+
 <?php // Igual que en el panel: el mensaje lo pinta SweetAlert2 desde app.js. ?>
 <?php if ($flash): ?>
 <div id="datosFlash" class="d-none" data-tipo="<?= e($flash['tipo']) ?>" data-mensaje="<?= e($flash['mensaje']) ?>"></div>

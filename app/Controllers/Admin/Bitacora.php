@@ -30,6 +30,8 @@ const BITACORA_ETIQUETAS = [
     'colaborador_acepto' => ['Invitación aceptada', 'bi-person-check', 'success'],
     'colaborador_nivel' => ['Nivel de colaborador cambiado', 'bi-person-gear', 'secondary'],
     'partido_default' => ['Triunfo por default (W.O.)', 'bi-flag', 'warning'],
+    'aviso_publicado' => ['Aviso al público publicado', 'bi-megaphone', 'info'],
+    'aviso_retirado' => ['Aviso al público retirado', 'bi-megaphone', 'secondary'],
     'correo_desautorizado' => ['Correo quitado', 'bi-person-dash', 'danger'],
     'cupo_actualizado' => ['Cupo actualizado', 'bi-ticket-perforated', 'secondary'],
 ];

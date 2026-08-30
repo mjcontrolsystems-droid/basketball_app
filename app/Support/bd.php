@@ -404,6 +404,14 @@ function db_migrar_automatico(): void
         $pdo->exec("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS grupo TEXT NOT NULL DEFAULT ''");
         $pdo->exec('ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cabeza_serie BOOLEAN NOT NULL DEFAULT FALSE');
 
+        // Aviso al público de la copa: un mensaje emergente que el organizador publica y
+        // quita cuando quiere — condolencias por un fallecimiento, un cumpleaños, un
+        // recordatorio. Aparece una vez por visita al entrar al sitio.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS aviso_activo BOOLEAN NOT NULL DEFAULT FALSE');
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS aviso_tipo TEXT NOT NULL DEFAULT 'informativo'");
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS aviso_titulo TEXT NOT NULL DEFAULT ''");
+        $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS aviso_mensaje TEXT NOT NULL DEFAULT ''");
+
         // Partido ganado por default (W.O.): el marcador es reglamentario (3-0 en fútbol,
         // 20-0 en basketball), no sale de goles, y el encuentro queda excluido de las
         // estadísticas individuales — nadie anotó y la portería no fue "vencida" jugando.

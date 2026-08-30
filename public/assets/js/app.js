@@ -875,6 +875,33 @@ document.addEventListener('DOMContentLoaded', function () {
     // Campos de solo lectura que se seleccionan enteros al tocarlos (enlaces largos que
     // uno quiere copiar a mano). Va aquí y no como onfocus en el HTML porque la política
     // de seguridad del sitio bloquea el JavaScript escrito dentro de los atributos.
+    // Aviso al público de la copa: emergente que se muestra UNA vez por visita. La marca
+    // vive en sessionStorage con el hash del texto: si el organizador cambia el mensaje,
+    // el hash cambia y el aviso nuevo vuelve a salir. El tono manda: las condolencias van
+    // sobrias (sin colores de fiesta), la celebración sí puede ser alegre.
+    var avisoCopa = document.getElementById('avisoCopa');
+    if (avisoCopa && typeof Swal !== 'undefined') {
+        var claveAviso = 'aviso_visto_' + avisoCopa.getAttribute('data-hash');
+        var yaVisto = false;
+        try { yaVisto = sessionStorage.getItem(claveAviso) === '1'; } catch (e) { /* modo privado */ }
+        if (!yaVisto) {
+            var tipoAviso = avisoCopa.getAttribute('data-tipo');
+            var estilos = {
+                luto: { emoji: '🕊️', boton: '#495057', confirmar: 'Nuestro pesar los acompaña' },
+                celebracion: { emoji: '🎉', boton: '#7b2ff7', confirmar: '¡Felicidades!' },
+                informativo: { emoji: '📢', boton: '#7b2ff7', confirmar: 'Entendido' }
+            };
+            var estilo = estilos[tipoAviso] || estilos.informativo;
+            Swal.fire({
+                title: estilo.emoji + ' ' + avisoCopa.getAttribute('data-titulo'),
+                text: avisoCopa.getAttribute('data-mensaje'),
+                confirmButtonText: estilo.confirmar,
+                confirmButtonColor: estilo.boton
+            });
+            try { sessionStorage.setItem(claveAviso, '1'); } catch (e) { /* noop */ }
+        }
+    }
+
     // Aviso de autogol en la ficha de eventos: aparece solo cuando el tipo elegido es
     // "autogol", que es el único caso con regla de captura no obvia (se registra al que
     // la metió en propia y el gol se suma al rival). Mostrarlo siempre sería ruido.
