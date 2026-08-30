@@ -2,7 +2,22 @@
     <div class="container">
         <div class="equipo-hero" style="background:linear-gradient(135deg, <?= e($equipo['color_primario']) ?>, <?= e($equipo['color_secundario']) ?>);">
             <div class="row align-items-center gy-4">
-                <div class="col-auto"><?= logo_equipo($equipo, 110) ?></div>
+                <?php // Escudo del encabezado: esfera grande con el logo COMPLETO adentro
+                      // (contain, no cover: el recorte circular se comía las puntas del
+                      // escudo) y el balón del deporte asomando detrás, para que el fondo
+                      // no se sienta vacío. ?>
+                <div class="col-auto">
+                    <div class="escudo-hero">
+                        <img src="<?= url('assets/img/' . (($torneo['deporte'] ?? '') === 'futbol' ? 'balon-futbol.png' : 'balon-basketball.png')) ?>" class="escudo-hero-balon" alt="">
+                        <div class="escudo-hero-plato">
+                            <?php if (!empty($equipo['logo'])): ?>
+                                <img src="<?= e(url_imagen((string) $equipo['logo'])) ?>" alt="<?= e($equipo['nombre']) ?>">
+                            <?php else: ?>
+                                <?= escudo_svg($equipo['nombre'], $equipo['color_primario'] ?? '#7b2ff7', $equipo['color_secundario'] ?? '#ff6b35', 120, (string) ($equipo['siglas'] ?? '')) ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
                 <div class="col">
                     <p class="small text-uppercase fw-bold mb-1" style="letter-spacing:.1em;opacity:.85;"><?= e($equipo['ciudad']) ?></p>
                     <h1 class="mb-2"><?= e($equipo['nombre']) ?></h1>

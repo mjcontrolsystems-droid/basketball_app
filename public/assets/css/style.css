@@ -588,6 +588,50 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     font-size: 1.6rem;
 }
 
+/* Escudo del encabezado del equipo: esfera blanca grande con el logo COMPLETO adentro
+   (contain con respiro, nunca recortado) y el balón del deporte asomando detrás, girado
+   y translúcido, para que la esquina no se sienta vacía. */
+.escudo-hero {
+    position: relative;
+    width: 158px;
+    height: 158px;
+}
+.escudo-hero-balon {
+    position: absolute;
+    width: 92px;
+    height: 92px;
+    right: -30px;
+    bottom: -16px;
+    object-fit: contain;
+    opacity: .5;
+    transform: rotate(-18deg);
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .35));
+}
+.escudo-hero-plato {
+    position: relative;
+    z-index: 1;
+    width: 158px;
+    height: 158px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .3), inset 0 0 0 4px rgba(255, 255, 255, .6);
+}
+.escudo-hero-plato img,
+.escudo-hero-plato svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@media (max-width: 575.98px) {
+    .escudo-hero, .escudo-hero-plato { width: 122px; height: 122px; }
+    .escudo-hero-balon { width: 70px; height: 70px; right: -20px; bottom: -12px; }
+}
+
 /* Encabezado de la ficha de partido: local — VS/marcador — visitante, SIEMPRE en línea.
    Cada equipo toma el espacio disponible y su nombre se parte por palabras si hace falta;
    el ancho máximo evita que en escritorio los dos equipos queden pegados a los bordes. */
