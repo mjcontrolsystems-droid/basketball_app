@@ -413,6 +413,52 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     box-shadow: 0 20px 40px -18px rgba(var(--color-primario-oscuro-rgb), .35);
 }
 
+/* ---------- Jornadas plegables (lista de encuentros del panel) ----------
+   Una temporada son 15 jornadas de 8 encuentros: la lista abierta es una pared de 120
+   tarjetas. Cada jornada es una barra cerrada que dice cuántos encuentros lleva jugados,
+   y solo se abre la que se está trabajando. */
+.jornada-bloque {
+    border-top: 1px solid rgba(var(--color-primario-rgb), .12);
+    padding-top: .6rem;
+}
+
+.jornada-toggle {
+    color: inherit;
+    min-width: 0;
+}
+
+.jornada-toggle:hover .jornada-chevron {
+    color: var(--color-primario);
+}
+
+/* El chevron apunta hacia abajo cuando la jornada está abierta y hacia la derecha cuando
+   está cerrada: es la única señal de estado que se ve sin leer nada. */
+.jornada-chevron {
+    display: inline-block;
+    transition: transform .2s ease;
+}
+
+.jornada-toggle[aria-expanded="false"] .jornada-chevron {
+    transform: rotate(-90deg);
+}
+
+/* El encuentro al que se acaba de volver desde su ficha. El realce se apaga solo: es para
+   encontrarlo con la vista al aterrizar, no una marca permanente. */
+.partido-destacado {
+    border-color: rgba(var(--color-primario-rgb), .55);
+    box-shadow: 0 0 0 3px rgba(var(--color-primario-rgb), .18), 0 12px 30px -18px rgba(var(--color-primario-oscuro-rgb), .25);
+    animation: destacar-partido 2.6s ease-out 1;
+}
+
+@keyframes destacar-partido {
+    0%, 45% { background: rgba(var(--color-primario-rgb), .09); }
+    100% { background: #fff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .partido-destacado { animation: none; }
+}
+
 /* ---------- Tabla de posiciones ---------- */
 .tabla-posiciones {
     border-collapse: separate;

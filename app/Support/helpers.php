@@ -141,7 +141,15 @@ function badge_patrocinador(array $patrocinador): string
  * Tarjeta de un encuentro para las listas del panel admin (fase de grupos y playoffs comparten el mismo diseño).
  * Requiere sesión con csrf_token() disponible.
  */
-function admin_tarjeta_partido(array $p, array $equiposPorId): string
+/**
+ * Tarjeta de un encuentro en el panel.
+ *
+ * $destacado marca el encuentro al que hay que volver después de trabajar su ficha: la
+ * tarjeta lleva un realce y el navegador baja sola hasta ella (ver data-ir-a en la vista).
+ * Sin esto, guardar un evento devolvía al organizador al principio de una lista de 120
+ * encuentros y había que buscar el partido a mano cada vez.
+ */
+function admin_tarjeta_partido(array $p, array $equiposPorId, bool $destacado = false): string
 {
     $local = $equiposPorId[$p['equipo_local']] ?? null;
     $visit = $equiposPorId[$p['equipo_visitante']] ?? null;
@@ -234,9 +242,11 @@ HTML;
 </div>
 HTML;
 
+    $claseDestacada = $destacado ? ' partido-destacado' : '';
+
     return <<<HTML
-<div class="col">
-    <div class="card-suave p-3">
+<div class="col" id="partido-{$id}">
+    <div class="card-suave p-3{$claseDestacada}">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="small text-muted">{$fecha} · {$hora}</span>
             <div class="d-flex align-items-center gap-2">

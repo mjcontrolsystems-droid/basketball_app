@@ -73,7 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($p);
             partidos_guardar_todos($partidos, $torneo['id']);
             bitacora_registrar('partido_reabierto', 'Encuentro #' . $id . ' reabierto para corrección de resultado', $torneo['id']);
-            redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro reabierto para corrección. Márcalo como jugado de nuevo cuando termines.');
+            // ?ir=<id>: la lista vuelve a abrirse en ESTE encuentro y no en el principio.
+            redirigir_con_mensaje(url('admin/partidos.php?ir=' . $id), 'success', 'Encuentro reabierto para corrección. Márcalo como jugado de nuevo cuando termines.');
         }
 
         // El marcador se toma de los goles registrados en Eventos (fuente de verdad). Si
@@ -94,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($p);
         partidos_guardar_todos($partidos, $torneo['id']);
         bitacora_registrar('partido_jugado', "Encuentro #{$id} en firme con marcador {$mLocal}-{$mVisit}", $torneo['id']);
-        redirigir_con_mensaje(url('admin/partidos.php'), 'success', 'Encuentro marcado como jugado. El resultado queda en firme.');
+        redirigir_con_mensaje(url('admin/partidos.php?ir=' . $id), 'success', 'Encuentro marcado como jugado. El resultado queda en firme.');
     }
 
     // Armar los cruces de eliminación con los clasificados de cada grupo. Se cruza el
@@ -755,7 +756,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             partidos_guardar_todos($partidos, $torneo['id']);
             bitacora_registrar($id > 0 ? 'partido_editado' : 'partido_creado', 'Encuentro ' . ($id > 0 ? "#{$id}" : "#{$datos['id']}") . ' — ' . ($equiposPorId[$local]['nombre'] ?? '?') . ' vs ' . ($equiposPorId[$visitante]['nombre'] ?? '?') . ' (' . $datos['fecha'] . ')', $torneo['id']);
-            redirigir_con_mensaje(url('admin/partidos.php'), 'success', $mensaje);
+            // Se vuelve al encuentro recién guardado (o al recién creado), con su jornada
+            // abierta: es el que el organizador quiere ver para comprobar cómo quedó.
+            redirigir_con_mensaje(url('admin/partidos.php?ir=' . ($id > 0 ? $id : (int) $datos['id'])), 'success', $mensaje);
         } else {
             $partidoEditar = array_merge($_POST, ['id' => $id]);
             $accion = $id > 0 ? 'editar' : 'nuevo';
@@ -765,6 +768,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $jornadas = partidos_por_jornada($partidos);
 $playoffsPorFase = partidos_playoffs_por_fase($partidos, $fasesTorneo);
+
+// --- A qué encuentro hay que volver y qué jornada se abre ---
+//
+// La lista llega a tener 120 tarjetas. Cerrarlas por jornada ordena la pantalla, pero
+// entonces hace falta saber CUÁL abrir: si no, después de cargar un evento el organizador
+// vuelve a una lista toda cerrada y tiene que buscar su partido igual que antes.
+//
+//  - ?ir=<id> (viene de la ficha de eventos y de cada acción sobre un encuentro): se abre
+//    la jornada de ESE partido y se baja hasta su tarjeta;
+//  - sin ?ir: se abre la primera jornada que todavía tiene encuentros por jugar, que es
+//    donde está trabajando quien entra un fin de semana cualquiera. Con todo jugado, la
+//    última.
+$irA = isset($_GET['ir']) ? (int) $_GET['ir'] : 0;
+$jornadaAbierta = 0;
+if ($irA > 0) {
+    $partidoIr = db_buscar_por_id($partidos, $irA);
+    $jornadaAbierta = $partidoIr !== null ? (int) ($partidoIr['jornada'] ?? 0) : 0;
+}
+if ($jornadaAbierta < 1) {
+    foreach ($jornadas as $numJor => $listaJor) {
+        if (array_filter($listaJor, fn($p) => ($p['estado'] ?? '') !== 'jugado')) {
+            $jornadaAbierta = (int) $numJor;
+            break;
+        }
+    }
+    if ($jornadaAbierta < 1 && !empty($jornadas)) {
+        $jornadaAbierta = (int) array_key_last($jornadas);
+    }
+}
 
 // Vista previa del calendario. Solo tiene contenido cuando el organizador acaba de pedir
 // "ver previa": el resto del tiempo el formulario se muestra vacío.
@@ -815,8 +847,10 @@ vista_admin('admin/partidos', compact(
     'fasesTorneo',
     'fasesValidas',
     'jornadaManualMarcada',
+    'jornadaAbierta',
     'jornadas',
     'jornadaSugerida',
+    'irA',
     'jornadaTope',
     'partidoEditar',
     'partidos',

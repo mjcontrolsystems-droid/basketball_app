@@ -926,4 +926,45 @@ document.addEventListener('DOMContentLoaded', function () {
         campo.addEventListener('focus', function () { campo.select(); });
         campo.addEventListener('click', function () { campo.select(); });
     });
+
+    // Abrir / cerrar TODAS las jornadas de golpe en la lista de encuentros. Sirve para las
+    // dos direcciones: buscar algo a ojo con todo abierto, o volver al orden con todo
+    // cerrado después de haber estado abriendo jornadas sueltas.
+    document.querySelectorAll('[data-jornadas]').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var abrir = boton.getAttribute('data-jornadas') === 'abrir';
+            document.querySelectorAll('.jornada-bloque .collapse').forEach(function (bloque) {
+                bloque.classList.toggle('show', abrir);
+            });
+            document.querySelectorAll('.jornada-toggle').forEach(function (t) {
+                t.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+                t.classList.toggle('collapsed', !abrir);
+            });
+        });
+    });
+
+    // Volver al encuentro que se estaba trabajando. La ficha de eventos y cada acción sobre
+    // un partido regresan a la lista con ?ir=<id>: el PHP deja abierta esa jornada y marca
+    // la tarjeta, y aquí se baja hasta ella. Sin esto, guardar un evento devolvía al
+    // principio de una lista de más de cien encuentros.
+    var irA = document.querySelector('[data-ir-a]');
+    if (irA) {
+        var destino = document.getElementById(irA.getAttribute('data-ir-a'));
+        // Un encuentro de playoffs vive en otra pestaña: si no se activa, el navegador
+        // intentaría bajar hasta algo que está oculto y no se movería nada.
+        var pestana = destino ? destino.closest('.tab-pane') : null;
+        if (pestana && !pestana.classList.contains('active')) {
+            var disparador = document.querySelector('[data-bs-target="#' + pestana.id + '"]');
+            if (disparador && window.bootstrap && window.bootstrap.Tab) {
+                window.bootstrap.Tab.getOrCreateInstance(disparador).show();
+            }
+        }
+        if (destino) {
+            // En el siguiente frame: el navegador todavía está pintando y una posición
+            // calculada ahora se queda corta cuando terminan de cargar logos y tarjetas.
+            window.requestAnimationFrame(function () {
+                destino.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        }
+    }
 });

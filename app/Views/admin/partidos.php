@@ -577,37 +577,74 @@
 
     <div class="tab-content">
         <div class="tab-pane fade show active" id="panelGrupos">
-            <?php foreach ($jornadas as $numJornada => $lista): ?>
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 mt-4">
-                <h6 class="text-muted text-uppercase small fw-bold mb-0">Jornada <?= $numJornada ?></h6>
-                <?php // Correr el calendario desde aquí. Nace de un caso real: un fin de
-                      // semana que se cae obliga a empujar esta jornada Y todas las de
-                      // atrás, porque si no se le encima a la siguiente. ?>
-                <form method="post" class="d-flex align-items-center gap-1" data-confirm="Se correrá la jornada <?= (int) $numJornada ?> y todas las siguientes. Los encuentros ya jugados no se tocan. ¿Continuamos?">
-                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="accion" value="correr_calendario">
-                    <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
-                    <select name="semanas" class="form-select form-select-sm" style="width:auto;" aria-label="Semanas a correr desde la jornada <?= (int) $numJornada ?>">
-                        <option value="1">+1 semana</option>
-                        <option value="2">+2 semanas</option>
-                        <option value="-1">−1 semana</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Correr esta jornada y las siguientes"><i class="bi bi-calendar-range me-1"></i>Correr</button>
-                </form>
-                <?php // Borrar de aquí en adelante conservando lo anterior. Es lo que hace
-                      // falta para rehacer solo la parte generada cuando las primeras
-                      // jornadas ya se publicaron a los equipos. ?>
-                <form method="post" class="mb-0" data-confirm="Se van a eliminar TODOS los encuentros desde la jornada <?= (int) $numJornada ?> en adelante. Las jornadas anteriores no se tocan. Si alguno ya está jugado o tiene eventos, no se borra nada. ¿Continuamos?">
-                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="accion" value="borrar_desde_jornada">
-                    <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Borrar esta jornada y todas las siguientes"><i class="bi bi-eraser me-1"></i>Borrar desde aquí</button>
-                </form>
+            <?php // ---------- Jornadas plegadas ----------
+                  // Con 15 jornadas de 8 encuentros la lista abierta son 120 tarjetas: para
+                  // llegar a la jornada de este fin de semana había que bajar media pantalla
+                  // tras media pantalla. Ahora cada jornada es un bloque cerrado que dice de
+                  // un vistazo cuántos encuentros tiene y cuántos van jugados, y solo se abre
+                  // la que se está trabajando. ?>
+            <?php if (!empty($jornadas)): ?>
+            <div class="d-flex justify-content-end gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-jornadas="abrir"><i class="bi bi-arrows-expand me-1"></i>Abrir todas</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-jornadas="cerrar"><i class="bi bi-arrows-collapse me-1"></i>Cerrar todas</button>
             </div>
-            <div class="row row-cols-1 row-cols-lg-2 g-3 mb-2">
-                <?php foreach ($lista as $p): ?>
-                    <?= admin_tarjeta_partido($p, $equiposPorId) ?>
-                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <?php foreach ($jornadas as $numJornada => $lista): ?>
+            <?php
+            // Resumen de la jornada: lo que hace que valga la pena tenerla cerrada.
+            $jugadosJor = count(array_filter($lista, fn($p) => ($p['estado'] ?? '') === 'jugado'));
+            $fechasJor = array_values(array_unique(array_filter(array_map(fn($p) => (string) ($p['fecha'] ?? ''), $lista))));
+            sort($fechasJor);
+            $rangoJor = $fechasJor === []
+                ? ''
+                : formatear_fecha_corta($fechasJor[0]) . (count($fechasJor) > 1 ? ' / ' . formatear_fecha_corta(end($fechasJor)) : '');
+            $completaJor = $jugadosJor === count($lista);
+            $abierta = (int) $numJornada === (int) $jornadaAbierta;
+            ?>
+            <div class="jornada-bloque mt-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <?php // El encabezado ENTERO es el botón de abrir/cerrar: un chevron de
+                          // 16px es un blanco difícil, sobre todo en el teléfono. ?>
+                    <button type="button" class="btn btn-link text-decoration-none p-0 text-start jornada-toggle flex-grow-1"
+                            data-bs-toggle="collapse" data-bs-target="#jornada<?= (int) $numJornada ?>"
+                            aria-expanded="<?= $abierta ? 'true' : 'false' ?>" aria-controls="jornada<?= (int) $numJornada ?>">
+                        <i class="bi bi-chevron-down jornada-chevron me-1"></i>
+                        <span class="fw-bold text-uppercase small">Jornada <?= $numJornada ?></span>
+                        <span class="small text-muted ms-1"><?= e($rangoJor) ?></span>
+                        <span class="badge rounded-pill <?= $completaJor ? 'text-bg-success' : 'text-bg-secondary' ?> ms-1"><?= $jugadosJor ?>/<?= count($lista) ?></span>
+                    </button>
+                    <?php // Correr el calendario desde aquí. Nace de un caso real: un fin de
+                          // semana que se cae obliga a empujar esta jornada Y todas las de
+                          // atrás, porque si no se le encima a la siguiente. ?>
+                    <form method="post" class="d-flex align-items-center gap-1 mb-0" data-confirm="Se correrá la jornada <?= (int) $numJornada ?> y todas las siguientes. Los encuentros ya jugados no se tocan. ¿Continuamos?">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="accion" value="correr_calendario">
+                        <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
+                        <select name="semanas" class="form-select form-select-sm" style="width:auto;" aria-label="Semanas a correr desde la jornada <?= (int) $numJornada ?>">
+                            <option value="1">+1 semana</option>
+                            <option value="2">+2 semanas</option>
+                            <option value="-1">−1 semana</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Correr esta jornada y las siguientes"><i class="bi bi-calendar-range me-1"></i>Correr</button>
+                    </form>
+                    <?php // Borrar de aquí en adelante conservando lo anterior. Es lo que hace
+                          // falta para rehacer solo la parte generada cuando las primeras
+                          // jornadas ya se publicaron a los equipos. ?>
+                    <form method="post" class="mb-0" data-confirm="Se van a eliminar TODOS los encuentros desde la jornada <?= (int) $numJornada ?> en adelante. Las jornadas anteriores no se tocan. Si alguno ya está jugado o tiene eventos, no se borra nada. ¿Continuamos?">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="accion" value="borrar_desde_jornada">
+                        <input type="hidden" name="jornada" value="<?= (int) $numJornada ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Borrar esta jornada y todas las siguientes"><i class="bi bi-eraser me-1"></i>Borrar desde aquí</button>
+                    </form>
+                </div>
+                <div class="collapse <?= $abierta ? 'show' : '' ?>" id="jornada<?= (int) $numJornada ?>">
+                    <div class="row row-cols-1 row-cols-lg-2 g-3 mt-0 mb-2">
+                        <?php foreach ($lista as $p): ?>
+                            <?= admin_tarjeta_partido($p, $equiposPorId, (int) $p['id'] === $irA) ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             </div>
             <?php endforeach; ?>
 
@@ -629,12 +666,19 @@
             <?php else: ?>
                 <div class="row row-cols-1 row-cols-lg-2 g-3">
                     <?php foreach ($playoffsPorFase[$f] as $p): ?>
-                        <?= admin_tarjeta_partido($p, $equiposPorId) ?>
+                        <?= admin_tarjeta_partido($p, $equiposPorId, (int) $p['id'] === $irA) ?>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
     </div>
+
+    <?php // Volver al encuentro que se estaba trabajando: la ficha de eventos regresa con
+          // ?ir=<id> y app.js baja sola hasta esa tarjeta y la resalta un momento. Nada de
+          // esto va inline porque el CSP no permite scripts dentro del HTML. ?>
+    <?php if ($irA > 0): ?>
+    <div data-ir-a="partido-<?= $irA ?>" class="d-none"></div>
+    <?php endif; ?>
 
 <?php endif; ?>
