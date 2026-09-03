@@ -61,14 +61,37 @@ New-Item -ItemType Directory -Force -Path $carpetaRespaldos | Out-Null
 Write-Host "Respaldando hacia: $destino"
 Write-Host 'Esto tarda unos segundos...'
 
-& $pgDump --format=custom --no-owner --no-privileges --file=$destino $urlDirecta
+$salida = & $pgDump --format=custom --no-owner --no-privileges --file=$destino $urlDirecta 2>&1
+$salidaTexto = ($salida | Out-String)
+if ($salidaTexto.Trim() -ne '') { Write-Host $salidaTexto }
+
 if ($LASTEXITCODE -ne 0) {
     Write-Host ''
-    Write-Host 'El respaldo FALLO. Revisa el mensaje de arriba.' -ForegroundColor Red
-    Write-Host 'Causas comunes: sin internet, la URL del .env cambio, o "server version'
-    Write-Host 'mismatch" — eso significa que hay que instalar la version de PostgreSQL'
-    Write-Host 'que diga "server version" en el mensaje (solo Command Line Tools).'
-    Write-Registro -Carpeta $carpetaRespaldos -Mensaje 'FALLO: pg_dump termino con error'
+    Write-Host 'El respaldo FALLO.' -ForegroundColor Red
+
+    # El error más común y el más confuso: pg_dump se niega a respaldar un servidor más
+    # nuevo que él. Neon actualiza su Postgres solo, así que esto reaparece cada tanto sin
+    # que nadie haya tocado nada. En vez de repetir la teoría, se lee la version exacta del
+    # mensaje y se dice cuál instalar.
+    if ($salidaTexto -match 'server version:\s*(\d+)') {
+        $versionServidor = $Matches[1]
+        Write-Host ''
+        Write-Host "La base de la liga ya va en PostgreSQL $versionServidor y esta computadora tiene una version" -ForegroundColor Yellow
+        Write-Host 'mas vieja. pg_dump se niega a respaldar un servidor mas nuevo que el.'
+        Write-Host ''
+        Write-Host "Solucion (una sola vez): instalar las herramientas de la version $versionServidor." -ForegroundColor Yellow
+        Write-Host '  1. Entra a https://www.enterprisedb.com/downloads/postgres-postgresql-downloads'
+        Write-Host "  2. En la fila que empieza con $versionServidor, baja el instalador de Windows x86-64."
+        Write-Host '  3. Al instalar, deja marcado SOLO "Command Line Tools".'
+        Write-Host '  4. Vuelve a correr este script. Va a tomar la version nueva solo.'
+        Write-Host ''
+        Write-Host 'No hay que desinstalar la version vieja: pueden convivir.'
+        Write-Registro -Carpeta $carpetaRespaldos -Mensaje "FALLO: falta pg_dump $versionServidor (servidor mas nuevo que la herramienta)"
+    } else {
+        Write-Host 'Revisa el mensaje de arriba. Causas comunes: sin internet, o la URL del .env cambio.'
+        Write-Registro -Carpeta $carpetaRespaldos -Mensaje 'FALLO: pg_dump termino con error'
+    }
+
     # Un archivo a medias es una trampa: parece un respaldo y no lo es.
     if (Test-Path $destino) { Remove-Item $destino -Force }
     Salir 1
