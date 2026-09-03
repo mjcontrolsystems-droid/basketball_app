@@ -13,6 +13,11 @@ if ($equipo === null) {
     exit('Equipo no encontrado.');
 }
 
+// Un capitán solo entra a la plantilla de su equipo. Va aquí arriba, antes de procesar
+// cualquier POST: esconder el enlace no sirve de nada si la URL con otro equipo_id sigue
+// respondiendo a quien la escriba a mano.
+requerir_equipo_propio($equipoId, $torneo);
+
 $jugadoresTodos = jugadores_listar($torneo['id']);
 $jugadores = array_values(array_filter($jugadoresTodos, fn($j) => (int) $j['equipo_id'] === $equipoId));
 
@@ -149,6 +154,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['accion'] ?? '') === 'eliminar') {
         $id = (int) $_POST['id'];
 
+        // El id tiene que ser de ESTA plantilla. Sin esta comprobación, mandar el id de un
+        // jugador de otro equipo junto con el equipo_id propio lo borraba igual, porque la
+        // búsqueda era sobre la lista completa de la copa.
+        if (db_buscar_por_id($jugadores, $id) === null) {
+            redirigir_con_mensaje($urlLista, 'error', 'Ese ' . mb_strtolower($etJugador) . ' no es de este equipo.');
+        }
+
         $eventos = eventos_de_torneo($torneo['id']);
         $referenciado = false;
         foreach ($eventos as $ev) {
@@ -175,6 +187,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $activo = isset($_POST['activo']);
 
         $etJugadorMin = mb_strtolower($etJugador);
+
+        // Al editar, el jugador tiene que ser de esta plantilla. Si no, guardar con el id
+        // de otro equipo lo MOVERÍA a este (los datos llevan equipo_id): un capitán podría
+        // quedarse con el goleador del rival mandando su id en el formulario.
+        if ($id > 0 && db_buscar_por_id($jugadores, $id) === null) {
+            redirigir_con_mensaje($urlLista, 'error', "Ese {$etJugadorMin} no es de este equipo.");
+        }
 
         if ($nombre === '') {
             redirigir_con_mensaje($urlLista, 'error', "El nombre del {$etJugadorMin} es obligatorio.");
@@ -223,7 +242,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$seccion_activa = 'equipos';
+// Para el capitán, "Mi plantilla" es una entrada propia del menú y no una subpantalla de
+// Equipos: si las dos comparten sección, las dos quedan resaltadas a la vez.
+$seccion_activa = es_capitan($torneo) ? 'plantilla' : 'equipos';
 $titulo_pagina = $etJugadores . ' · ' . $equipo['nombre'];
 
 vista_admin('admin/jugadores', compact(

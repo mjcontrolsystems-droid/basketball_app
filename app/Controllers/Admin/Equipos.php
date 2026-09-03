@@ -10,6 +10,35 @@ $accion = $_GET['accion'] ?? 'lista';
 $idEditar = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $equipoEditar = $idEditar ? db_buscar_por_id($equipos, $idEditar) : null;
 
+// --- Candado del capitán ---
+//
+// El capitán entra a esta pantalla solo para mantener SU equipo: escudo, colores y datos.
+// Todo lo demás que se hace aquí (crear, borrar, sortear grupos) cambia la forma del
+// torneo y no le corresponde.
+//
+// OJO con $equipos: equipos_guardar_todos() borra y reescribe TODA la copa, así que la
+// lista completa tiene que llegar intacta al guardado. Lo que se filtra es únicamente lo
+// que ve la vista ($equiposVisibles, más abajo) — filtrar $equipos aquí borraría los otros
+// 15 equipos en cuanto el capitán guardara su escudo.
+$equipoCapitan = equipo_del_capitan($torneo);
+$esCapitan = $equipoCapitan !== null;
+
+if ($esCapitan) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Lista blanca: cualquier acción que no sea "guardar mi equipo" se corta aquí,
+        // antes de csrf_validar() y antes de tocar nada.
+        if (($_POST['accion'] ?? '') !== 'guardar' || (int) ($_POST['id'] ?? 0) !== $equipoCapitan) {
+            redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'Solo puedes editar los datos de tu propio equipo.');
+        }
+    }
+    if ($accion === 'nuevo') {
+        redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'Los equipos los da de alta quien organiza la copa.');
+    }
+    if ($accion === 'editar' && $idEditar !== $equipoCapitan) {
+        redirigir_con_mensaje(url('admin/equipos.php'), 'error', 'Solo puedes editar los datos de tu propio equipo.');
+    }
+}
+
 // Jugadores mínimos que debe traer un equipo nuevo: los que juegan en cancha según la
 // modalidad de la copa (11 en fútbol 11, 7 en fútbol 7, 5 en sala y basketball).
 $minimoPlantilla = torneo_jugadores_en_cancha($torneo);
@@ -305,16 +334,25 @@ $titulo_pagina = 'Equipos';
 $porGrupo = $tieneGrupos ? equipos_por_grupo($equipos, $numGrupos) : [];
 $avisoCuadro = $tieneGrupos ? grupos_aviso_cuadro($numGrupos, torneo_clasifican_por_grupo($torneo)) : '';
 
-vista_admin('admin/equipos', compact(
-    'accion',
-    'avisoCuadro',
-    'equipoEditar',
-    'equipos',
-    'minimoPlantilla',
-    'numGrupos',
-    'porGrupo',
-    'tieneGrupos',
-    'seccion_activa',
-    'titulo_pagina',
-    'torneo'
+// Lo que la vista puede pintar. Para el capitán, solo su equipo: la lista completa se
+// queda arriba, para guardarla entera cuando haga falta.
+$equiposVisibles = $esCapitan
+    ? array_values(array_filter($equipos, fn($e) => (int) $e['id'] === $equipoCapitan))
+    : $equipos;
+
+vista_admin('admin/equipos', array_merge(
+    compact(
+        'accion',
+        'avisoCuadro',
+        'equipoEditar',
+        'esCapitan',
+        'minimoPlantilla',
+        'numGrupos',
+        'porGrupo',
+        'tieneGrupos',
+        'seccion_activa',
+        'titulo_pagina',
+        'torneo'
+    ),
+    ['equipos' => $equiposVisibles]
 ));

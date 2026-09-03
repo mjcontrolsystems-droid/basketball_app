@@ -468,6 +468,14 @@ function db_migrar_automatico(): void
         // hora. Guardado aquí, el resto del torneo se programa con el mismo criterio.
         $pdo->exec("ALTER TABLE torneos ADD COLUMN IF NOT EXISTS calendario_config TEXT NOT NULL DEFAULT ''");
 
+        // A qué equipo pertenece un colaborador. Solo lo usa el nivel "capitán": es un
+        // acceso que NO abarca la copa entera sino un equipo, para que cada capitán maneje
+        // su propia plantilla sin poder tocar la de los demás. Los otros niveles lo dejan
+        // en NULL. Con ON DELETE CASCADE, borrar un equipo se lleva el acceso de su capitán
+        // en vez de dejarlo apuntando a un equipo que ya no existe.
+        $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS equipo_id INTEGER REFERENCES equipos(id) ON DELETE CASCADE');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_equipo_idx ON colaboradores (equipo_id)');
+
         // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
         // clave por cada cambio del archivo a lo largo de la vida del proyecto.
         foreach (array_keys($_SESSION) as $k) {

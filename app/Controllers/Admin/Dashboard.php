@@ -111,6 +111,83 @@ $podio = podio_calcular($torneo, $equipos, $partidos);
 $temporadaTerminada = podio_temporada_terminada($partidos);
 $podioPublicado = torneo_podio_publicado($torneo);
 
+// --- Dashboard del capitán ---
+//
+// Al capitán no le sirve el panel de la copa: no puede tocar casi nada de lo que hay ahí.
+// Lo que necesita al entrar son tres cosas, que son justo las que hoy pregunta por
+// WhatsApp: cuándo y contra quién juega, quién no puede jugar (suspendido o debiendo), y
+// dónde imprime su nómina. Se le pinta su propia pantalla y se corta aquí.
+$equipoCapitan = equipo_del_capitan($torneo);
+if ($equipoCapitan !== null && isset($equiposPorId[$equipoCapitan])) {
+    $miEquipo = $equiposPorId[$equipoCapitan];
+
+    $jugadoresTodos = jugadores_listar($torneo['id']);
+    $jugadoresPorId = jugadores_por_id($jugadoresTodos);
+    $miPlantilla = array_values(array_filter($jugadoresTodos, fn($j) => (int) $j['equipo_id'] === $equipoCapitan));
+    usort($miPlantilla, fn($a, $b) => (int) $a['dorsal'] <=> (int) $b['dorsal']);
+    $misActivos = array_values(array_filter($miPlantilla, fn($j) => !empty($j['activo'])));
+
+    $misPartidos = array_values(array_filter(
+        $partidos,
+        fn($p) => (int) $p['equipo_local'] === $equipoCapitan || (int) $p['equipo_visitante'] === $equipoCapitan
+    ));
+    usort($misPartidos, fn($a, $b) => strcmp((string) $a['fecha'] . $a['hora'], (string) $b['fecha'] . $b['hora']));
+
+    $proximoMio = null;
+    foreach ($misPartidos as $p) {
+        if (($p['estado'] ?? '') !== 'jugado') {
+            $proximoMio = $p;
+            break;
+        }
+    }
+    $ultimosMios = array_values(array_filter($misPartidos, fn($p) => ($p['estado'] ?? '') === 'jugado'));
+    $ultimosMios = array_slice(array_reverse($ultimosMios), 0, 3);
+
+    // Quién no puede entrar a la cancha el próximo partido. Es exactamente el mismo
+    // cálculo que hace la nómina del árbitro, para que las dos digan lo mismo.
+    $misSuspendidos = [];
+    if ($proximoMio !== null && torneo_aplica_suspensiones($torneo)) {
+        $misSuspendidos = disciplina_suspendidos_para_partido($torneo['id'], $proximoMio, $torneo, $partidos, $jugadoresPorId);
+    }
+    $misDeudores = [];
+    if (torneo_cobra_multas($torneo)) {
+        $deudaVigente = $proximoMio !== null
+            ? sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, (int) ($proximoMio['jornada'] ?? 0))
+            : sanciones_deuda_por_jugador($torneo['id']);
+        // Solo los suyos: la deuda del resto de la liga no es asunto del capitán.
+        $mios = array_flip(array_map(fn($j) => (int) $j['id'], $miPlantilla));
+        $misDeudores = array_intersect_key($deudaVigente, $mios);
+    }
+
+    $miFila = null;
+    foreach ($tabla as $fila) {
+        if ((int) $fila['equipo']['id'] === $equipoCapitan) {
+            $miFila = $fila;
+            break;
+        }
+    }
+
+    $titulo_pagina = $miEquipo['nombre'];
+
+    vista_admin('admin/dashboard_capitan', compact(
+        'equiposPorId',
+        'jugadoresPorId',
+        'miEquipo',
+        'miFila',
+        'miPlantilla',
+        'misActivos',
+        'misDeudores',
+        'misPartidos',
+        'misSuspendidos',
+        'proximoMio',
+        'seccion_activa',
+        'titulo_pagina',
+        'torneo',
+        'ultimosMios'
+    ));
+    return;
+}
+
 vista_admin('admin/dashboard', compact(
     'equipos',
     'equiposPorId',

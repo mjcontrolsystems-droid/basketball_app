@@ -35,9 +35,9 @@ if (PHP_SAPI !== 'cli') {
 
 define('RAIZ_APP', dirname(__DIR__, 2));
 
-// A propósito NO se carga config/config.php: ese archivo abre sesión, manda cabeceras y
-// prepara la conexión. Aquí solo hacen falta los archivos de reglas, que son funciones
-// puras (entran arrays, salen arrays) y no tocan nada de fuera.
+// Solo archivos de reglas: funciones puras (entran arrays, salen arrays) que no abren
+// conexión ni leen la sesión. Ninguno de estos require arrastra config.php, así que correr
+// las pruebas no toca la base ni el sitio.
 foreach ([
     '/app/Support/fixture.php',
     '/app/Support/tabla.php',
@@ -45,9 +45,11 @@ foreach ([
     '/app/Support/disciplina.php',
     '/app/Support/calendario.php',
     '/app/Models/Sancion.php',
+    '/app/Models/Colaborador.php',
 ] as $archivo) {
     require_once RAIZ_APP . $archivo;
 }
+
 
 final class PruebaFallida extends RuntimeException
 {

@@ -22,10 +22,23 @@ function admin_nav_copa(string $seccion_activa, ?array $torneoActivo): string
         <?php // Cada quien ve solo lo que puede abrir. Esconder el enlace es cortesía, no
               // seguridad: el candado de verdad está en requerir_permiso() dentro de cada
               // controlador, porque el menú no impide escribir la URL a mano. ?>
+        <?php // El capitán ve su equipo y su plantilla, y nada más: el menú se le arma
+              // aparte porque para él "Equipos" no es una lista sino UN equipo, y las
+              // demás secciones ni siquiera le abrirían. ?>
+        <?php $miEquipo = equipo_del_capitan($torneoActivo); ?>
+        <?php if ($miEquipo !== null): ?>
+        <a class="nav-link <?= admin_nav_activa('equipos', $seccion_activa) ?>" href="<?= url('admin/equipos.php') ?>"><i class="bi bi-shield me-2"></i>Mi equipo</a>
+        <a class="nav-link <?= admin_nav_activa('plantilla', $seccion_activa) ?>" href="<?= url('admin/jugadores.php?equipo_id=' . $miEquipo) ?>"><i class="bi bi-people me-2"></i>Mi plantilla</a>
+        <?php else: ?>
         <?php if (puede('equipos', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('equipos', $seccion_activa) ?>" href="<?= url('admin/equipos.php') ?>"><i class="bi bi-people me-2"></i>Equipos</a>
         <?php endif; ?>
+        <?php // Encuentros llevaba a una pantalla que exige permiso de captura: al capitán
+              // le rebotaba con un "no tienes permiso" apenas la tocaba. ?>
+        <?php if (puede('partido_capturar', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('partidos', $seccion_activa) ?>" href="<?= url('admin/partidos.php') ?>"><i class="bi bi-calendar2-week me-2"></i>Encuentros</a>
+        <?php endif; ?>
+        <?php endif; ?>
         <?php // Sanciones solo aparece si la liga cobra multas por tarjeta ?>
         <?php if (torneo_cobra_multas($torneoActivo) && puede('sanciones', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('sanciones', $seccion_activa) ?>" href="<?= url('admin/sanciones.php') ?>"><i class="bi bi-cash-coin me-2"></i>Sanciones</a>

@@ -124,20 +124,10 @@ function auth_requerir(): void
 /**
  * Qué puede hacer cada quien dentro de una copa.
  *
- * El dueño puede todo. Los colaboradores son una ayuda acotada, y el corte no es
- * caprichoso: lo que se les deja es lo que se repite cada fin de semana y lo que, si se
- * equivocan, se arregla editando. Lo que decide la forma del torneo — calendario,
- * formato, reglas, quién más entra — se queda con el dueño, porque ahí un error se paga
- * con avisarle a 16 equipos que todo cambió.
+ * La tabla PERMISOS_POR_NIVEL vive junto a la definición de los niveles, en
+ * Models/Colaborador.php: son las dos mitades de lo mismo (qué niveles hay y qué alcanza
+ * cada uno), y tenerlas separadas hacía fácil agregar un nivel y olvidar sus permisos.
  */
-const PERMISOS_POR_NIVEL = [
-    // La mesa es quien está en la cancha: solo la ficha del partido.
-    'mesa' => ['partido_capturar'],
-    'asistente' => [
-        'partido_capturar', 'partidos_editar', 'equipos', 'jugadores',
-        'sanciones', 'patrocinadores', 'comentarios',
-    ],
-];
 
 /**
  * Nivel de la persona logueada en la copa activa: 'dueno', 'mesa', 'asistente' o null.
@@ -147,13 +137,25 @@ const PERMISOS_POR_NIVEL = [
  */
 function nivel_en_copa(?array $torneo = null): ?string
 {
+    return acceso_en_copa($torneo)['nivel'];
+}
+
+/**
+ * El acceso completo en la copa activa: nivel y, para el capitán, su equipo.
+ *
+ * @return array{nivel: ?string, equipo_id: ?int}
+ */
+function acceso_en_copa(?array $torneo = null): array
+{
     static $cache = [];
+
+    $sinAcceso = ['nivel' => null, 'equipo_id' => null];
 
     $torneo = $torneo ?? copa_actual();
     $torneoId = (int) ($torneo['id'] ?? 0);
     $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
     if ($torneoId <= 0 || $usuarioId <= 0) {
-        return null;
+        return $sinAcceso;
     }
 
     $clave = $torneoId . ':' . $usuarioId;
@@ -162,16 +164,68 @@ function nivel_en_copa(?array $torneo = null): ?string
     }
 
     if ((int) ($torneo['usuario_id'] ?? 0) === $usuarioId) {
-        return $cache[$clave] = 'dueno';
+        return $cache[$clave] = ['nivel' => 'dueno', 'equipo_id' => null];
     }
 
     $usuario = usuarios_obtener_por_id($usuarioId);
     // El superadmin entra a todo como dueño: es quien da soporte cuando algo se rompe.
     if (es_superadmin($usuario)) {
-        return $cache[$clave] = 'dueno';
+        return $cache[$clave] = ['nivel' => 'dueno', 'equipo_id' => null];
     }
 
-    return $cache[$clave] = colaborador_nivel_de($torneoId, $usuarioId, (string) ($usuario['email'] ?? ''));
+    return $cache[$clave] = colaborador_acceso_de($torneoId, $usuarioId, (string) ($usuario['email'] ?? ''))
+        ?? $sinAcceso;
+}
+
+/**
+ * El equipo del capitán logueado, o null si no es capitán.
+ *
+ * Todo el candado de este nivel cuelga de aquí. Devolver null para alguien que SÍ es
+ * capitán abriría la copa entera, así que un capitán sin equipo asignado (dato roto) se
+ * trata como si no tuviera acceso: ver capitan_puede_con_equipo().
+ */
+function equipo_del_capitan(?array $torneo = null): ?int
+{
+    $acceso = acceso_en_copa($torneo);
+
+    return $acceso['nivel'] === 'capitan' ? $acceso['equipo_id'] : null;
+}
+
+function es_capitan(?array $torneo = null): bool
+{
+    return nivel_en_copa($torneo) === 'capitan';
+}
+
+/**
+ * ¿Puede la persona logueada trabajar sobre ESTE equipo?
+ *
+ * Para el dueño y los colaboradores de copa, todos. Para un capitán, solo el suyo. Es la
+ * pregunta que hay que hacer antes de guardar o borrar cualquier cosa que cuelgue de un
+ * equipo — un jugador, el escudo, los datos —, porque ocultar el botón no impide que
+ * alguien mande el formulario con otro id.
+ */
+function capitan_puede_con_equipo(int $equipoId, ?array $torneo = null): bool
+{
+    $acceso = acceso_en_copa($torneo);
+
+    return acceso_alcanza_equipo($acceso['nivel'], $acceso['equipo_id'], $equipoId);
+}
+
+/**
+ * Corta la petición si el equipo no es el suyo. Va junto a requerir_permiso(), antes de
+ * procesar el POST.
+ */
+function requerir_equipo_propio(int $equipoId, ?array $torneo = null): void
+{
+    if (capitan_puede_con_equipo($equipoId, $torneo)) {
+        return;
+    }
+
+    redirigir_con_mensaje(
+        url('admin/index.php'),
+        'error',
+        'Solo puedes trabajar sobre tu propio equipo.'
+    );
 }
 
 function es_dueno_de_copa(?array $torneo = null): bool

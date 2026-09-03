@@ -61,7 +61,9 @@
                 <label class="form-label small fw-semibold">Qué podrá hacer</label>
                 <?php foreach (COLABORADOR_NIVELES as $clave => $nivel): ?>
                 <div class="form-check mb-2">
-                    <input class="form-check-input" type="radio" name="nivel" id="nivel<?= e($clave) ?>" value="<?= e($clave) ?>" <?= $clave === 'mesa' ? 'checked' : '' ?>>
+                    <input class="form-check-input" type="radio" name="nivel" id="nivel<?= e($clave) ?>" value="<?= e($clave) ?>"
+                           <?= $clave === 'mesa' ? 'checked' : '' ?>
+                           <?= colaborador_nivel_por_equipo($clave) ? 'data-muestra="#bloqueEquipoCapitan"' : '' ?>>
                     <label class="form-check-label" for="nivel<?= e($clave) ?>">
                         <strong><?= e($nivel['nombre']) ?></strong>
                         <span class="d-block small text-muted"><?= e($nivel['resumen']) ?></span>
@@ -70,11 +72,26 @@
                 <?php endforeach; ?>
             </div>
 
+            <?php // El capitán es el único nivel que necesita saber DE QUÉ equipo: su
+                  // acceso no abarca la copa sino un equipo, y todo el candado cuelga de
+                  // este dato. El bloque aparece solo al elegir ese nivel. ?>
+            <div class="mb-3" id="bloqueEquipoCapitan" style="display:none;">
+                <label class="form-label small fw-semibold" for="equipoCapitan">¿De qué equipo es capitán?</label>
+                <select name="equipo_id" id="equipoCapitan" class="form-select">
+                    <option value="">Elige el equipo...</option>
+                    <?php foreach ($equipos as $eq): ?>
+                    <option value="<?= (int) $eq['id'] ?>"><?= e($eq['nombre']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-text">Solo va a poder ver y editar ese equipo. Nada del resto de la liga.</div>
+            </div>
+
             <?php // Lo que NUNCA puede un colaborador. Se dice explícito para que el
                   // organizador invite tranquilo y no se quede con la duda. ?>
             <div class="alert alert-light border small mb-3">
-                <strong>Ninguno de los dos puede:</strong> generar o borrar el calendario, cambiar el formato y las reglas,
-                cerrar el sitio público, invitar a otros, ni ver tus demás copas.
+                <strong>Ninguno puede:</strong> generar o borrar el calendario, cambiar el formato y las reglas,
+                cerrar el sitio público, invitar a otros, ni ver tus demás copas. El capitán, además, no toca
+                resultados, ni sanciones, ni ningún equipo que no sea el suyo.
             </div>
 
             <button type="submit" class="btn btn-degradado rounded-pill w-100">
@@ -113,6 +130,11 @@
                                     <span class="badge rounded-pill text-bg-warning mt-1">Invitación enviada</span>
                                 <?php else: ?>
                                     <span class="badge rounded-pill text-bg-success mt-1">Aceptada</span>
+                                <?php endif; ?>
+                                <?php // De qué equipo es capitán: sin esto, la lista no
+                                      // distingue a los 16 capitanes entre sí. ?>
+                                <?php if (!empty($c['equipo_nombre'])): ?>
+                                    <div class="small text-muted mt-1"><i class="bi bi-shield me-1"></i><?= e($c['equipo_nombre']) ?></div>
                                 <?php endif; ?>
                             </td>
                             <?php // Se cambia en el sitio: quitar y volver a invitar para

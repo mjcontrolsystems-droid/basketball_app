@@ -53,6 +53,7 @@ la prueba que lo reproduce. Así ese error concreto no vuelve nunca.
 | `04_suspensiones.php` | Roja, acumulación de amarillas, ventana de castigo |
 | `05_calendario.php` | Sin cruces repetidos, fechas excluidas, cierre en la fecha de la final |
 | `06_jornadas.php` | Jornada deducida de la fecha, tope al corregirla a mano |
+| `07_capitan.php` | Qué alcanza el nivel capitán y que no salga de su equipo |
 
 Lo que todavía **no** se cubre: importación de plantillas, permisos por nivel, correos y
 generación de PDFs. Son los siguientes candidatos.

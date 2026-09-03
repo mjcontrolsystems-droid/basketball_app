@@ -20,9 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['accion'] ?? '') === 'invitar') {
         $email = colaborador_normalizar_email((string) ($_POST['email'] ?? ''));
         $nivel = (string) ($_POST['nivel'] ?? 'mesa');
+        // Solo lo usa el nivel capitán; para los demás el modelo lo ignora.
+        $equipoId = (int) ($_POST['equipo_id'] ?? 0) ?: null;
 
         try {
-            colaboradores_guardar($torneo['id'], $email, $nivel, $usuarioId);
+            colaboradores_guardar($torneo['id'], $email, $nivel, $usuarioId, $equipoId);
         } catch (RuntimeException $e) {
             redirigir_con_mensaje($urlLista, 'error', $e->getMessage());
         }
@@ -90,8 +92,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje($urlLista, 'error', 'Ese colaborador ya no está en la lista.');
         }
 
+        // Al pasar a capitán hace falta saber de qué equipo. Desde el selector de la lista
+        // no se puede preguntar, así que se conserva el equipo que ya tuviera y, si no
+        // tiene ninguno, se manda a hacerlo con el formulario de arriba.
+        $equipoId = (int) ($_POST['equipo_id'] ?? 0) ?: ($destino['equipo_id'] ?? null);
+        if (colaborador_nivel_por_equipo($nivel) && !$equipoId) {
+            redirigir_con_mensaje($urlLista, 'error', 'Para hacerlo capitán hay que decir de qué equipo: vuelve a invitarlo con el formulario de arriba eligiendo su equipo.');
+        }
+
         try {
-            colaboradores_guardar($torneo['id'], $destino['email'], $nivel, $usuarioId);
+            colaboradores_guardar($torneo['id'], $destino['email'], $nivel, $usuarioId, $equipoId);
         } catch (RuntimeException $e) {
             redirigir_con_mensaje($urlLista, 'error', $e->getMessage());
         }
@@ -154,6 +164,8 @@ unset($_SESSION['enlace_invitacion']);
 
 $correoListo = correo_configurado();
 $colaboradores = colaboradores_listar($torneo['id']);
+// Para el selector de equipo del nivel capitán.
+$equipos = equipos_listar($torneo['id']);
 $seccion_activa = 'colaboradores';
 $titulo_pagina = 'Colaboradores';
 $flash = obtener_flash();
@@ -161,6 +173,7 @@ $flash = obtener_flash();
 vista_admin('admin/colaboradores', compact(
     'colaboradores',
     'correoListo',
+    'equipos',
     'enlaceInvitacion',
     'flash',
     'seccion_activa',

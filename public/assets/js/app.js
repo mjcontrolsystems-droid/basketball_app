@@ -927,6 +927,27 @@ document.addEventListener('DOMContentLoaded', function () {
         campo.addEventListener('click', function () { campo.select(); });
     });
 
+    // Radios que destapan un bloque del formulario solo cuando son el elegido. Hoy lo usa
+    // el nivel "capitán" en Colaboradores, que es el único que necesita además decir de
+    // qué equipo. Genérico a propósito: data-muestra="#id" en el radio que lo pide.
+    var radiosMuestran = document.querySelectorAll('input[type="radio"][data-muestra]');
+    if (radiosMuestran.length) {
+        var nombreGrupo = radiosMuestran[0].getAttribute('name');
+        var delGrupo = document.querySelectorAll('input[type="radio"][name="' + nombreGrupo + '"]');
+        var aplicarMuestra = function () {
+            delGrupo.forEach(function (radio) {
+                var selector = radio.getAttribute('data-muestra');
+                if (selector) {
+                    mostrarBloque(document.querySelector(selector), radio.checked);
+                }
+            });
+        };
+        delGrupo.forEach(function (radio) {
+            radio.addEventListener('change', aplicarMuestra);
+        });
+        aplicarMuestra();
+    }
+
     // Abrir / cerrar TODAS las jornadas de golpe en la lista de encuentros. Sirve para las
     // dos direcciones: buscar algo a ojo con todo abierto, o volver al orden con todo
     // cerrado después de haber estado abriendo jornadas sueltas.

@@ -136,14 +136,29 @@
 
 <?php else: ?>
 
+    <?php // El capitán ve esta misma pantalla, pero con un solo equipo y sin nada de lo
+          // que arma la copa: dar de alta, borrar y sortear grupos son del organizador.
+          // El servidor ya lo impide (ver Equipos.php); aquí solo se evita mostrar
+          // botones que van a rebotar. ?>
+    <?php $esCapitan = !empty($esCapitan); ?>
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Equipos (<?= count($equipos) ?>)</h3>
+        <h3 class="mb-0"><?= $esCapitan ? 'Mi equipo' : 'Equipos (' . count($equipos) . ')' ?></h3>
+        <?php if (!$esCapitan): ?>
         <a href="<?= url('admin/equipos.php?accion=nuevo') ?>" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nuevo equipo</a>
+        <?php endif; ?>
     </div>
+
+    <?php if ($esCapitan): ?>
+    <div class="alert alert-info rounded-4 border-0 small">
+        <i class="bi bi-info-circle me-1"></i>Aquí actualizas el escudo, los colores y los datos de tu equipo.
+        Para agregar o quitar jugadores, entra a tu plantilla con el botón de abajo.
+    </div>
+    <?php endif; ?>
 
     <?php // ---------- Crear varios de una vez ----------
           // Una liga de ex alumnos son 16 promociones: cargarlas una por una son 16
           // vueltas por el formulario completo. Aquí se pegan los nombres y ya. ?>
+    <?php if (!$esCapitan): ?>
     <div class="card-suave p-4 mb-4">
         <h5 class="mb-1"><i class="bi bi-list-ul me-1"></i>Crear varios equipos de una vez</h5>
         <p class="small text-muted">
@@ -161,12 +176,13 @@
             </div>
         </form>
     </div>
+    <?php endif; ?>
 
     <?php // ---------- Fase de grupos ----------
           // Solo aparece si la competencia usa el formato de grupos. Junta en una sola
           // pantalla el sorteo, las cabezas de serie y la corrección a mano, porque son
           // tres pasos del mismo momento: armar los grupos antes de que empiece nada. ?>
-    <?php if (!empty($tieneGrupos) && !empty($equipos)): ?>
+    <?php if (!empty($tieneGrupos) && !empty($equipos) && !$esCapitan): ?>
     <div class="card-suave p-4 mb-4">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
@@ -263,12 +279,14 @@
                     <a href="<?= url('admin/jugadores.php?equipo_id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-people me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras')) ?></a>
                     <a href="<?= e(url_copa('equipo_reporte.php?id=' . $eq['id'])) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Reporte del equipo en PDF"><i class="bi bi-file-earmark-text"></i></a>
                     <a href="<?= url('admin/equipos.php?accion=editar&id=' . $eq['id']) ?>" class="btn btn-sm btn-outline-secondary" title="Editar equipo"><i class="bi bi-pencil"></i></a>
+                    <?php if (!$esCapitan): ?>
                     <form method="post" data-confirm="¿Eliminar a <?= e($eq['nombre']) ?>? Esta acción no se puede deshacer.">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="id" value="<?= $eq['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar equipo"><i class="bi bi-trash"></i></button>
                     </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
