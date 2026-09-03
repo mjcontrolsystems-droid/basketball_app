@@ -10,3 +10,6 @@ Thumbs.db
 .vscode/
 .idea/
 Respaldos BD/
+
+# Salida de la última corrida de pruebas (se regenera cada vez; no es parte del código)
+herramientas/pruebas/ultimo_resultado.txt

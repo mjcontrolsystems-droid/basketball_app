@@ -36,8 +36,9 @@ if not defined PHP (
     echo No se encontro PHP en esta computadora.
     echo.
     echo Las pruebas necesitan PHP para correr. Se descarga de:
-    echo   https://windows.php.net/download/    ^(version 8.3, Thread Safe, x64^)
+    echo   https://windows.php.net/download/
     echo.
+    echo Busca "PHP 8.3" y baja el Zip de "VS16 x64 Non Thread Safe".
     echo Se descomprime en C:\php y listo: no hay que instalar nada mas.
     echo.
     pause
@@ -45,8 +46,14 @@ if not defined PHP (
 )
 
 echo Usando: %PHP%
-"%PHP%" "%~dp0correr.php"
+echo.
+
+rem El resultado se guarda ademas en un archivo: la ventana se cierra al presionar una
+rem tecla y con ella se perdia todo lo que habia que leer o pasar por chat.
+set "SALIDA=%~dp0ultimo_resultado.txt"
+"%PHP%" "%~dp0correr.php" > "%SALIDA%" 2>&1
 set CODIGO=%ERRORLEVEL%
+type "%SALIDA%"
 
 echo.
 if %CODIGO%==0 (
@@ -54,6 +61,9 @@ if %CODIGO%==0 (
 ) else (
     echo Hay pruebas fallando. NO subas el cambio hasta arreglarlas.
 )
+echo.
+echo El resultado quedo guardado en:
+echo   %SALIDA%
 echo.
 pause
 exit /b %CODIGO%
