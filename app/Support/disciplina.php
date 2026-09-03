@@ -92,6 +92,21 @@ function disciplina_calendario_equipo(array $partidos, int $equipoId): array
  */
 function disciplina_castigos_por_jugador(int $torneoId, array $torneo, array $partidos, array $jugadoresPorId): array
 {
+    return disciplina_castigos_desde_eventos(eventos_de_torneo($torneoId), $torneo, $partidos);
+}
+
+/**
+ * El cálculo en sí, ya con los eventos en la mano.
+ *
+ * Está separado de la lectura de la base a propósito: es la regla que decide quién no
+ * puede jugar el fin de semana, y así se puede comprobar con casos de prueba (una roja
+ * suspende el siguiente partido, la cuarta amarilla dispara y la quinta no, el castigo se
+ * agota) sin necesidad de una copa real con datos.
+ *
+ * @param array $eventos Filas de partido_eventos de toda la copa.
+ */
+function disciplina_castigos_desde_eventos(array $eventos, array $torneo, array $partidos): array
+{
     if (!torneo_aplica_suspensiones($torneo)) {
         return [];
     }
@@ -103,7 +118,7 @@ function disciplina_castigos_por_jugador(int $torneoId, array $torneo, array $pa
 
     // Tarjetas de cada jugador, en orden cronológico del partido donde ocurrieron.
     $tarjetas = [];
-    foreach (eventos_de_torneo($torneoId) as $ev) {
+    foreach ($eventos as $ev) {
         $tipo = (string) ($ev['tipo'] ?? '');
         if (!in_array($tipo, ['amarilla', 'roja'], true)) {
             continue;
@@ -174,6 +189,15 @@ function disciplina_suspendidos_para_partido(int $torneoId, array $partidoObjeti
     }
 
     $castigos = disciplina_castigos_por_jugador($torneoId, $torneo, $partidos, $jugadoresPorId);
+    return disciplina_suspendidos_desde_castigos($castigos, $partidoObjetivo, $partidos, $jugadoresPorId);
+}
+
+/**
+ * La ventana de castigo aplicada a un partido concreto, ya con los castigos calculados.
+ * Igual que arriba: separado de la base para poder comprobarlo con casos de prueba.
+ */
+function disciplina_suspendidos_desde_castigos(array $castigos, array $partidoObjetivo, array $partidos, array $jugadoresPorId): array
+{
     if (empty($castigos)) {
         return [];
     }

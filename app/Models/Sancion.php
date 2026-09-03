@@ -153,13 +153,27 @@ function sanciones_deuda_por_jugador(int $torneoId): array
  */
 function sanciones_deuda_vigente_para_jornada(int $torneoId, array $partidos, int $jornadaTope): array
 {
+    return sanciones_filtrar_vigentes(sanciones_listar($torneoId, SANCION_PENDIENTE), $partidos, $jornadaTope);
+}
+
+/**
+ * La regla de vigencia en sí, ya con las sanciones pendientes en la mano.
+ *
+ * Separada de la lectura de la base para poder comprobarla con casos de prueba: es la que
+ * decide si un jugador entra o no entra a la cancha, y se equivocó una vez marcando moroso
+ * a alguien en la misma jornada en que lo sancionaron (y en las anteriores, ya jugadas).
+ *
+ * @param array $sanciones Sanciones PENDIENTES de la copa.
+ */
+function sanciones_filtrar_vigentes(array $sanciones, array $partidos, int $jornadaTope): array
+{
     $jornadaDePartido = [];
     foreach ($partidos as $p) {
         $jornadaDePartido[(int) $p['id']] = (int) ($p['jornada'] ?? 0);
     }
 
     $deuda = [];
-    foreach (sanciones_listar($torneoId, SANCION_PENDIENTE) as $s) {
+    foreach ($sanciones as $s) {
         $jornadaSancion = $jornadaDePartido[(int) ($s['partido_id'] ?? 0)] ?? 0;
         // Solo es exigible la multa de una jornada estrictamente anterior. Una sanción
         // cuyo partido no se encuentra (0) se cobra siempre: mejor exigir de más un caso
@@ -167,11 +181,11 @@ function sanciones_deuda_vigente_para_jornada(int $torneoId, array $partidos, in
         if ($jornadaSancion !== 0 && $jornadaSancion >= $jornadaTope) {
             continue;
         }
-        $jid = $s['jugador_id'];
+        $jid = (int) $s['jugador_id'];
         if (!isset($deuda[$jid])) {
             $deuda[$jid] = ['total' => 0.0, 'cantidad' => 0];
         }
-        $deuda[$jid]['total'] += $s['monto'];
+        $deuda[$jid]['total'] += (float) $s['monto'];
         $deuda[$jid]['cantidad']++;
     }
     return $deuda;
