@@ -43,6 +43,11 @@ function admin_nav_copa(string $seccion_activa, ?array $torneoActivo): string
         <?php if (torneo_cobra_multas($torneoActivo) && puede('sanciones', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('sanciones', $seccion_activa) ?>" href="<?= url('admin/sanciones.php') ?>"><i class="bi bi-cash-coin me-2"></i>Sanciones</a>
         <?php endif; ?>
+        <?php // Cuentas aparece siempre que la persona pueda verlas: aunque la liga no
+              // haya configurado cuotas, ahí se llevan los cargos manuales. ?>
+        <?php if (puede('cuentas', $torneoActivo)): ?>
+        <a class="nav-link <?= admin_nav_activa('cuentas', $seccion_activa) ?>" href="<?= url('admin/cuentas.php') ?>"><i class="bi bi-wallet2 me-2"></i>Cuentas</a>
+        <?php endif; ?>
         <?php if (puede('patrocinadores', $torneoActivo)): ?>
         <a class="nav-link <?= admin_nav_activa('patrocinadores', $seccion_activa) ?>" href="<?= url('admin/patrocinadores.php') ?>"><i class="bi bi-award me-2"></i>Patrocinadores</a>
         <?php endif; ?>

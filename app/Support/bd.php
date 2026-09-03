@@ -476,6 +476,51 @@ function db_migrar_automatico(): void
         $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS equipo_id INTEGER REFERENCES equipos(id) ON DELETE CASCADE');
         $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_equipo_idx ON colaboradores (equipo_id)');
 
+        // --- Cuentas por equipo ---
+        //
+        // Cuánto cobra cada liga es distinto, así que los montos se configuran por copa y
+        // en cero no se cobra nada. multas_al_equipo decide si las multas de tarjetas —que
+        // siguen siendo del jugador y lo bloquean a él— además suman al saldo del equipo,
+        // que es como funciona en la práctica: el capitán junta y paga.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS cuota_inscripcion NUMERIC(10,2) NOT NULL DEFAULT 0');
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS cuota_arbitraje NUMERIC(10,2) NOT NULL DEFAULT 0');
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS multas_al_equipo BOOLEAN NOT NULL DEFAULT TRUE');
+
+        // El libro de cuentas: un renglón por movimiento, cargo o pago, sin borrar nunca
+        // nada. El saldo no se guarda, se suma desde aquí — un saldo guardado se
+        // desincroniza en cuanto alguien corrige un movimiento viejo, y entonces nadie
+        // sabe cuál de los dos números es el bueno.
+        //
+        // origen dice de dónde salió el movimiento ('inscripcion', 'arbitraje', 'manual',
+        // 'pago') y referencia guarda el id del partido cuando aplica: con esos dos se
+        // evita cobrar dos veces el mismo encuentro.
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS movimientos_equipo (
+                id SERIAL PRIMARY KEY,
+                torneo_id INTEGER NOT NULL REFERENCES torneos(id) ON DELETE CASCADE,
+                equipo_id INTEGER NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+                tipo TEXT NOT NULL DEFAULT 'cargo',
+                origen TEXT NOT NULL DEFAULT 'manual',
+                referencia INTEGER,
+                concepto TEXT NOT NULL DEFAULT '',
+                monto NUMERIC(10,2) NOT NULL DEFAULT 0,
+                fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+                nota TEXT NOT NULL DEFAULT '',
+                creado_en TIMESTAMP NOT NULL DEFAULT NOW(),
+                creado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL
+            )"
+        );
+        $pdo->exec('CREATE INDEX IF NOT EXISTS movimientos_equipo_idx ON movimientos_equipo (torneo_id, equipo_id)');
+        // Un cargo automático no se puede repetir: la inscripción es una por equipo y el
+        // arbitraje uno por equipo y por encuentro. El índice único lo garantiza en la
+        // base, que es donde de verdad importa — dos pestañas abiertas dando al botón de
+        // generar al mismo tiempo se saltarían cualquier comprobación hecha en PHP.
+        $pdo->exec(
+            "CREATE UNIQUE INDEX IF NOT EXISTS movimientos_equipo_auto_idx
+                ON movimientos_equipo (torneo_id, equipo_id, origen, COALESCE(referencia, 0))
+             WHERE origen IN ('inscripcion', 'arbitraje')"
+        );
+
         // Se limpian las marcas de versiones anteriores para que la sesión no acumule una
         // clave por cada cambio del archivo a lo largo de la vida del proyecto.
         foreach (array_keys($_SESSION) as $k) {

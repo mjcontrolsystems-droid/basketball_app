@@ -107,6 +107,55 @@ $hayProblemas = !empty($misSuspendidos) || !empty($misDeudores);
         </div>
     </div>
 
+    <?php // ---------- Lo que debe el equipo ----------
+          // De solo lectura: el capitán consulta, el organizador cobra. Antes esto se
+          // preguntaba por WhatsApp cada semana y la respuesta salía de un cuaderno. ?>
+    <?php if ($miCuenta !== null): ?>
+    <?php $saldoEquipo = (float) $miCuenta['saldo']; ?>
+    <div class="col-12">
+        <div class="card-suave p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="mb-0"><i class="bi bi-wallet2 me-1"></i>Cuenta con la liga</h5>
+                <div class="text-end">
+                    <div class="fs-4 fw-bold <?= $saldoEquipo > 0 ? 'text-danger' : 'text-success' ?>">
+                        <?= e(sancion_monto_texto($torneo, abs($saldoEquipo))) ?>
+                    </div>
+                    <div class="small text-muted"><?= $saldoEquipo > 0 ? 'pendiente de pago' : ($saldoEquipo < 0 ? 'a favor' : 'al día') ?></div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-4"><div class="stat-tile text-center"><div class="fw-bold"><?= e(sancion_monto_texto($torneo, (float) $miCuenta['cargos'])) ?></div><div class="small text-muted">Cargos</div></div></div>
+                <div class="col-4"><div class="stat-tile text-center"><div class="fw-bold"><?= e(sancion_monto_texto($torneo, (float) $miCuenta['multas'])) ?></div><div class="small text-muted">Multas</div></div></div>
+                <div class="col-4"><div class="stat-tile text-center"><div class="fw-bold text-success"><?= e(sancion_monto_texto($torneo, (float) $miCuenta['pagos'])) ?></div><div class="small text-muted">Pagado</div></div></div>
+            </div>
+
+            <?php if (!empty($misMovimientos)): ?>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        <?php foreach ($misMovimientos as $m): ?>
+                        <?php $esPago = $m['tipo'] === MOVIMIENTO_PAGO; ?>
+                        <tr>
+                            <td class="small text-nowrap text-muted"><?= e(formatear_fecha_corta($m['fecha'])) ?></td>
+                            <td class="small"><?= e($m['concepto']) ?></td>
+                            <td class="text-end small fw-semibold <?= $esPago ? 'text-success' : '' ?>">
+                                <?= $esPago ? '−' : '' ?><?= e(sancion_monto_texto($torneo, (float) $m['monto'])) ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+
+            <p class="small text-muted mt-3 mb-0">
+                Los pagos se entregan a la organización de la liga. Si ves algo que no cuadra, avísale al organizador.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php // ---------- Últimos resultados ---------- ?>
     <?php if (!empty($ultimosMios)): ?>
     <div class="col-12">

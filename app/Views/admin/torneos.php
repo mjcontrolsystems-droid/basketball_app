@@ -218,6 +218,37 @@
                 <input type="number" min="0" step="0.01" name="multa_roja" class="form-control" value="<?= e((string) ($torneoEditar['multa_roja'] ?? 0)) ?>">
             </div>
 
+            <?php // --- Cuotas de la liga ---
+                  // Cada liga cobra distinto: hay quien solo cobra inscripción, quien
+                  // cobra arbitraje por fecha y quien no cobra nada. Por eso son montos
+                  // configurables y no algo fijo en el código; en cero no se cobra y la
+                  // pantalla de Cuentas ni siquiera ofrece generar ese cargo. ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-wallet2 me-1"></i>Cuotas de la liga (opcional)</label>
+                <p class="form-text mt-0 mb-2">Con esto la app lleva el estado de cuenta de cada equipo: la inscripción se cobra una vez y el arbitraje por cada encuentro jugado. Déjalos en 0 si tu liga no cobra.</p>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label small fw-semibold">Inscripción por equipo</label>
+                <input type="number" min="0" step="0.01" name="cuota_inscripcion" class="form-control" value="<?= e((string) ($torneoEditar['cuota_inscripcion'] ?? 0)) ?>">
+                <div class="form-text">Monto único al inicio de la temporada.</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label small fw-semibold">Arbitraje por partido</label>
+                <input type="number" min="0" step="0.01" name="cuota_arbitraje" class="form-control" value="<?= e((string) ($torneoEditar['cuota_arbitraje'] ?? 0)) ?>">
+                <div class="form-text">Lo que paga CADA equipo por cada encuentro que juega.</div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="form-check mt-md-4">
+                    <input class="form-check-input" type="checkbox" name="multas_al_equipo" value="1" id="chkMultasAlEquipo"
+                           <?= !isset($torneoEditar['multas_al_equipo']) || !empty($torneoEditar['multas_al_equipo']) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="chkMultasAlEquipo">
+                        Las multas suman al saldo del equipo
+                        <span class="d-block small text-muted">La multa sigue siendo del jugador y lo bloquea a él, pero aparece en la cuenta del equipo: en la práctica el capitán junta y paga.</span>
+                    </label>
+                </div>
+            </div>
+
             <?php // --- Suspensiones por partidos (independiente de las multas) --- ?>
             <div class="col-12">
                 <hr class="my-2">

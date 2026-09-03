@@ -49,7 +49,7 @@ const PERMISOS_POR_NIVEL = [
     'mesa' => ['partido_capturar'],
     'asistente' => [
         'partido_capturar', 'partidos_editar', 'equipos', 'jugadores',
-        'sanciones', 'patrocinadores', 'comentarios',
+        'sanciones', 'cuentas', 'patrocinadores', 'comentarios',
     ],
     // El capitán no administra la copa: administra SU equipo. Tiene los mismos permisos de
     // equipos y jugadores que un asistente, pero acotados a un solo equipo — el corte no lo

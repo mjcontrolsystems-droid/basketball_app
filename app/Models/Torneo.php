@@ -27,6 +27,7 @@ const COLUMNAS_TORNEO = [
     'en_mantenimiento', 'mensaje_mantenimiento',
     'calendario_config',
     'aviso_activo', 'aviso_tipo', 'aviso_titulo', 'aviso_mensaje',
+    'cuota_inscripcion', 'cuota_arbitraje', 'multas_al_equipo',
 ];
 
 /**
@@ -74,12 +75,12 @@ function db_normalizar_torneo(array $fila): array
         }
     }
     // Las multas son decimales (NUMERIC), no enteros: PDO las devuelve como texto.
-    foreach (['multa_amarilla', 'multa_roja'] as $col) {
+    foreach (['multa_amarilla', 'multa_roja', 'cuota_inscripcion', 'cuota_arbitraje'] as $col) {
         if (array_key_exists($col, $fila) && $fila[$col] !== null) {
             $fila[$col] = (float) $fila[$col];
         }
     }
-    foreach (['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea'] as $col) {
+    foreach (['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'multas_al_equipo'] as $col) {
         if (array_key_exists($col, $fila)) {
             $fila[$col] = (bool) (
                 is_string($fila[$col]) ? ($fila[$col] === 't' || $fila[$col] === '1') : $fila[$col]
@@ -255,7 +256,7 @@ function torneos_guardar(array $datos, ?int $usuarioIdCreador = null): int
     // Con prepared statements emulados (necesario por el pooler de Neon, ver db_conexion()),
     // Postgres ya no acepta 0/1 como boolean de forma implícita como sí hacía con prepares
     // nativos: hay que mandar el texto 'true'/'false' para estas 3 columnas.
-    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento', 'aviso_activo'];
+    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento', 'aviso_activo', 'multas_al_equipo'];
 
     // El UPDATE escribe TODAS las columnas, pero ningún formulario las manda todas: el de
     // configuración de la copa no toca el mensaje de mantenimiento ni la configuración del

@@ -1104,6 +1104,28 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     .solo-pantalla {
         display: none !important;
     }
+
+    /* Pantallas del panel que también se imprimen (el estado de cuenta de un equipo). No
+       son fichas armadas para papel como la nómina: es la misma pantalla, así que hay que
+       quitarle lo que solo sirve para trabajar — el menú lateral, los formularios de
+       captura y los botones de cada fila. Lo que queda es el comprobante. */
+    .no-imprimir,
+    .sidebar-admin,
+    .hoja-cuenta form,
+    .hoja-cuenta .btn {
+        display: none !important;
+    }
+    .hoja-cuenta .card-suave {
+        box-shadow: none !important;
+        border: 1px solid #999 !important;
+        break-inside: avoid;
+    }
+    .hoja-cuenta .table th,
+    .hoja-cuenta .table td {
+        border: 1px solid #999 !important;
+        font-size: 11px;
+        padding: 4px 6px;
+    }
     body { background: #fff !important; }
     .solo-impresion {
         display: block !important;

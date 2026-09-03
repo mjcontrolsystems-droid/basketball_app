@@ -55,6 +55,7 @@ la prueba que lo reproduce. Así ese error concreto no vuelve nunca.
 | `06_jornadas.php` | Jornada deducida de la fecha, tope al corregirla a mano |
 | `07_capitan.php` | Qué alcanza el nivel capitán y que no salga de su equipo |
 | `08_mensaje.php` | El texto de la jornada que se pega en el grupo de WhatsApp |
+| `09_cuentas.php` | Saldos por equipo y cargos automáticos que no se duplican |
 
-Lo que todavía **no** se cubre: importación de plantillas, permisos por nivel, correos y
-generación de PDFs. Son los siguientes candidatos.
+Lo que todavía **no** se cubre: importación de plantillas, correos y generación de PDFs.
+Son los siguientes candidatos.

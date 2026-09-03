@@ -36,6 +36,7 @@ foreach ([
     'importacion', // lectura de plantillas desde Excel o CSV
     'disciplina', // suspensiones por roja y acumulación de amarillas
     'mensaje',  // el texto de la jornada listo para pegar en WhatsApp
+    'cuentas',  // saldo de cada equipo con la liga (usa Models/Cuenta.php)
 ] as $modulo) {
     require_once RAIZ_APP . '/app/Support/' . $modulo . '.php';
 }
@@ -43,7 +44,7 @@ foreach ([
 // --- Modelos: acceso a datos por entidad ---
 foreach ([
     'Torneo', 'Equipo', 'Jugador', 'Partido', 'Evento', 'Alineacion', 'Sancion',
-    'Patrocinador', 'Comentario', 'Usuario', 'Bitacora', 'Visita', 'Colaborador',
+    'Patrocinador', 'Comentario', 'Usuario', 'Bitacora', 'Visita', 'Colaborador', 'Cuenta',
 ] as $modelo) {
     require_once RAIZ_APP . '/app/Models/' . $modelo . '.php';
 }

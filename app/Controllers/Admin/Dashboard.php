@@ -167,13 +167,35 @@ if ($equipoCapitan !== null && isset($equiposPorId[$equipoCapitan])) {
         }
     }
 
+    // Lo que su equipo le debe a la liga. De solo lectura: el capitán consulta, el
+    // organizador cobra. Es la otra pregunta que llega por WhatsApp cada semana.
+    $multasAlEquipo = torneo_multas_al_equipo($torneo) && torneo_cobra_multas($torneo);
+    $miCuenta = null;
+    $misMovimientos = [];
+    if (torneo_lleva_cuentas($torneo) || $multasAlEquipo) {
+        $movimientosCopa = movimientos_listar($torneo['id']);
+        $deudaJugadores = $multasAlEquipo ? sanciones_deuda_por_jugador($torneo['id']) : [];
+        foreach (cuentas_saldos($equipos, $movimientosCopa, $deudaJugadores, $jugadoresTodos, $multasAlEquipo) as $fila) {
+            if ((int) $fila['equipo']['id'] === $equipoCapitan) {
+                $miCuenta = $fila;
+            }
+        }
+        $misMovimientos = array_slice(
+            array_values(array_filter($movimientosCopa, fn($m) => (int) $m['equipo_id'] === $equipoCapitan)),
+            0,
+            8
+        );
+    }
+
     $titulo_pagina = $miEquipo['nombre'];
 
     vista_admin('admin/dashboard_capitan', compact(
         'equiposPorId',
         'jugadoresPorId',
+        'miCuenta',
         'miEquipo',
         'miFila',
+        'misMovimientos',
         'miPlantilla',
         'misActivos',
         'misDeudores',
