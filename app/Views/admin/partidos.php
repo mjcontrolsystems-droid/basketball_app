@@ -293,6 +293,62 @@
 
     <?php endif; ?>
 
+<?php elseif ($accion === 'mensaje'): ?>
+    <?php // ---------- El mensaje de la jornada ----------
+          // Sale ya armado con todo lo que el organizador escribía a mano cada semana. Se
+          // deja editable a propósito: siempre hay algo que solo él sabe (una cancha que
+          // se movió, un aviso de la directiva), y obligarlo a pegar y después corregir en
+          // WhatsApp haría que dejara de usarlo. ?>
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="<?= url('admin/partidos.php?ir=0') ?>" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <h3 class="mb-0">Mensaje de la jornada <?= (int) $jornadaMensaje ?></h3>
+            <div class="small text-muted">Cópialo y pégalo en el grupo. Ya lleva horas, canchas, suspendidos y deudores.</div>
+        </div>
+    </div>
+
+    <div class="card-suave p-4" style="max-width:760px;">
+        <?php // El recordatorio viaja por GET y se vuelve a armar el mensaje: así lo que se
+              // ve en el cuadro es exactamente lo que se va a copiar, sin pegarlo aparte. ?>
+        <form method="get" class="mb-4">
+            <input type="hidden" name="accion" value="mensaje">
+            <input type="hidden" name="jornada" value="<?= (int) $jornadaMensaje ?>">
+            <label class="form-label small fw-semibold" for="notaJornada">Agregar un recordatorio (opcional)</label>
+            <div class="input-group">
+                <input type="text" name="nota" id="notaJornada" class="form-control" maxlength="300"
+                       value="<?= e($notaMensaje) ?>" placeholder="Ej: Recuerden llevar la nómina firmada.">
+                <button type="submit" class="btn btn-outline-secondary">Agregar</button>
+            </div>
+        </form>
+
+        <label class="form-label small fw-semibold" for="textoJornada">Mensaje</label>
+        <textarea id="textoJornada" class="form-control" rows="18" spellcheck="false"
+                  style="font-family:ui-monospace,Consolas,monospace;font-size:.9rem;"><?= e($textoMensaje) ?></textarea>
+        <div class="form-text mb-3">Puedes corregirlo aquí antes de copiar. Los cambios no se guardan en la app.</div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-degradado rounded-pill px-4" data-copiar="#textoJornada">
+                <i class="bi bi-clipboard me-1"></i>Copiar mensaje
+            </button>
+            <?php // Enlace directo a WhatsApp: abre el selector de chat con el texto puesto.
+                  // Solo si el mensaje entra en una URL sin arriesgarse a que el navegador
+                  // la corte a la mitad. Lleva el texto ORIGINAL, no lo editado arriba. ?>
+            <?php $paraUrl = rawurlencode($textoMensaje); ?>
+            <?php if (strlen($paraUrl) < 1800): ?>
+            <a href="https://wa.me/?text=<?= $paraUrl ?>" target="_blank" rel="noopener"
+               class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-whatsapp me-1"></i>Abrir WhatsApp
+            </a>
+            <?php endif; ?>
+            <a href="<?= url('admin/partidos.php') ?>" class="btn btn-outline-secondary rounded-pill px-4">Volver</a>
+        </div>
+
+        <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>Los suspendidos y las multas se calculan igual que en la
+            nómina del árbitro: solo se cobra lo que viene de jornadas anteriores.
+        </p>
+    </div>
+
 <?php elseif ($accion === 'nuevo' || $accion === 'editar'): ?>
     <div class="d-flex align-items-center gap-2 mb-4">
         <a href="<?= url('admin/partidos.php') ?>" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-arrow-left"></i></a>
@@ -614,6 +670,13 @@
                         <span class="small text-muted ms-1"><?= e($rangoJor) ?></span>
                         <span class="badge rounded-pill <?= $completaJor ? 'text-bg-success' : 'text-bg-secondary' ?> ms-1"><?= $jugadosJor ?>/<?= count($lista) ?></span>
                     </button>
+                    <?php // El texto de la jornada, listo para el grupo. Va en el mismo
+                          // renglón de la jornada porque es ahí donde uno está cuando se
+                          // acuerda de que hay que avisarle a los equipos. ?>
+                    <a href="<?= url('admin/partidos.php?accion=mensaje&jornada=' . (int) $numJornada) ?>"
+                       class="btn btn-sm btn-outline-secondary" title="Armar el mensaje de esta jornada para WhatsApp">
+                        <i class="bi bi-whatsapp me-1"></i>Mensaje
+                    </a>
                     <?php // Correr el calendario desde aquí. Nace de un caso real: un fin de
                           // semana que se cae obliga a empujar esta jornada Y todas las de
                           // atrás, porque si no se le encima a la siguiente. ?>

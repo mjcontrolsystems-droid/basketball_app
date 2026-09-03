@@ -872,6 +872,29 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Copiar el contenido de un campo entero (el mensaje de la jornada para WhatsApp).
+    // Distinto del botón de arriba: ahí se copia una URL corta guardada en un atributo,
+    // aquí un texto largo que ya está en pantalla y que el organizador puede haber
+    // editado antes de copiar.
+    document.querySelectorAll('[data-copiar]').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var campo = document.querySelector(boton.getAttribute('data-copiar'));
+            if (!campo) { return; }
+            var textoOriginal = boton.innerHTML;
+            var marcarCopiado = function () {
+                boton.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copiado';
+                setTimeout(function () { boton.innerHTML = textoOriginal; }, 2000);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(campo.value).then(marcarCopiado);
+            } else {
+                campo.select();
+                try { document.execCommand('copy'); } catch (e) { /* noop */ }
+                marcarCopiado();
+            }
+        });
+    });
+
     // Campos de solo lectura que se seleccionan enteros al tocarlos (enlaces largos que
     // uno quiere copiar a mano). Va aquí y no como onfocus en el HTML porque la política
     // de seguridad del sitio bloquea el JavaScript escrito dentro de los atributos.

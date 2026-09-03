@@ -54,6 +54,7 @@ la prueba que lo reproduce. Así ese error concreto no vuelve nunca.
 | `05_calendario.php` | Sin cruces repetidos, fechas excluidas, cierre en la fecha de la final |
 | `06_jornadas.php` | Jornada deducida de la fecha, tope al corregirla a mano |
 | `07_capitan.php` | Qué alcanza el nivel capitán y que no salga de su equipo |
+| `08_mensaje.php` | El texto de la jornada que se pega en el grupo de WhatsApp |
 
 Lo que todavía **no** se cubre: importación de plantillas, permisos por nivel, correos y
 generación de PDFs. Son los siguientes candidatos.

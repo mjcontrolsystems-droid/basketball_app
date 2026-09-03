@@ -44,6 +44,8 @@ foreach ([
     '/app/Support/liga.php',
     '/app/Support/disciplina.php',
     '/app/Support/calendario.php',
+    '/app/Support/helpers.php',
+    '/app/Support/mensaje.php',
     '/app/Models/Sancion.php',
     '/app/Models/Colaborador.php',
 ] as $archivo) {

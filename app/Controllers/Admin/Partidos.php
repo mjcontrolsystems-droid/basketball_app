@@ -769,6 +769,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $jornadas = partidos_por_jornada($partidos);
 $playoffsPorFase = partidos_playoffs_por_fase($partidos, $fasesTorneo);
 
+// --- El mensaje de la jornada para el grupo de WhatsApp ---
+//
+// Todo lo que el organizador termina escribiendo a mano cada semana ya está en la app.
+// Aquí se arma el texto completo: los encuentros con su hora y cancha, y pegado a cada
+// uno quién no puede jugar y quién debe multa. Lo que se busca es que deje de contestar
+// diez veces lo mismo en el grupo.
+$textoMensaje = '';
+$jornadaMensaje = 0;
+$notaMensaje = '';
+if ($accion === 'mensaje') {
+    $jornadaMensaje = (int) ($_GET['jornada'] ?? 0);
+    $notaMensaje = mb_substr(trim((string) ($_GET['nota'] ?? '')), 0, 300);
+    $listaJornada = $jornadas[$jornadaMensaje] ?? [];
+
+    $jugadoresPorId = jugadores_por_id(jugadores_listar($torneo['id']));
+
+    // Los castigos se calculan UNA vez para toda la copa y después se aplican partido por
+    // partido. Preguntarlos por encuentro leía los eventos de la copa entera ocho veces
+    // seguidas para armar un solo mensaje.
+    $castigosCopa = torneo_aplica_suspensiones($torneo)
+        ? disciplina_castigos_desde_eventos(eventos_de_torneo($torneo['id']), $torneo, $partidos)
+        : [];
+
+    // La deuda exigible PARA esta jornada: las multas de jornadas anteriores. Una tarjeta
+    // de esta misma fecha todavía no vence (ver sanciones_filtrar_vigentes).
+    $deudaVigente = torneo_cobra_multas($torneo)
+        ? sanciones_deuda_vigente_para_jornada($torneo['id'], $partidos, $jornadaMensaje)
+        : [];
+
+    $paraMensaje = [];
+    foreach ($listaJornada as $p) {
+        $avisos = [];
+        $equiposDelPartido = [(int) $p['equipo_local'], (int) $p['equipo_visitante']];
+
+        foreach (disciplina_suspendidos_desde_castigos($castigosCopa, $p, $partidos, $jugadoresPorId) as $jid => $info) {
+            $jug = $jugadoresPorId[$jid] ?? null;
+            $avisos[] = mensaje_aviso_suspendido(
+                jugador_nombre($jug),
+                (string) ($equiposPorId[(int) ($jug['equipo_id'] ?? 0)]['nombre'] ?? ''),
+                (string) ($info['detalle'] ?? '')
+            );
+        }
+
+        foreach ($deudaVigente as $jid => $info) {
+            $jug = $jugadoresPorId[$jid] ?? null;
+            if ($jug === null || !in_array((int) $jug['equipo_id'], $equiposDelPartido, true)) {
+                continue;
+            }
+            $avisos[] = mensaje_aviso_deudor(
+                jugador_nombre($jug),
+                (string) ($equiposPorId[(int) $jug['equipo_id']]['nombre'] ?? ''),
+                sancion_monto_texto($torneo, (float) $info['total'])
+            );
+        }
+
+        $paraMensaje[] = [
+            'fecha' => (string) ($p['fecha'] ?? ''),
+            'hora' => (string) ($p['hora'] ?? ''),
+            'cancha' => (string) ($p['cancha'] ?? ''),
+            'local' => (string) ($equiposPorId[(int) $p['equipo_local']]['nombre'] ?? '?'),
+            'visitante' => (string) ($equiposPorId[(int) $p['equipo_visitante']]['nombre'] ?? '?'),
+            'avisos' => $avisos,
+        ];
+    }
+
+    $textoMensaje = mensaje_jornada(
+        $torneo,
+        $jornadaMensaje,
+        $paraMensaje,
+        SITE_ORIGIN . url_copa_de($torneo, 'index.php'),
+        $notaMensaje
+    );
+}
+
 // --- A qué encuentro hay que volver y qué jornada se abre ---
 //
 // La lista llega a tener 120 tarjetas. Cerrarlas por jornada ordena la pantalla, pero
@@ -848,9 +922,12 @@ vista_admin('admin/partidos', compact(
     'fasesValidas',
     'jornadaManualMarcada',
     'jornadaAbierta',
+    'jornadaMensaje',
     'jornadas',
     'jornadaSugerida',
     'irA',
+    'notaMensaje',
+    'textoMensaje',
     'jornadaTope',
     'partidoEditar',
     'partidos',

@@ -35,6 +35,7 @@ foreach ([
     'podio',    // campeón, subcampeón y tercer lugar al cerrar la temporada
     'importacion', // lectura de plantillas desde Excel o CSV
     'disciplina', // suspensiones por roja y acumulación de amarillas
+    'mensaje',  // el texto de la jornada listo para pegar en WhatsApp
 ] as $modulo) {
     require_once RAIZ_APP . '/app/Support/' . $modulo . '.php';
 }
