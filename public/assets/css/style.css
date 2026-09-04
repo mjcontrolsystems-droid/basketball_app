@@ -282,6 +282,24 @@ h1, h2, h3, h4, h5, h6, .fw-heading {
     backdrop-filter: blur(6px);
 }
 
+/* Los cuadros de la portada llevan a donde dice su etiqueta: "16 Equipos" abre los
+   equipos, "120 Partidos" abre el calendario. Son <a> de verdad y no divs con un clic
+   pegado por JavaScript, para que se puedan abrir en otra pestaña, se lleguen con el
+   teclado y funcionen aunque el JS falle. */
+a.hero-stat {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease;
+}
+
+a.hero-stat:hover,
+a.hero-stat:focus-visible {
+    background: rgba(255, 255, 255, .14);
+    border-color: rgba(255, 255, 255, .28);
+    transform: translateY(-3px);
+}
+
 .hero-stat .valor {
     font-family: 'Poppins', sans-serif;
     font-weight: 800;

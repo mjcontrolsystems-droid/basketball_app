@@ -39,11 +39,29 @@
                     <a href="<?= url_copa('tabla.php') ?>" class="btn btn-degradado btn-lg rounded-pill px-4">Ver tabla de posiciones</a>
                     <a href="<?= url_copa('calendario.php') ?>" class="btn btn-outline-luz btn-lg rounded-pill px-4">Calendario completo</a>
                 </div>
+                <?php // Cada cuadro lleva a donde dice su etiqueta. Nace de ver a la gente
+                      // tocándolos esperando que abrieran algo: un número grande al lado de
+                      // la palabra "Equipos" parece un botón, aunque no lo fuera.
+                      //
+                      // "Jugados" abre el calendario en la ÚLTIMA jornada con resultados,
+                      // que es lo que alguien busca cuando toca ese número: qué pasó el fin
+                      // de semana, no el listado completo desde agosto. ?>
+                <?php
+                $jornadaConResultados = 0;
+                foreach ($partidos as $pStat) {
+                    if (($pStat['estado'] ?? '') === 'jugado') {
+                        $jornadaConResultados = max($jornadaConResultados, (int) ($pStat['jornada'] ?? 0));
+                    }
+                }
+                $urlJugados = $jornadaConResultados > 0
+                    ? url_copa('calendario.php?jornada=' . $jornadaConResultados)
+                    : url_copa('calendario.php');
+                ?>
                 <div class="row row-cols-2 row-cols-sm-4 g-3">
-                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-people-fill"></i></span><div class="valor"><?= count($equipos) ?></div><div class="etiqueta">Equipos</div></div></div>
-                    <div class="col"><div class="hero-stat"><span class="stat-icono"><?= icono_balon_img($deporte, 20) ?></span><div class="valor"><?= count($partidos) ?></div><div class="etiqueta">Partidos</div></div></div>
-                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-check2-circle"></i></span><div class="valor"><?= $totalJugados ?></div><div class="etiqueta">Jugados</div></div></div>
-                    <div class="col"><div class="hero-stat"><span class="stat-icono"><i class="bi bi-calendar2-week"></i></span><div class="valor"><?= $jornadaActual ?></div><div class="etiqueta">Jornadas</div></div></div>
+                    <div class="col"><a href="<?= url_copa('equipos.php') ?>" class="hero-stat"><span class="stat-icono"><i class="bi bi-people-fill"></i></span><div class="valor"><?= count($equipos) ?></div><div class="etiqueta">Equipos</div></a></div>
+                    <div class="col"><a href="<?= url_copa('calendario.php') ?>" class="hero-stat"><span class="stat-icono"><?= icono_balon_img($deporte, 20) ?></span><div class="valor"><?= count($partidos) ?></div><div class="etiqueta">Partidos</div></a></div>
+                    <div class="col"><a href="<?= e($urlJugados) ?>" class="hero-stat"><span class="stat-icono"><i class="bi bi-check2-circle"></i></span><div class="valor"><?= $totalJugados ?></div><div class="etiqueta">Jugados</div></a></div>
+                    <div class="col"><a href="<?= url_copa('calendario.php') ?>" class="hero-stat"><span class="stat-icono"><i class="bi bi-calendar2-week"></i></span><div class="valor"><?= $jornadaActual ?></div><div class="etiqueta">Jornadas</div></a></div>
                 </div>
             </div>
             <div class="col-lg-5">
@@ -235,8 +253,12 @@
                     <h2 class="mb-0">Próximos partidos</h2>
                 </div>
                 <div class="d-flex flex-column gap-3">
+                    <?php // La tarjeta entera abre la ficha del encuentro, igual que en la
+                          // página del equipo. Aquí no lo hacía y la gente las tocaba
+                          // esperando que abrieran algo — una tarjeta con marcador parece
+                          // un botón aunque no lo sea. ?>
                     <?php foreach ($proximos as $p): $local = $equiposPorId[$p['equipo_local']]; $visit = $equiposPorId[$p['equipo_visitante']]; ?>
-                    <div class="partido-card">
+                    <div class="partido-card fila-clicable" data-href="<?= e(url_copa('partido.php?id=' . (int) $p['id'])) ?>">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge-jornada">Jornada <?= $p['jornada'] ?></span>
                             <span class="small text-muted"><i class="bi bi-calendar3 me-1"></i><?= formatear_fecha_larga($p['fecha']) ?> · <?= e($p['hora']) ?></span>
@@ -261,7 +283,7 @@
                 </div>
                 <div class="d-flex flex-column gap-3">
                     <?php foreach ($resultados as $p): $local = $equiposPorId[$p['equipo_local']]; $visit = $equiposPorId[$p['equipo_visitante']]; $ganoLocal = $p['marcador_local'] > $p['marcador_visitante']; ?>
-                    <div class="partido-card">
+                    <div class="partido-card fila-clicable" data-href="<?= e(url_copa('partido.php?id=' . (int) $p['id'])) ?>">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge-jornada">Jornada <?= $p['jornada'] ?></span>
                             <span class="badge badge-estado-jugado rounded-pill px-3 py-2"><i class="bi bi-check-circle me-1"></i>Finalizado</span>
