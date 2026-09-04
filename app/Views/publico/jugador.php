@@ -7,7 +7,11 @@
     <div class="container">
         <p class="kicker mb-2"><i class="bi bi-person me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Jugador', 'Jugadora')) ?> de <?= e($equipo['nombre'] ?? '') ?></p>
         <div class="d-flex align-items-center gap-3 flex-wrap">
-            <?php if ($equipo): ?><?= logo_equipo($equipo, 64) ?><?php endif; ?>
+            <?php // La foto preside el perfil, con el escudo del equipo al lado. Es lo que
+                  // convierte esta página en algo comprobable: quien duda de si el que va a
+                  // entrar es de la promoción, abre esto en el teléfono y compara la cara. ?>
+            <?= foto_jugador($jugador, 96, 'foto-jugador--hero') ?>
+            <?php if ($equipo): ?><?= logo_equipo($equipo, 56) ?><?php endif; ?>
             <div>
                 <h1 class="text-white mb-1">#<?= e($jugador['dorsal']) ?> <?= e($jugador['nombre']) ?></h1>
                 <p style="color:rgba(255,255,255,.75);" class="mb-0">

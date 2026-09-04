@@ -11,7 +11,7 @@ const COLUMNAS_POR_TABLA = [
     'partidos' => ['id', 'torneo_id', 'jornada', 'equipo_local', 'equipo_visitante', 'fecha', 'hora', 'cancha', 'estado', 'marcador_local', 'marcador_visitante', 'fase', 'arbitro', 'observaciones', 'por_default', 'cronometro_estado', 'cronometro_inicio', 'cronometro_segundos', 'cronometro_periodo', 'cronometro_extra_min'],
     'patrocinadores' => ['id', 'torneo_id', 'nombre', 'nivel', 'url', 'logo', 'orden'],
     'comentarios' => ['id', 'torneo_id', 'mensaje', 'fecha', 'leido'],
-    'jugadores' => ['id', 'torneo_id', 'equipo_id', 'dorsal', 'nombre', 'activo', 'posicion'],
+    'jugadores' => ['id', 'torneo_id', 'equipo_id', 'dorsal', 'nombre', 'activo', 'posicion', 'foto'],
     'partido_eventos' => ['id', 'torneo_id', 'partido_id', 'tipo', 'equipo_id', 'jugador_id', 'jugador_entra_id', 'minuto', 'tipo_gol', 'asistencia_jugador_id', 'motivo', 'periodo'],
 ];
 
@@ -475,6 +475,11 @@ function db_migrar_automatico(): void
         // en vez de dejarlo apuntando a un equipo que ya no existe.
         $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS equipo_id INTEGER REFERENCES equipos(id) ON DELETE CASCADE');
         $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_equipo_idx ON colaboradores (equipo_id)');
+
+        // Foto del jugador. Guarda el id de la fila en la tabla 'imagenes', igual que el
+        // escudo del equipo: las imágenes viven en la base y no en el disco, porque el
+        // disco de Render se borra en cada despliegue.
+        $pdo->exec("ALTER TABLE jugadores ADD COLUMN IF NOT EXISTS foto TEXT NOT NULL DEFAULT ''");
 
         // --- Cuentas por equipo ---
         //

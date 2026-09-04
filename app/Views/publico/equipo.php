@@ -80,7 +80,11 @@
             <?php foreach ($jugadoresEquipo as $j): ?>
             <div class="col">
                 <div class="stat-tile text-center fila-clicable h-100" data-href="<?= e(url_copa('jugador.php?id=' . (int) $j['id'])) ?>">
-                    <div class="fs-4 fw-bold">#<?= e($j['dorsal']) ?></div>
+                    <?php // Con foto, la plantilla deja de ser una lista de números y se
+                          // vuelve la promoción reconociéndose. Sin ella se pinta el dorsal
+                          // en el círculo, así que la tarjeta se ve igual de completa. ?>
+                    <div class="mb-2"><?= foto_jugador($j, 56) ?></div>
+                    <div class="fs-5 fw-bold">#<?= e($j['dorsal']) ?></div>
                     <div class="small text-muted"><?= e($j['nombre']) ?></div>
                     <?php if (!empty($j['posicion'])): ?>
                     <div class="badge rounded-pill text-bg-light border small mt-1"><?= e(posicion_label($torneo['deporte'] ?? null, $j['posicion'])) ?></div>

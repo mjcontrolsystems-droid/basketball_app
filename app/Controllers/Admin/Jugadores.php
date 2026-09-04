@@ -136,6 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'nombre' => mb_substr($nombreFila, 0, 120),
                 'posicion' => (string) ($posiciones[$i] ?? ''),
                 'activo' => true,
+                // Explícita aunque venga vacía: la columna es NOT NULL y el guardado
+                // escribe todas las columnas, así que omitirla intentaría meter NULL.
+                'foto' => '',
             ];
             $creados++;
         }
@@ -175,8 +178,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir_con_mensaje($urlLista, 'error', "Este {$etJugadorRef} ya aparece en la ficha de algún partido y no se puede eliminar. Puedes desactivarlo en su lugar.");
         }
 
+        // La foto se borra con el jugador: si no, la imagen queda huérfana en la base
+        // ocupando espacio para siempre (Neon en plan gratis tiene 0.5 GB).
+        $aEliminar = db_buscar_por_id($jugadores, $id);
         $jugadoresTodos = array_values(array_filter($jugadoresTodos, fn($j) => $j['id'] !== $id));
         jugadores_guardar_todos($jugadoresTodos, $torneo['id']);
+        eliminar_imagen(!empty($aEliminar['foto']) ? (string) $aEliminar['foto'] : null);
         redirigir_con_mensaje($urlLista, 'success', forma_genero($torneo['genero'] ?? null, 'Jugador eliminado.', 'Jugadora eliminada.'));
     }
 
@@ -215,6 +222,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $posicion = '';
         }
 
+        // Foto del jugador. Mismo camino que el escudo del equipo: la imagen se guarda en
+        // la base (no en el disco, que Render borra en cada despliegue) y aquí solo queda
+        // su referencia.
+        try {
+            $fotoSubida = manejar_subida_imagen('foto', 'jugadores', FOTO_JUGADOR_LADO_MAXIMO);
+        } catch (RuntimeException $e) {
+            redirigir_con_mensaje($urlLista, 'error', $e->getMessage());
+        }
+
         $datos = [
             'equipo_id' => $equipoId,
             'dorsal' => $dorsal,
@@ -226,6 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id > 0) {
             foreach ($jugadoresTodos as &$j) {
                 if ($j['id'] === $id) {
+                    $datos['foto'] = resolver_archivo_guardado($fotoSubida, (string) ($j['foto'] ?? ''), !empty($_POST['quitar_foto']));
                     $j = array_merge($j, $datos, ['id' => $id]);
                 }
             }
@@ -233,6 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensaje = forma_genero($torneo['genero'] ?? null, 'Jugador actualizado correctamente.', 'Jugadora actualizada correctamente.');
         } else {
             $datos['id'] = jugador_nuevo_id();
+            $datos['foto'] = $fotoSubida ?? '';
             $jugadoresTodos[] = $datos;
             $mensaje = forma_genero($torneo['genero'] ?? null, 'Jugador agregado correctamente.', 'Jugadora agregada correctamente.');
         }

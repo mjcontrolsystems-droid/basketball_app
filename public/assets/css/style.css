@@ -431,6 +431,37 @@ a.hero-stat:focus-visible {
     box-shadow: 0 20px 40px -18px rgba(var(--color-primario-oscuro-rgb), .35);
 }
 
+/* ---------- Foto del jugador ----------
+   Cuando no hay foto se pinta el dorsal dentro del círculo: con 240 jugadores, una lista
+   llena de siluetas genéricas no identifica a nadie, y así además se ve de un vistazo a
+   quién le falta subirla. */
+.foto-jugador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(var(--color-primario-rgb), .18);
+    background: #fff;
+    overflow: hidden;
+}
+
+.foto-jugador--sin {
+    background: linear-gradient(135deg, rgba(var(--color-primario-rgb), .12), rgba(var(--color-primario-rgb), .04));
+    color: var(--color-primario-oscuro);
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Sobre el fondo oscuro del encabezado, el borde claro despega la foto del degradado. */
+.foto-jugador--hero {
+    border-color: rgba(255, 255, 255, .5);
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .6);
+}
+
+.foto-jugador--hero.foto-jugador--sin {
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+}
+
 /* ---------- Jornadas plegables (lista de encuentros del panel) ----------
    Una temporada son 15 jornadas de 8 encuentros: la lista abierta es una pared de 120
    tarjetas. Cada jornada es una barra cerrada que dice cuántos encuentros lleva jugados,

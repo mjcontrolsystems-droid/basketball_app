@@ -124,6 +124,34 @@ function logo_equipo(array $equipo, int $size = 96, string $clase = ''): string
 }
 
 /**
+ * Foto del jugador, o su dorsal dentro de un círculo si todavía no tiene.
+ *
+ * El sustituto no es un icono genérico de persona a propósito: con 240 jugadores, una
+ * lista llena de siluetas iguales no dice nada, y el dorsal sí identifica. De paso se ve
+ * de un vistazo a quién le falta la foto.
+ *
+ * La foto va recortada en círculo y con object-fit: cover porque las que manda la gente
+ * vienen de todos los tamaños —selfies verticales, recortes de WhatsApp— y sin eso la
+ * lista queda desalineada.
+ */
+function foto_jugador(?array $jugador, int $size = 44, string $clase = ''): string
+{
+    $estiloBase = "width:{$size}px;height:{$size}px;border-radius:50%;flex-shrink:0;";
+
+    if (!empty($jugador['foto'])) {
+        $src = e(url_imagen((string) $jugador['foto']));
+        $alt = e((string) ($jugador['nombre'] ?? ''));
+        return "<img src=\"{$src}\" alt=\"{$alt}\" class=\"foto-jugador {$clase}\" style=\"{$estiloBase}object-fit:cover;\">";
+    }
+
+    $dorsal = trim((string) ($jugador['dorsal'] ?? ''));
+    $texto = $dorsal !== '' ? e($dorsal) : '?';
+    $fuente = max(11, (int) round($size * 0.4));
+
+    return "<span class=\"foto-jugador foto-jugador--sin {$clase}\" style=\"{$estiloBase}font-size:{$fuente}px;\">{$texto}</span>";
+}
+
+/**
  * Insignia (wordmark) de patrocinador cuando no hay logo cargado.
  */
 function badge_patrocinador(array $patrocinador): string

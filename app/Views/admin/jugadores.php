@@ -143,7 +143,9 @@
     </div>
 
 <?php elseif ($accion === 'nuevo' || $accion === 'editar'): ?>
-    <form method="post" class="card-suave p-4" style="max-width:480px;">
+    <?php // enctype: sin esto el archivo de la foto no viaja y el formulario guarda todo
+          // lo demás sin decir nada — el clásico "subí la foto y no se guardó". ?>
+    <form method="post" enctype="multipart/form-data" class="card-suave p-4" style="max-width:480px;">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="accion" value="guardar">
         <input type="hidden" name="equipo_id" value="<?= $equipoId ?>">
@@ -168,6 +170,27 @@
                 </select>
                 <div class="form-text">Se propone automáticamente al armar la alineación de cada encuentro; ahí puedes cambiarla partido por partido.</div>
             </div>
+            <?php // ---------- Foto ----------
+                  // Es contra la suplantación: en una liga de exalumnos el reclamo clásico
+                  // es "ese no es de la promoción". Con la foto en su perfil, cualquiera
+                  // puede comprobarlo desde el teléfono en la propia cancha. ?>
+            <div class="col-12">
+                <label class="form-label small fw-semibold" for="fotoJugador">Foto (opcional)</label>
+                <div class="d-flex align-items-center gap-3">
+                    <?= foto_jugador($jugadorEditar, 64) ?>
+                    <div class="flex-grow-1">
+                        <input type="file" name="foto" id="fotoJugador" class="form-control" accept="image/*">
+                        <?php if (!empty($jugadorEditar['foto'])): ?>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="quitar_foto" value="1" id="quitarFoto">
+                            <label class="form-check-label small" for="quitarFoto">Quitar la foto actual</label>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="form-text">De la cara, mejor. Se recorta en círculo, así que lo de los lados se pierde.</div>
+            </div>
+
             <div class="col-12">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="checkActivo" name="activo" <?= ($jugadorEditar === null || !empty($jugadorEditar['activo'])) ? 'checked' : '' ?>>
@@ -213,6 +236,9 @@
         <table class="table align-middle mb-0">
             <thead>
                 <tr>
+                    <?php // La foto va primero y sin encabezado: se lee como parte del
+                          // nombre, no como una columna más que haya que llenar. ?>
+                    <th style="width:56px;"></th>
                     <th style="width:80px;">Dorsal</th>
                     <th>Nombre</th>
                     <th style="width:150px;">Posición</th>
@@ -224,6 +250,7 @@
                 <?php $ordenados = $jugadores; usort($ordenados, fn($a, $b) => $a['dorsal'] <=> $b['dorsal']); ?>
                 <?php foreach ($ordenados as $j): ?>
                 <tr>
+                    <td><?= foto_jugador($j, 40) ?></td>
                     <td class="fw-bold">#<?= e($j['dorsal']) ?></td>
                     <td><?= e($j['nombre']) ?></td>
                     <td class="small text-muted"><?= e(posicion_label($torneo['deporte'] ?? null, $j['posicion'] ?? null)) ?></td>

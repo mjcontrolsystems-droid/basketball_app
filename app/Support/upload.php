@@ -61,7 +61,7 @@ function manejar_subida_pdf(string $campo): ?string
  * @throws RuntimeException con un mensaje entendible por el usuario si se subió un archivo pero es inválido
  *         (para no fallar en silencio, como pasaba antes con fotos de cámara de celular que superaban el límite).
  */
-function manejar_subida_imagen(string $campo, string $subcarpeta = ''): ?string
+function manejar_subida_imagen(string $campo, string $subcarpeta = '', ?int $ladoMaximo = null): ?string
 {
     if (empty($_FILES[$campo]) || $_FILES[$campo]['error'] === UPLOAD_ERR_NO_FILE) {
         return null;
@@ -96,7 +96,7 @@ function manejar_subida_imagen(string $campo, string $subcarpeta = ''): ?string
     // menos de 200px — redimensionar al subir hace el sitio mucho más rápido en datos
     // móviles y ahorra espacio en la base. Si GD no está disponible o la imagen no se
     // puede procesar, se guarda la original tal cual (nunca se bloquea la subida por esto).
-    $optimizada = optimizar_imagen($datosImagen, $tipoDetectado);
+    $optimizada = optimizar_imagen($datosImagen, $tipoDetectado, $ladoMaximo);
     if ($optimizada !== null) {
         [$datosImagen, $tipoDetectado] = $optimizada;
     }
@@ -115,15 +115,23 @@ function manejar_subida_imagen(string $campo, string $subcarpeta = ''): ?string
 // equipo en su página, foto del organizador) manteniendo el archivo pequeño.
 const IMAGEN_LADO_MAXIMO = 1000;
 
+// Las fotos de jugador nunca se muestran a más de 96px (perfil público) — 400 sobra
+// incluso en pantallas retina. La diferencia importa: la página de un equipo carga 20
+// fotos de golpe, y a 1000px eso son unos 3MB de datos móviles parado en la cancha.
+const FOTO_JUGADOR_LADO_MAXIMO = 400;
+
 /**
  * Redimensiona (si hace falta) y recomprime una imagen subida. Devuelve [datos, mime]
  * o null si no se pudo/necesitó procesar (GD ausente, imagen corrupta, o ya pequeña y
  * más liviana que la versión reprocesada).
  *
+ * @param ?int $ladoMaximo Lado mayor al que reducir. null = el general del sitio.
  * @return array{0:string,1:string}|null
  */
-function optimizar_imagen(string $datos, string $mime): ?array
+function optimizar_imagen(string $datos, string $mime, ?int $ladoMaximo = null): ?array
 {
+    $ladoMaximo = $ladoMaximo !== null && $ladoMaximo > 0 ? $ladoMaximo : IMAGEN_LADO_MAXIMO;
+
     if (!function_exists('imagecreatefromstring')) {
         return null;
     }
@@ -137,8 +145,8 @@ function optimizar_imagen(string $datos, string $mime): ?array
     $alto = imagesy($origen);
     $ladoMayor = max($ancho, $alto);
 
-    if ($ladoMayor > IMAGEN_LADO_MAXIMO) {
-        $factor = IMAGEN_LADO_MAXIMO / $ladoMayor;
+    if ($ladoMayor > $ladoMaximo) {
+        $factor = $ladoMaximo / $ladoMayor;
         $nuevoAncho = max(1, (int) round($ancho * $factor));
         $nuevoAlto = max(1, (int) round($alto * $factor));
         $reducida = imagecreatetruecolor($nuevoAncho, $nuevoAlto);

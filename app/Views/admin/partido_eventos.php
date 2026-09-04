@@ -290,6 +290,10 @@ foreach ($equiposDelPartido as $eid) {
                                   // igual que los eventos y el cronómetro. ?>
                             <input class="form-check-input check-titular m-0" type="checkbox" name="titular[]" value="<?= $jid ?>" id="titular-<?= $jid ?>" <?= $esTitular ? 'checked' : '' ?> <?= (empty($j['activo']) || $resultadoBloqueado || $bloqueadoPorDeuda || $suspension !== null) ? 'disabled' : '' ?>>
                             <label class="flex-grow-1 mb-0 d-flex align-items-center gap-2" for="titular-<?= $jid ?>" style="cursor:pointer;min-width:0;">
+                                <?php // La foto le sirve a la mesa, que muchas veces no
+                                      // conoce a los jugadores: compara la cara con quien
+                                      // tiene enfrente antes de marcarlo. ?>
+                                <?= foto_jugador($j, 30) ?>
                                 <span class="fw-bold">#<?= e($j['dorsal']) ?></span>
                                 <span class="text-truncate"><?= e($j['nombre']) ?></span>
                                 <?php if (empty($j['activo'])): ?><span class="badge rounded-pill text-bg-secondary small"><?= e(forma_genero($torneo['genero'] ?? null, 'Inactivo', 'Inactiva')) ?></span><?php endif; ?>

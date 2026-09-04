@@ -318,6 +318,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'nombre' => $nuevo['nombre'],
                     'posicion' => $nuevo['posicion'],
                     'activo' => true,
+                    // Explícita aunque venga vacía: la columna es NOT NULL y el guardado
+                    // escribe todas las columnas, así que omitirla intentaría meter NULL.
+                    'foto' => '',
                 ];
             }
             jugadores_guardar_todos($jugadores, $torneo['id']);
