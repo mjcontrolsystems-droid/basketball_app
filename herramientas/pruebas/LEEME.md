@@ -56,6 +56,7 @@ la prueba que lo reproduce. Así ese error concreto no vuelve nunca.
 | `07_capitan.php` | Qué alcanza el nivel capitán y que no salga de su equipo |
 | `08_mensaje.php` | El texto de la jornada que se pega en el grupo de WhatsApp |
 | `09_cuentas.php` | Saldos por equipo y cargos automáticos que no se duplican |
+| `10_excel.php` | El XML de los archivos .xlsx que se exportan |
 
 Lo que todavía **no** se cubre: importación de plantillas, correos y generación de PDFs.
 Son los siguientes candidatos.

@@ -190,6 +190,11 @@ $hoy = date('Y-m-d');
             <h3 class="mb-0">Cuentas de los equipos</h3>
             <div class="small text-muted">Ordenadas por lo que deben, de mayor a menor.</div>
         </div>
+        <?php // La exportación vive aquí porque es donde uno está cuando necesita cuadrar
+              // el dinero con algo de fuera de la app. ?>
+        <a href="<?= url('admin/exportar.php') ?>" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar todo a Excel
+        </a>
         <?php if (!empty($pendientes)): ?>
         <form method="post" data-confirm="Se van a generar <?= count($pendientes) ?> cargos por <?= e($moneda($montoPendiente)) ?>. ¿Continuamos?">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">

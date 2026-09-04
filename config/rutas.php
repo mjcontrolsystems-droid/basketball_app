@@ -67,6 +67,7 @@ return [
     'admin/partido_eventos.php' => ['controlador' => 'Admin/PartidoEventos', 'copa' => false],
     'admin/sanciones.php' => ['controlador' => 'Admin/Sanciones', 'copa' => false],
     'admin/cuentas.php' => ['controlador' => 'Admin/Cuentas', 'copa' => false],
+    'admin/exportar.php' => ['controlador' => 'Admin/Exportar', 'copa' => false],
     'admin/patrocinadores.php' => ['controlador' => 'Admin/Patrocinadores', 'copa' => false],
     'admin/comentarios.php' => ['controlador' => 'Admin/Comentarios', 'copa' => false],
     'admin/colaboradores.php' => ['controlador' => 'Admin/Colaboradores', 'copa' => false],

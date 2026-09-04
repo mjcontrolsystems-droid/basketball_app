@@ -47,6 +47,7 @@ foreach ([
     '/app/Support/helpers.php',
     '/app/Support/mensaje.php',
     '/app/Support/cuentas.php',
+    '/app/Support/excel.php',
     '/app/Models/Sancion.php',
     '/app/Models/Colaborador.php',
     '/app/Models/Cuenta.php',

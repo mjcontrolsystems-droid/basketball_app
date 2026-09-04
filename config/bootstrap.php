@@ -37,6 +37,7 @@ foreach ([
     'disciplina', // suspensiones por roja y acumulación de amarillas
     'mensaje',  // el texto de la jornada listo para pegar en WhatsApp
     'cuentas',  // saldo de cada equipo con la liga (usa Models/Cuenta.php)
+    'excel',    // generación de archivos .xlsx sin librerías externas
 ] as $modulo) {
     require_once RAIZ_APP . '/app/Support/' . $modulo . '.php';
 }
