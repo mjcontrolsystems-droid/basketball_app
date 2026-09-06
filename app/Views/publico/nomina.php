@@ -24,12 +24,28 @@ $casilla = '<span style="display:inline-block;width:14px;height:14px;border:1.5p
             <a href="<?= url_copa('equipo.php?id=' . (int) $equipo['id']) ?>" class="btn btn-outline-luz btn-sm rounded-pill px-3">Volver al equipo</a>
         </div>
         <?php if (count($proximosDelEquipo) > 1): ?>
+        <?php // Cada botón dice fecha Y rival. Con la fecha sola, los dos encuentros de un
+              // equipo que juega dos veces la misma jornada salían con la misma etiqueta y
+              // no había forma de saber cuál se estaba imprimiendo. Los ya jugados llevan
+              // un visto: se pueden reimprimir, pero se ve que son de una fecha pasada. ?>
         <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
             <span class="small" style="color:rgba(255,255,255,.75);">Para el encuentro de:</span>
-            <?php foreach (array_slice($proximosDelEquipo, 0, 4) as $pp): ?>
+            <?php // Seis como máximo: cada botón ahora lleva fecha y rival, y en un
+                  // teléfono ocho de estos llenan la pantalla antes de la propia hoja. ?>
+            <?php foreach (array_slice($proximosDelEquipo, 0, 6) as $pp): ?>
+            <?php
+            $esLocalPP = (int) $pp['equipo_local'] === (int) $equipo['id'];
+            $rivalPP = $equiposPorId[$esLocalPP ? (int) $pp['equipo_visitante'] : (int) $pp['equipo_local']] ?? null;
+            $yaJugado = ($pp['estado'] ?? '') === 'jugado';
+            ?>
             <a href="<?= url_copa('nomina.php?id=' . (int) $equipo['id'] . '&partido=' . (int) $pp['id']) ?>"
-               class="btn btn-sm rounded-pill px-3 <?= $partidoHoja && (int) $partidoHoja['id'] === (int) $pp['id'] ? 'btn-degradado' : 'btn-outline-luz' ?>">
+               class="btn btn-sm rounded-pill px-3 <?= $partidoHoja && (int) $partidoHoja['id'] === (int) $pp['id'] ? 'btn-degradado' : 'btn-outline-luz' ?>"
+               title="Jornada <?= (int) ($pp['jornada'] ?? 0) ?><?= $yaJugado ? ' · ya jugado' : '' ?>">
+                <?php if ($yaJugado): ?><i class="bi bi-check2 me-1"></i><?php endif; ?>
                 <?= e(formatear_fecha_corta((string) $pp['fecha'])) ?>
+                <?php if ($rivalPP !== null): ?>
+                <span class="opacity-75">· <?= e($rivalPP['nombre']) ?></span>
+                <?php endif; ?>
             </a>
             <?php endforeach; ?>
         </div>

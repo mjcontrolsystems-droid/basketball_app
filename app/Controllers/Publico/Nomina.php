@@ -40,26 +40,46 @@ $plantilla = array_values(array_filter(
 usort($plantilla, fn($a, $b) => (int) $a['dorsal'] <=> (int) $b['dorsal']);
 
 // --- El partido de la hoja: el pedido por URL, o el próximo del equipo ---
+//
+// El selector de arriba ofrecía SOLO los encuentros no jugados, y eso dejaba fuera dos
+// casos reales de una liga con dobletes:
+//   - un equipo juega dos veces la misma jornada, se captura el primero, y el segundo
+//     seguía sin jugarse pero ya no había forma cómoda de llegar a su nómina si el
+//     primero se marcó jugado antes de imprimir;
+//   - la nómina de un encuentro YA jugado no se podía volver a sacar, y a veces hace
+//     falta (se perdió el papel, hay un reclamo, se archiva la temporada).
+//
+// Ahora se listan los encuentros de alrededor: los últimos jugados y todos los que
+// faltan. Y se etiquetan con fecha Y rival, porque dos partidos de la misma jornada
+// tienen la misma fecha o casi, y solo el rival los distingue.
 $partidos = partidos_listar($torneo['id']);
 $partidoIdPedido = (int) ($_GET['partido'] ?? 0);
 $partidoHoja = null;
-$proximosDelEquipo = [];
+$partidosDelEquipo = [];
 foreach ($partidos as $p) {
     $esDelEquipo = (int) $p['equipo_local'] === $id || (int) $p['equipo_visitante'] === $id;
     if (!$esDelEquipo) {
         continue;
     }
+    $partidosDelEquipo[] = $p;
     if ((int) $p['id'] === $partidoIdPedido) {
         $partidoHoja = $p;
     }
-    if (($p['estado'] ?? '') !== 'jugado') {
-        $proximosDelEquipo[] = $p;
-    }
 }
-usort($proximosDelEquipo, fn($a, $b) => strcmp((string) $a['fecha'] . $a['hora'], (string) $b['fecha'] . $b['hora']));
+usort($partidosDelEquipo, fn($a, $b) => strcmp((string) $a['fecha'] . $a['hora'], (string) $b['fecha'] . $b['hora']));
+
+$pendientes = array_values(array_filter($partidosDelEquipo, fn($p) => ($p['estado'] ?? '') !== 'jugado'));
+$jugadosDelEquipo = array_values(array_filter($partidosDelEquipo, fn($p) => ($p['estado'] ?? '') === 'jugado'));
+
 if ($partidoHoja === null) {
-    $partidoHoja = $proximosDelEquipo[0] ?? null;
+    // Sin encuentro pedido: el más próximo por jugar. Si ya se jugó todo, el último —
+    // así la hoja nunca sale en blanco al final de la temporada.
+    $partidoHoja = $pendientes[0] ?? (end($jugadosDelEquipo) ?: null);
 }
+
+// Los dos últimos jugados van primero para poder reimprimir la fecha recién pasada, que
+// es cuando más se pide; después todo lo que falta.
+$proximosDelEquipo = array_merge(array_slice($jugadosDelEquipo, -2), $pendientes);
 
 // --- Avisos que el árbitro debe ver junto a cada nombre ---
 $suspendidos = [];
@@ -95,6 +115,7 @@ vista_publica('publico/nomina', compact(
     'deporte',
     'deudores',
     'equipo',
+    'equiposPorId',
     'jugadoresEnCancha',
     'pagina_activa',
     'partidoHoja',
