@@ -117,6 +117,26 @@ prueba('el contador de amarillas NO se reinicia por partido', function () use ($
     igual(4, $castigos[100][0]['partido_id'], 'se ordenan por fecha, no por orden de captura');
 });
 
+prueba('en un doblete, la roja del sábado bloquea el domingo de la MISMA jornada', function () use ($torneo, $jugadores, $tarjeta) {
+    // El caso real de esta liga: cuando el cupo del fin de semana da para más de una
+    // ronda, hay equipos que juegan dos veces la misma jornada. La suspensión se cuenta
+    // por PARTIDOS del equipo y no por jornadas, así que el rojo del primer encuentro
+    // tiene que pesar en el segundo aunque los dos digan "jornada 3".
+    $doblete = [
+        ['id' => 1, 'jornada' => 3, 'equipo_local' => 1, 'equipo_visitante' => 90, 'fecha' => '2026-09-05', 'hora' => '15:00'],
+        ['id' => 2, 'jornada' => 3, 'equipo_local' => 1, 'equipo_visitante' => 91, 'fecha' => '2026-09-06', 'hora' => '16:00'],
+        ['id' => 3, 'jornada' => 4, 'equipo_local' => 1, 'equipo_visitante' => 92, 'fecha' => '2026-09-12', 'hora' => '15:00'],
+    ];
+    $porIdDoblete = fn(int $id) => array_values(array_filter($doblete, fn($p) => $p['id'] === $id))[0];
+
+    $castigos = disciplina_castigos_desde_eventos([$tarjeta('roja', 1)], $torneo, $doblete);
+
+    cierto(isset(disciplina_suspendidos_desde_castigos($castigos, $porIdDoblete(2), $doblete, $jugadores)[100]),
+        'el segundo partido de la jornada 3 lo pierde');
+    falso(isset(disciplina_suspendidos_desde_castigos($castigos, $porIdDoblete(3), $doblete, $jugadores)[100]),
+        'la jornada 4 ya la puede jugar: cumplió con el domingo');
+});
+
 prueba('una copa sin suspensiones configuradas no suspende a nadie', function () use ($partidos, $tarjeta) {
     $sinReglas = ['partidos_suspension_roja' => 0, 'amarillas_para_suspension' => 0, 'partidos_suspension_amarillas' => 0];
     igual([], disciplina_castigos_desde_eventos([$tarjeta('roja', 1)], $sinReglas, $partidos));
