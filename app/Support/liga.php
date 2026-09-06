@@ -464,6 +464,20 @@ function torneo_formato(array $torneo): string
     return array_key_exists($modo, FORMATOS_TORNEO_LABEL) ? $modo : FORMATO_CAMPEONATO;
 }
 
+/**
+ * ¿Los capitanes todavía pueden mover su plantilla?
+ *
+ * Es el candado de las inscripciones. Abierto, cada capitán mantiene su equipo y el
+ * organizador se ahorra capturar 16 plantillas; cerrado, quedan congeladas y solo él las
+ * toca — que es lo que hace falta cuando la temporada arranca y ya nadie debería meter un
+ * refuerzo. Las copas viejas quedan abiertas por el DEFAULT de la columna, o sea que
+ * siguen comportándose como antes.
+ */
+function torneo_inscripciones_abiertas(array $torneo): bool
+{
+    return !array_key_exists('inscripciones_abiertas', $torneo) || !empty($torneo['inscripciones_abiertas']);
+}
+
 function torneo_es_liga(array $torneo): bool
 {
     return torneo_formato($torneo) === FORMATO_LIGA;

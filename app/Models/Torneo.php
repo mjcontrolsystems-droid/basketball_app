@@ -28,6 +28,7 @@ const COLUMNAS_TORNEO = [
     'calendario_config',
     'aviso_activo', 'aviso_tipo', 'aviso_titulo', 'aviso_mensaje',
     'cuota_inscripcion', 'cuota_arbitraje', 'multas_al_equipo',
+    'inscripciones_abiertas',
 ];
 
 /**
@@ -80,7 +81,7 @@ function db_normalizar_torneo(array $fila): array
             $fila[$col] = (float) $fila[$col];
         }
     }
-    foreach (['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'multas_al_equipo'] as $col) {
+    foreach (['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'multas_al_equipo', 'inscripciones_abiertas'] as $col) {
         if (array_key_exists($col, $fila)) {
             $fila[$col] = (bool) (
                 is_string($fila[$col]) ? ($fila[$col] === 't' || $fila[$col] === '1') : $fila[$col]
@@ -256,7 +257,7 @@ function torneos_guardar(array $datos, ?int $usuarioIdCreador = null): int
     // Con prepared statements emulados (necesario por el pooler de Neon, ver db_conexion()),
     // Postgres ya no acepta 0/1 como boolean de forma implícita como sí hacía con prepares
     // nativos: hay que mandar el texto 'true'/'false' para estas 3 columnas.
-    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento', 'aviso_activo', 'multas_al_equipo'];
+    $columnasBooleanas = ['permite_empates', 'es_predeterminado', 'activo', 'sancion_bloquea', 'podio_publicado', 'en_mantenimiento', 'aviso_activo', 'multas_al_equipo', 'inscripciones_abiertas'];
 
     // El UPDATE escribe TODAS las columnas, pero ningún formulario las manda todas: el de
     // configuración de la copa no toca el mensaje de mantenimiento ni la configuración del

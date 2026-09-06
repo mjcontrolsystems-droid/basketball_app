@@ -25,6 +25,25 @@ $accion = $_GET['accion'] ?? 'lista';
 $idEditar = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $jugadorEditar = $idEditar ? db_buscar_por_id($jugadores, $idEditar) : null;
 
+// --- Inscripciones cerradas ---
+//
+// Al capitán se le congela la plantilla; al organizador nunca. El corte se hace en el
+// servidor y no escondiendo botones: una vez que alguien tuvo acceso a esta pantalla,
+// conoce las URLs de memoria.
+$plantillaCongelada = es_capitan($torneo) && !torneo_inscripciones_abiertas($torneo);
+if ($plantillaCongelada) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        redirigir_con_mensaje(
+            url('admin/jugadores.php?equipo_id=' . $equipoId),
+            'error',
+            'El registro de jugadores está cerrado. Si necesitas un cambio en tu plantilla, pídeselo a quien organiza la liga.'
+        );
+    }
+    if ($accion !== 'lista') {
+        $accion = 'lista';
+    }
+}
+
 $urlLista = url('admin/jugadores.php?equipo_id=' . $equipoId);
 $etJugador = forma_genero($torneo['genero'] ?? null, 'Jugador', 'Jugadora');
 $etJugadores = forma_genero($torneo['genero'] ?? null, 'Jugadores', 'Jugadoras');
@@ -275,6 +294,7 @@ vista_admin('admin/jugadores', compact(
     'etJugadores',
     'jugadorEditar',
     'jugadores',
+    'plantillaCongelada',
     'previaImport',
     'seccion_activa',
     'titulo_pagina',

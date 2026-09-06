@@ -872,6 +872,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Nómina del árbitro: marcar desde el teléfono a quién se presenta, y que la X salga
+    // ya puesta en el papel. La hoja se pinta dos veces (la de pantalla con casillas, la
+    // de impresión con cuadritos), así que al marcar arriba hay que reflejarlo abajo.
+    //
+    // No se guarda nada en el servidor a propósito: es una ayuda para imprimir, no un
+    // registro. El acta sigue siendo el papel firmado por el capitán y el árbitro.
+    var casillasJuega = document.querySelectorAll('.check-juega');
+    if (casillasJuega.length) {
+        var reflejar = function (casilla) {
+            var destino = document.querySelector('.casilla-juega[data-jugador="' + casilla.getAttribute('data-jugador') + '"]');
+            if (destino) {
+                destino.classList.toggle('marcada', casilla.checked);
+            }
+        };
+        casillasJuega.forEach(function (casilla) {
+            casilla.addEventListener('change', function () { reflejar(casilla); });
+        });
+
+        // "Marcar todos" es el caso normal: casi siempre llega el equipo completo y lo que
+        // se hace es destildar a los dos que faltaron.
+        document.querySelectorAll('[data-marcar-todos], [data-desmarcar-todos]').forEach(function (boton) {
+            var marcar = boton.hasAttribute('data-marcar-todos');
+            boton.addEventListener('click', function () {
+                casillasJuega.forEach(function (casilla) {
+                    casilla.checked = marcar;
+                    reflejar(casilla);
+                });
+            });
+        });
+    }
+
     // Copiar el contenido de un campo entero (el mensaje de la jornada para WhatsApp).
     // Distinto del botón de arriba: ahí se copia una URL corta guardada en un atributo,
     // aquí un texto largo que ya está en pantalla y que el organizador puede haber

@@ -431,6 +431,39 @@ a.hero-stat:focus-visible {
     box-shadow: 0 20px 40px -18px rgba(var(--color-primario-oscuro-rgb), .35);
 }
 
+/* ---------- Casillas de la nómina ----------
+   En pantalla son casillas de verdad, y grandes: se marcan con el dedo, parado en la
+   cancha, con el partido por empezar. El cuadrito de 14px del papel es imposible de
+   acertar en un teléfono. */
+.check-juega {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    accent-color: var(--color-primario);
+}
+
+/* El cuadrito que va al papel. Vacío por defecto (se llena con lapicero, como siempre) y
+   con una X si se marcó arriba antes de imprimir. */
+.casilla-juega {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #000;
+    position: relative;
+}
+
+.casilla-juega.marcada::after {
+    content: 'X';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000;
+}
+
 /* ---------- Foto del jugador ----------
    Cuando no hay foto se pinta el dorsal dentro del círculo: con 240 jugadores, una lista
    llena de siluetas genéricas no identifica a nadie, y así además se ve de un vistazo a

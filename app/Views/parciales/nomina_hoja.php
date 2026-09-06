@@ -1,8 +1,20 @@
 <?php
 /**
- * Hoja de la nómina. Se usa dos veces (vista previa e impresión): lo que se ve es lo que
- * sale en papel. Las casillas van VACÍAS a propósito — las llena el capitán con lapicero.
+ * Hoja de la nómina. Se pinta dos veces: la vista previa en pantalla y la copia que sale
+ * en papel.
+ *
+ * Las casillas ya no se llenan solo con lapicero. En la vista previa son casillas de
+ * verdad: el capitán marca desde el teléfono a quién trae, y al imprimir la X aparece ya
+ * puesta en el papel. Marcar veinte cuadritos a mano, parado en la cancha y con el juego
+ * por empezar, era el paso donde se equivocaban.
+ *
+ * Nada de esto se guarda: es una ayuda para imprimir, no un registro. Quien no marque
+ * nada obtiene la hoja en blanco de siempre y la llena con lapicero.
+ *
+ * $modoHoja distingue las dos copias: 'pantalla' lleva las casillas marcables y
+ * 'impresion' los cuadritos que se pintan solos con lo que se marcó arriba (ver app.js).
  */
+$modoHoja = $modoHoja ?? 'impresion';
 $linea = '<span style="display:inline-block;border-bottom:1px solid #000;min-width:160px;">&nbsp;</span>';
 ?>
 <div class="ficha-titulo">
@@ -37,6 +49,18 @@ $linea = '<span style="display:inline-block;border-bottom:1px solid #000;min-wid
     en este encuentro</strong>. Quien no esté marcado no podrá ingresar al terreno de juego.
 </p>
 
+<?php if ($modoHoja === 'pantalla' && !empty($plantilla)): ?>
+<p class="small text-muted mb-3 solo-pantalla">
+    <i class="bi bi-hand-index me-1"></i>Puedes marcarlos aquí antes de imprimir y salen con la X ya puesta.
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-2" data-marcar-todos>
+        Marcar todos
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-1" data-desmarcar-todos>
+        Ninguno
+    </button>
+</p>
+<?php endif; ?>
+
 <table class="ficha-tabla">
     <thead>
         <tr>
@@ -49,7 +73,17 @@ $linea = '<span style="display:inline-block;border-bottom:1px solid #000;min-wid
     <tbody>
         <?php foreach ($plantilla as $j): $jid = (int) $j['id']; ?>
         <tr>
-            <td style="text-align:center;"><span style="display:inline-block;width:14px;height:14px;border:1.5px solid #000;"></span></td>
+            <td style="text-align:center;">
+                <?php if ($modoHoja === 'pantalla'): ?>
+                    <?php // Un suspendido o un moroso no debería marcarse: la casilla se
+                          // deja igual pero avisada, porque la decisión final la toma la
+                          // mesa con el papel en la mano. ?>
+                    <input type="checkbox" class="check-juega" data-jugador="<?= $jid ?>"
+                           aria-label="Marcar a <?= e($j['nombre']) ?> como presente">
+                <?php else: ?>
+                    <span class="casilla-juega" data-jugador="<?= $jid ?>"></span>
+                <?php endif; ?>
+            </td>
             <td><strong><?= e($j['dorsal']) ?></strong></td>
             <td><?= e($j['nombre']) ?></td>
             <td style="font-size:11px;">

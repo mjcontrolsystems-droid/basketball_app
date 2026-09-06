@@ -476,6 +476,12 @@ function db_migrar_automatico(): void
         $pdo->exec('ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS equipo_id INTEGER REFERENCES equipos(id) ON DELETE CASCADE');
         $pdo->exec('CREATE INDEX IF NOT EXISTS colaboradores_equipo_idx ON colaboradores (equipo_id)');
 
+        // Cierre de inscripciones. Mientras está abierto, cada capitán mantiene su propia
+        // plantilla; al cerrarlo, las plantillas quedan congeladas para ellos y solo el
+        // organizador puede tocarlas. Es lo que evita que alguien meta un refuerzo a media
+        // temporada. Abierto por defecto: una copa nueva empieza cargando jugadores.
+        $pdo->exec('ALTER TABLE torneos ADD COLUMN IF NOT EXISTS inscripciones_abiertas BOOLEAN NOT NULL DEFAULT TRUE');
+
         // Foto del jugador. Guarda el id de la fila en la tabla 'imagenes', igual que el
         // escudo del equipo: las imágenes viven en la base y no en el disco, porque el
         // disco de Render se borra en cada despliegue.

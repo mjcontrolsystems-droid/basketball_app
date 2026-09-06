@@ -56,13 +56,16 @@ $casilla = '<span style="display:inline-block;width:14px;height:14px;border:1.5p
 <section class="seccion pt-4">
     <div class="container" style="max-width:820px;">
         <div class="card-suave p-4 hoja-previa">
-            <?php require __DIR__ . '/../parciales/nomina_hoja.php'; ?>
+            <?php $modoHoja = 'pantalla'; require __DIR__ . '/../parciales/nomina_hoja.php'; ?>
         </div>
     </div>
 </section>
 </div>
 
-<?php // ---------- La hoja que se imprime ---------- ?>
+<?php // ---------- La hoja que se imprime ----------
+      // Es una copia aparte de la de arriba, no la misma: la de pantalla tiene casillas
+      // marcables y esta lleva los cuadritos que van al papel. app.js copia en estos lo
+      // que se marcó arriba, así que lo que se ve es lo que se imprime. ?>
 <div class="solo-impresion ficha-imprimir">
-    <?php require __DIR__ . '/../parciales/nomina_hoja.php'; ?>
+    <?php $modoHoja = 'impresion'; require __DIR__ . '/../parciales/nomina_hoja.php'; ?>
 </div>

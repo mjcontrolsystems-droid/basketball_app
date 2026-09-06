@@ -218,6 +218,26 @@
                 <input type="number" min="0" step="0.01" name="multa_roja" class="form-control" value="<?= e((string) ($torneoEditar['multa_roja'] ?? 0)) ?>">
             </div>
 
+            <?php // --- Inscripciones ---
+                  // El interruptor que congela las plantillas. Se deja aquí arriba, junto
+                  // a lo que define la competencia, porque cerrar inscripciones es una
+                  // decisión de temporada y no un ajuste de trámite. ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <label class="form-label small fw-semibold d-block mb-1"><i class="bi bi-lock me-1"></i>Inscripciones</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="inscripciones_abiertas" value="1" id="chkInscripciones"
+                           <?= !isset($torneoEditar['inscripciones_abiertas']) || !empty($torneoEditar['inscripciones_abiertas']) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="chkInscripciones">
+                        Los capitanes pueden modificar su plantilla
+                        <span class="d-block small text-muted">
+                            Desmárcalo cuando cierre el registro: las plantillas quedan congeladas para ellos
+                            y solo tú puedes agregar, corregir o dar de baja jugadores. Tú nunca te bloqueas.
+                        </span>
+                    </label>
+                </div>
+            </div>
+
             <?php // --- Cuotas de la liga ---
                   // Cada liga cobra distinto: hay quien solo cobra inscripción, quien
                   // cobra arbitraje por fecha y quien no cobra nada. Por eso son montos

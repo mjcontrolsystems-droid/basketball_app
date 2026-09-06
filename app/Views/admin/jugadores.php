@@ -207,8 +207,17 @@
 
 <?php else: ?>
 
+    <?php $plantillaCongelada = !empty($plantillaCongelada); ?>
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h5 class="mb-0">Plantilla (<?= count($jugadores) ?>)</h5>
+        <?php // Con las inscripciones cerradas, el capitán ve su plantilla pero no la
+              // toca. El servidor ya lo impide; aquí solo se evita mostrar botones que
+              // van a rebotar. ?>
+        <?php if ($plantillaCongelada): ?>
+        <span class="badge rounded-pill text-bg-secondary px-3 py-2">
+            <i class="bi bi-lock me-1"></i>Registro cerrado
+        </span>
+        <?php else: ?>
         <div class="d-flex gap-2 flex-wrap">
             <?php // Importar desde el Excel que ya trae el delegado, en vez de capturar
                   // uno por uno. El archivo se lee y se muestra una vista previa editable:
@@ -223,11 +232,20 @@
             </form>
             <a href="<?= $urlLista ?>&accion=nuevo" class="btn btn-degradado rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i><?= e(forma_genero($torneo['genero'] ?? null, 'Nuevo', 'Nueva')) ?> <?= e(mb_strtolower($etJugador)) ?></a>
         </div>
+        <?php endif; ?>
     </div>
+
+    <?php if ($plantillaCongelada): ?>
+    <div class="alert alert-secondary rounded-4 border-0 small mb-4">
+        <i class="bi bi-lock me-1"></i>El registro de jugadores está cerrado. Puedes ver tu plantilla, pero los
+        cambios los hace quien organiza la liga: escríbele si necesitas agregar o dar de baja a alguien.
+    </div>
+    <?php else: ?>
     <p class="small text-muted mt-n2 mb-4">
         <i class="bi bi-lightbulb me-1"></i>Puedes subir el Excel del delegado tal cual: la app busca sola la columna del
         nombre y la del dorsal, ignora el DPI y los teléfonos, y te muestra cómo quedaría antes de crear nada.
     </p>
+    <?php endif; ?>
 
     <?php if (empty($jugadores)): ?>
         <p class="text-muted">Todavía no hay <?= e(mb_strtolower($etJugadores)) ?> <?= e(forma_genero($torneo['genero'] ?? null, 'cargados', 'cargadas')) ?> para este equipo.</p>
@@ -256,6 +274,7 @@
                     <td class="small text-muted"><?= e(posicion_label($torneo['deporte'] ?? null, $j['posicion'] ?? null)) ?></td>
                     <td><?= $j['activo'] ? '<span class="badge rounded-pill text-bg-success-subtle text-success-emphasis small">' . e($etActivo) . '</span>' : '<span class="badge rounded-pill text-bg-secondary small">' . e($etInactivo) . '</span>' ?></td>
                     <td class="text-end">
+                        <?php if (!$plantillaCongelada): ?>
                         <a href="<?= $urlLista ?>&accion=editar&id=<?= $j['id'] ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                         <form method="post" class="d-inline" data-confirm="¿Eliminar a <?= e($j['nombre']) ?>?">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
@@ -264,6 +283,7 @@
                             <input type="hidden" name="id" value="<?= $j['id'] ?>">
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                         </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

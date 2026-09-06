@@ -179,6 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
             'moneda' => trim((string) ($_POST['moneda'] ?? 'Q')) !== '' ? mb_substr(trim((string) $_POST['moneda']), 0, 4) : 'Q',
             // Cuotas de la liga: en cero no se cobra y la pantalla de Cuentas no ofrece
             // generar ese cargo. Cada liga pone las suyas.
+            // Congelar las plantillas de los capitanes. Nunca afecta al dueño.
+            'inscripciones_abiertas' => isset($_POST['inscripciones_abiertas']),
             'cuota_inscripcion' => max(0, (float) ($_POST['cuota_inscripcion'] ?? 0)),
             'cuota_arbitraje' => max(0, (float) ($_POST['cuota_arbitraje'] ?? 0)),
             'multas_al_equipo' => isset($_POST['multas_al_equipo']),
